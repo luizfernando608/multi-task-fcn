@@ -1,3 +1,4 @@
+#%%
 import argparse
 import math
 import os
@@ -10,7 +11,7 @@ import torch.nn.parallel
 import torch.backends.cudnn as cudnn
 import torch.optim
 from src.metrics import evaluate_metrics
-
+from tqdm import tqdm
 
 from src.utils import (
     initialize_exp,
@@ -21,91 +22,104 @@ from src.utils import (
     load_norm,
     check_folder,
     plot_figures,
-    oversamp
+    oversamp,
+    read_yaml
 )
 
 from src.multicropdataset import DatasetFromCoord
 from src.resnet import ResUnet
 
+#%%
 logger = getLogger('swav_model')
 
-parser = argparse.ArgumentParser(description="Training of MUlti-task FCN")
+# parser = argparse.ArgumentParser(description="Training of MUlti-task FCN")
 
-#########################
-#### data parameters ####
-#########################
-parser.add_argument("--dump_path", type=str, default="./exp_deeplab_v4",
-                    help="experiment dump path for checkpoints and log")
-parser.add_argument('--image_path', type=str, default='D:/Projects/PUC-PoC/data_new/amazonas/ITC_annotation/NNDiffusePanSharpening_REFLECTANCE_TIFF_NOCLOUDS_8bits.tif',
-                        help="Path containing the raster image")
-parser.add_argument('--ref_path',type=str, default='D:/Projects/PUC-PoC/data_new/amazonas/ITC_annotation/ITC_CLASS.tif', 
-                    help="Path containing the refrence label image for training")
-parser.add_argument('--depth_path',type=str, default='D:/Projects/PUC-PoC/data_new/amazonas/ITC_annotation/train_depth.tif', 
-                    help="Path containing the refrence depth image for training")
-parser.add_argument("--samples", type=int, default=2500, 
-                    help="nb samples per epoch")
-parser.add_argument("--size_crops", type=int, default=256, 
-                    help="Size of the input tile for the network")
-parser.add_argument("--augment", type=bool, default=False, 
-                    help="True for data augmentation during training")
+# #########################
+# #### data parameters ####
+# #########################
+# # Último Checkpoint 
+# parser.add_argument("--dump_path", type=str, default="./exp_deeplab_v4",
+#                     help="experiment dump path for checkpoints and log")
 
+# # Imagem de satélite original
+# parser.add_argument('--image_path', type=str, 
+#     default='D:/Projects/PUC-PoC/data_new/amazonas/ITC_annotation/NNDiffusePanSharpening_REFLECTANCE_TIFF_NOCLOUDS_8bits.tif',
+#     help="Path containing the raster image")
 
-#########################
-#### model parameters ###
-#########################
-parser.add_argument("--arch", default="deeplabv3_resnet50", type=str, 
-                    help="convnet architecture --> 'resunet','deeplabv3_resnet50'")
-parser.add_argument("--pretrained", default=True, type=bool, 
-                    help="True for load pretrained weights from Imagenet")
-parser.add_argument("--frozen", default=False, type=bool, 
-                    help="True for frozen the resnet backbone")
-parser.add_argument("--filters", default=[32,32,32,32], type=int, 
-                    help="Filter for the ResUnet for trained from scratch")
+# # Label
+# parser.add_argument('--ref_path',type=str, 
+#     default='D:/Projects/PUC-PoC/data_new/amazonas/ITC_annotation/ITC_CLASS.tif', 
+#     help="Path containing the refrence label image for training")
+
+# # Mapa de distâncias da imagem
+# parser.add_argument('--depth_path',type=str, default='D:/Projects/PUC-PoC/data_new/amazonas/ITC_annotation/train_depth.tif', 
+#                     help="Path containing the refrence depth image for training")
+# parser.add_argument("--samples", type=int, default=2500, 
+#                     help="nb samples per epoch")
+# parser.add_argument("--size_crops", type=int, default=256, 
+#                     help="Size of the input tile for the network")
+# parser.add_argument("--augment", type=bool, default=False, 
+#                     help="True for data augmentation during training")
 
 
-#########################
-#### optim parameters ###
-#########################
-parser.add_argument("--epochs", default=30, type=int,
-                    help="number of total epochs to run")
-parser.add_argument("--batch_size", default=16, type=int,
-                    help="batch size per gpu, i.e. how many unique instances per gpu")
-parser.add_argument("--base_lr", default=0.01, type=float, help="base learning rate")
-parser.add_argument("--final_lr", type=float, default=0.0001, help="final learning rate")
-parser.add_argument("--wd", default=1e-6, type=float, help="weight decay")
-parser.add_argument("--warmup_epochs", default=5, type=int, help="number of warmup epochs")
-parser.add_argument("--start_warmup", default=0, type=float,
-                    help="initial warmup learning rate")
+# #########################
+# #### model parameters ###
+# #########################
+# parser.add_argument("--arch", default="deeplabv3_resnet50", type=str, 
+#                     help="convnet architecture --> 'resunet','deeplabv3_resnet50'")
+# parser.add_argument("--pretrained", default=True, type=bool, 
+#                     help="True for load pretrained weights from Imagenet")
+# parser.add_argument("--frozen", default=False, type=bool, 
+#                     help="True for frozen the resnet backbone")
+# parser.add_argument("--filters", default=[32,32,32,32], type=int, 
+#                     help="Filter for the ResUnet for trained from scratch")
 
-#########################
-#### dist parameters ###
-#########################
-parser.add_argument("--dist_url", default="env://", type=str, help="""url used to set up distributed
-                    training; see https://pytorch.org/docs/stable/distributed.html""")
-parser.add_argument("--world_size", default=-1, type=int, help="""
-                    number of processes: it is set automatically and
-                    should not be passed as argument""")
-parser.add_argument("--rank", default=0, type=int, help="""rank of this process:
-                    it is set automatically and should not be passed as argument""")
-parser.add_argument("--local_rank", default=0, type=int,
-                    help="this argument is not used and should be ignored")
 
-##########################
-#### others parameters ###
-##########################
+# #########################
+# #### optim parameters ###
+# #########################
+# parser.add_argument("--epochs", default=30, type=int,
+#                     help="number of total epochs to run")
+# parser.add_argument("--batch_size", default=16, type=int,
+#                     help="batch size per gpu, i.e. how many unique instances per gpu")
+# parser.add_argument("--base_lr", default=0.01, type=float, help="base learning rate")
+# parser.add_argument("--final_lr", type=float, default=0.0001, help="final learning rate")
+# parser.add_argument("--wd", default=1e-6, type=float, help="weight decay")
+# parser.add_argument("--warmup_epochs", default=5, type=int, help="number of warmup epochs")
+# parser.add_argument("--test_itc", default=0, type=float,
+#                     help="initial warmup learning rate")
 
-parser.add_argument("--workers", default=0, type=int,
-                    help="number of data loading workers")
-parser.add_argument("--seed", type=int, default=[31,10,75,102,40], help="seeds")
+# #########################
+# #### dist parameters ###
+# #########################
+# parser.add_argument("--dist_url", default="env://", type=str, help="""url used to set up distributed
+#                     training; see https://pytorch.org/docs/stable/distributed.html""")
+# parser.add_argument("--world_size", default=-1, type=int, help="""
+#                     number of processes: it is set automatically and
+#                     should not be passed as argument""")
+# parser.add_argument("--rank", default=0, type=int, help="""rank of this process:
+#                     it is set automatically and should not be passed as argument""")
+# parser.add_argument("--local_rank", default=0, type=int,
+#                     help="this argument is not used and should be ignored")
+
+# ##########################
+# #### others parameters ###
+# ##########################
+
+# parser.add_argument("--workers", default=0, type=int,
+#                     help="number of data loading workers")
+# parser.add_argument("--seed", type=int, default=[31,10,75,102,40], help="seeds")
 
 
 def main():
     global args, figures_path
-    args = parser.parse_args()
-    check_folder(args.dump_path)
+    # args = parser.parse_args()
+    args = read_yaml("args.yaml")
+
+    check_folder(args.model_dir)
     fix_random_seeds(args.seed[0])
     
-    figures_path = os.path.join(args.dump_path, 'figures')
+    figures_path = os.path.join(args.model_dir, 'figures')
     check_folder(figures_path)
 
     
@@ -113,10 +127,11 @@ def main():
     
     
     ######### Define Loader ############
-    raster_train = read_tiff(args.ref_path)
-    depth_img = read_tiff(args.depth_path)
-
-    image, coords_train, raster_train, labs_coords_train = define_loader(args.moizaic_image, 
+    raster_train = read_tiff(args.raster_gt)
+    
+    depth_img = read_tiff(os.path.join(args.data_path, 'train_depth.tif'))
+    ## MINHA MUDANÇA
+    image, coords_train, raster_train, labs_coords_train = define_loader(args.ortho_image, 
                                                             raster_train,
                                                             args.size_crops)    
     
@@ -166,12 +181,13 @@ def main():
             
         if os.path.isdir(model_path):
             model_file = os.listdir(model_path)
-            model = torch.load(os.path.join(model_path,model_file[0]))
+            model = torch.load(os.path.join(model_path, model_file[0]))
         else:
             check_folder(model_path)
             model = torch.hub.load('pytorch/vision:v0.10.0', args.arch, 
                                    pretrained=args.pretrained,
                                    aux_loss =True)
+            # gera o model
             torch.save(model, os.path.join(model_path,'model'))
         
         # modify initial conv and classfiers
@@ -179,9 +195,26 @@ def main():
         model.aux_classifier[4] = nn.Conv2d(256, 1, kernel_size=(1, 1), stride=(1, 1))
         model.classifier[4] = nn.Conv2d(256, len(np.unique(labs_coords_train)), kernel_size=(1, 1), stride=(1, 1))
 
-
+    # # load weights
+    # if os.path.isfile(args.pretrained_sentinel):
+    #     state_dict = torch.load(args.pretrained_sentinel, map_location="cuda:0" )
+    #     if "state_dict" in state_dict:
+    #         state_dict = state_dict["state_dict"]
+    #     # remove prefixe "module."
+    #     state_dict = {k.replace("module.", ""): v for k, v in state_dict.items()}
+    #     for k, v in model_encoder_sentinel.state_dict().items():
+    #         if k not in list(state_dict):
+    #             logger.info('key "{}" could not be found in provided state dict'.format(k))
+    #         elif state_dict[k].shape != v.shape:
+    #             logger.info('key "{}" is of different shape in model and provided state dict'.format(k))
+    #             state_dict[k] = v
+    #     msg = model_encoder_sentinel.load_state_dict(state_dict, strict=False)
+    #     logger.info("Load pretrained model with msg: {}".format(msg))
+    # else:
+    #     logger.info("No pretrained weights found => training from random weights")
     # copy model to GPU
     model = model.cuda()
+
     
     if args.rank == 0:
         logger.info(model)
@@ -205,9 +238,10 @@ def main():
 
 
     # optionally resume from a checkpoint
-    to_restore = {"epoch": 0}
+
+    to_restore = {"epoch": 0, "best_acc":(0.)}
     restart_from_checkpoint(
-        os.path.join(args.dump_path, "checkpoint.pth.tar"),
+        os.path.join(args.model_dir, "checkpoint.pth.tar"),
         run_variables=to_restore,
         state_dict=model,
         optimizer=optimizer
@@ -221,7 +255,7 @@ def main():
     cont_early = 0
     patience = 20
 
-    for epoch in range(start_epoch, args.epochs):
+    for epoch in tqdm(range(start_epoch, args.epochs)):
         np.random.shuffle(train_loader.dataset.coord)
 
         # train the network for one epoch
@@ -246,7 +280,8 @@ def main():
                 cont_early = 0
                 torch.save(
                     save_dict,
-                    os.path.join(args.dump_path, "checkpoint.pth.tar"),
+                    # Criar um checkpoint diferente para cada iteração
+                    os.path.join(args.model_dir, "checkpoint.pth.tar"),
                 )
                 best_val = scores_tr[1]
             else:
@@ -330,7 +365,7 @@ def train(train_loader, model, optimizer, epoch, lr_schedule):
             
         if it == 0:
             # plot samples results for visual inspection
-            plot_figures(inp_img,ref,soft(out_batch['out']),depth,
+            plot_figures(inp_img, ref, soft(out_batch['out']),depth,
                          sig(out_batch['aux']),figures_path,epoch,'train')
 
             
@@ -343,7 +378,6 @@ def define_loader(orto_img, gt_lab,
     if not test:
         image = load_norm(orto_img)
     
-    # gt_lab must have zero for the background (unknown region)
     gt_lab[:size_crops,:] = 0
     gt_lab[-size_crops:,:] = 0
     gt_lab[:,:size_crops] = 0

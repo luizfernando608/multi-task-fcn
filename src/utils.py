@@ -4,7 +4,7 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 #
-
+import ast
 import argparse
 from logging import getLogger
 import pickle
@@ -167,9 +167,7 @@ def plot_figures(img_mult, ref, pred, depth, dist, model_dir, epoch, set_name):
         depth = depth.data.cpu().numpy()
         
     batch=5
-    # my changes
-    # img_mult = img_mult[:batch,[5,3,2],:,:]  
-    img_mult = img_mult[:batch,[0],:,:]  
+    img_mult = img_mult[:batch,[5,3,2],:,:]  
     img_mult = np.moveaxis(img_mult,1,3)
     ref = ref[:batch,:,:]
     pred_cl = np.argmax(pred[:batch,:,:,:],axis=1)+1
@@ -279,22 +277,22 @@ def initialize_exp(params, *args, dump_params=True):
 
     # dump parameters
     if dump_params:
-        pickle.dump(params, open(os.path.join(params.dump_path, "params.pkl"), "wb"))
+        pickle.dump(params, open(os.path.join(params.model_dir, "params.pkl"), "wb"))
 
     # create a panda object to log loss and acc
     training_stats = PD_Stats(
-        os.path.join(params.dump_path, "stats" + str(params.rank) + ".pkl"), args
+        os.path.join(params.model_dir, "stats" + str(params.rank) + ".pkl"), args
     )
 
     # create a logger
     logger = create_logger(
-        os.path.join(params.dump_path, "train.log"), rank=params.rank
+        os.path.join(params.model_dir, "train.log"), rank=params.rank
     )
     logger.info("============ Initialized logger ============")
     logger.info(
         "\n".join("%s: %s" % (k, str(v)) for k, v in sorted(dict(vars(params)).items()))
     )
-    logger.info("The experiment will be stored in %s\n" % params.dump_path)
+    logger.info("The experiment will be stored in %s\n" % params.model_dir)
     logger.info("")
     return logger, training_stats
 
@@ -460,3 +458,34 @@ def oversamp(coords, lab, under = False):
             
     return out_coords
 
+class AttrDict(dict):
+    def __init__(self, *args, **kwargs):
+        super(AttrDict, self).__init__(*args, **kwargs)
+        self.__dict__ = self
+
+
+def read_yaml(yaml_path:str)->dict:
+    """Read yaml file
+    Args:
+        yaml_path (str): path to yaml file
+    Returns:
+        dict: dictionary with yaml file content
+    """
+    with open(yaml_path, 'r') as stream:
+        try:
+            yaml_dict = yaml.safe_load(stream)
+            yaml_attrdict = AttrDict()
+            yaml_attrdict.update(yaml_dict)
+        except yaml.YAMLError as exc:
+            print(exc)
+        
+    # for each value try to convert to float
+    for key in yaml_attrdict.keys():
+        # eval values
+        try:
+            yaml_attrdict[key] = ast.literal_eval(yaml_attrdict[key])
+        except:
+            pass
+
+
+    return yaml_attrdict

@@ -21,6 +21,7 @@ from skimage.morphology import dilation, disk
 from sklearn.model_selection import StratifiedKFold
 from skimage.measure import label, regionprops, regionprops_table
 
+from src.utils import read_yaml
 
 def make_checkerboard(n_rows, n_columns, square_size):
 
@@ -41,7 +42,6 @@ def main(args):
     raster_gt = read_tiff(args.raster_gt) 
     itc_id = label(raster_gt)
     raster_src = gdal.Open(args.raster_gt)
-    
     ################################# Random Seelection ########################################
     
     region_props = regionprops_table(itc_id, properties=("label","centroid"))
@@ -81,17 +81,17 @@ def main(args):
     array2raster(os.path.join(args.out_path, 'checkboard.TIF'), raster_src, unique_mask, 'Byte')
     
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Binarizes images according to shapefile attributes')
-    parser.add_argument('--raster_gt', default='D:/Projects/PUC-PoC/data_new/amazonas/ITC_annotation/ITC_CLASS.tif',
-                        help="Path of the refence raster image")
-    parser.add_argument('--itc_id', default='D:/Projects/PUC-PoC/data_new/amazonas/ITC_annotation/ITC_ID.tif',
-                        help="Path of the ITC unique id raster image")
-    parser.add_argument('--mask_cluster', default='D:/Projects/PUC-PoC/data_new/amazonas/isa_upa/clustered_shape.TIF',
-                        help="Path of the mask image for cluster split")
-    parser.add_argument('--out_path', default='D:/Projects/PUC-PoC/data_new/amazonas/ITC_annotation',
-                        help="Path to save the images")
+    # parser = argparse.ArgumentParser(description='Binarizes images according to shapefile attributes')
+    # parser.add_argument('--raster_gt', default='D:/Projects/PUC-PoC/data_new/amazonas/ITC_annotation/ITC_CLASS.tif',
+    #                     help="Path of the refence raster image")
+    # parser.add_argument('--itc_id', default='D:/Projects/PUC-PoC/data_new/amazonas/ITC_annotation/ITC_ID.tif',
+    #                     help="Path of the ITC unique id raster image")
+    # parser.add_argument('--mask_cluster', default='D:/Projects/PUC-PoC/data_new/amazonas/isa_upa/clustered_shape.TIF',
+    #                     help="Path of the mask image for cluster split")
+    # parser.add_argument('--out_path', default='D:/Projects/PUC-PoC/data_new/amazonas/ITC_annotation',
+    #                     help="Path to save the images")
 
-    args = parser.parse_args()
-
+    # args = parser.parse_args()
+    args = read_yaml("args.yaml")
 
     main(args)

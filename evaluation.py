@@ -16,14 +16,18 @@ from sklearn.model_selection import train_test_split
 from sklearn.model_selection import StratifiedKFold
 from skimage.morphology import dilation, disk
 
+from tqdm import tqdm
+
 from src.logger import create_logger
 
-from mosaic_data import extract_patches_coord, add_padding_new, array2raster
+from src.utils import extract_patches_coord, add_padding_new, array2raster
+
 from src.utils import (
     bool_flag,
     read_tiff,
     load_norm,
-    check_folder
+    check_folder,
+    read_yaml
 )
 
 from src.multicropdataset import DatasetFromCoord
@@ -36,18 +40,21 @@ parser = argparse.ArgumentParser(description="Inference of CNN-patch")
 #########################
 #### data parameters ####
 #########################
-parser.add_argument('--orto_img', type=str, default='D:/Projects/PUC-PoC/data_new/amazonas/ITC_annotation/NNDiffusePanSharpening_REFLECTANCE_TIFF_NOCLOUDS_8bits.tif',
-                        help="Path containing the raster image")
-parser.add_argument('--ref_path',type=str, default=None, 
-                    help="Path containing the refrence and mask data for training")
-parser.add_argument("--overlap", type=float, default=[0.1,0.3,0.5], 
-                    help="samples per epoch")
-parser.add_argument("--size_crops", type=int, default=256, 
-                    help="True for training 4 disjoint regions")
-parser.add_argument("--nb_class", type=int, default=8, 
-                    help="samples per epoch")
-parser.add_argument("--test_itc", type=bool, default=False, 
-                    help="True for predicting only the test ITCs")
+# parser.add_argument('--orto_img', type=str, default='D:/Projects/PUC-PoC/data_new/amazonas/ITC_annotation/NNDiffusePanSharpening_REFLECTANCE_TIFF_NOCLOUDS_8bits.tif',
+#                         help="Path containing the raster image")
+
+# parser.add_argument('--orto_img', type=str, default='/home/luiz/multi-task-fcn/Data/orthoimages/new_ortoA1_25tiff.tif',
+#                         help="Path containing the raster image")
+# parser.add_argument('--ref_path',type=str, default=None, 
+#                     help="Path containing the refrence and mask data for training")
+# parser.add_argument("--overlap", type=float, default=[0.1,0.3,0.5], 
+#                     help="samples per epoch")
+# parser.add_argument("--size_crops", type=int, default=256, 
+#                     help="True for training 4 disjoint regions")
+# parser.add_argument("--nb_class", type=int, default=8, 
+#                     help="samples per epoch")
+# parser.add_argument("--test_itc", type=bool, default=False, 
+#                     help="True for predicting only the test ITCs")
 
 #########################
 #### model parameters ###
@@ -80,6 +87,7 @@ parser.add_argument("--seed", type=int, default=31, help="seed")
 #########################
 #### model parameters ###
 #########################
+# Usar o último modelo treinado
 parser.add_argument("--pretrained", default="checkpoint.pth.tar", type=str, 
                     help="path to pretrained weights")
 
@@ -87,14 +95,15 @@ parser.add_argument("--pretrained", default="checkpoint.pth.tar", type=str,
 #########################
 #### optim parameters ###
 #########################
-parser.add_argument("--batch_size", default=16, type=int,
+parser.add_argument("--batch_size", default=8, type=int,
                     help="batch size ")
 
 
 def main(overlap):
     global args
-    args = parser.parse_args()
-    args.pretrained = os.path.join(args.dump_path,args.pretrained)
+    # args = parser.parse_args()
+    args = read_yaml("args.yaml")
+    args.pretrained_file_checkpoint = os.path.join(args.model_dir, args.pretrained_file_checkpoint)
     
     args.overlap = overlap
 
@@ -102,19 +111,19 @@ def main(overlap):
 
     
     # create a logger
-    logger = create_logger(os.path.join(args.dump_path, "inference.log"),rank=0)
+    logger = create_logger(os.path.join(args.model_dir, "inference.log"),rank=0)
     logger.info("============ Initialized logger ============")
     logger.info(
         "\n".join("%s: %s" % (k, str(v)) for k, v in sorted(dict(vars(args)).items()))
     )
 
     if args.test_itc:
-        ref = read_tiff(args.ref_path)
+        ref = read_tiff(args.ref_path_evaluation)
         image, coords, stride, step_row, step_col, overlap  = define_loader(args.orto_img, ref)
 
     else:
         ref = None
-        image, coords, stride, step_row, step_col, overlap = define_loader(args.orto_img, ref)
+        image, coords, stride, step_row, step_col, overlap = define_loader(args.ortho_image, ref)
     
 
     pred_prob = np.zeros(shape = (image.shape[1],image.shape[2],args.nb_class), dtype='float16')
@@ -161,8 +170,8 @@ def main(overlap):
     model.eval()
 
     # load weights
-    if os.path.isfile(args.pretrained):
-        state_dict = torch.load(args.pretrained, map_location="cuda:0")
+    if os.path.isfile(args.pretrained_file_checkpoint):
+        state_dict = torch.load(args.pretrained_file_checkpoint, map_location="cuda:0")
         if "state_dict" in state_dict:
             state_dict = state_dict["state_dict"]
         # remove prefixe "module."
@@ -180,7 +189,7 @@ def main(overlap):
 
     cudnn.benchmark = True
 
-    check_folder(os.path.join(args.dump_path,'prediction'))
+    check_folder(os.path.join(args.model_dir,'prediction'))
     
     predict_network(test_loader, model, coords, pred_prob, pred_depth, 
                     stride, step_row, step_col, overlap, logger)
@@ -200,7 +209,7 @@ def predict_network(dataloader, model, coords, pred_prob, pred_depth,
     
     j = 0
     with torch.no_grad(): 
-        for i, inputs in enumerate(dataloader):      
+        for i, inputs in enumerate(tqdm(dataloader)):      
             # ============ multi-res forward passes ... ============
             # compute model loss and output
             input_batch = inputs.cuda(non_blocking=True)
@@ -227,7 +236,7 @@ def predict_network(dataloader, model, coords, pred_prob, pred_depth,
             j+=out_batch.shape[0] 
             
             
-        raster_src = gdal.Open(args.orto_img)
+        raster_src = gdal.Open(args.ortho_image)
         
         row, col = raster_src.RasterYSize, raster_src.RasterXSize
         
@@ -237,9 +246,9 @@ def predict_network(dataloader, model, coords, pred_prob, pred_depth,
         pred_depth = pred_depth[overlap//2:,overlap//2:]
         pred_depth = pred_depth[:row,:col]
         
-        np.save(os.path.join(args.dump_path,'prediction','prob_map_itc{}_{}'.format(args.test_itc,args.overlap)), pred_prob)
-        np.save(os.path.join(args.dump_path,'prediction','pred_class_itc{}_{}'.format(args.test_itc,args.overlap)), np.argmax(pred_prob,axis=-1))    
-        np.save(os.path.join(args.dump_path,'prediction','depth_map_itc{}_{}'.format(args.test_itc,args.overlap)), pred_depth)
+        np.save(os.path.join(args.model_dir,'prediction','prob_map_itc{}_{}'.format(args.test_itc,args.overlap)), pred_prob)
+        np.save(os.path.join(args.model_dir,'prediction','pred_class_itc{}_{}'.format(args.test_itc,args.overlap)), np.argmax(pred_prob,axis=-1))    
+        np.save(os.path.join(args.model_dir,'prediction','depth_map_itc{}_{}'.format(args.test_itc,args.overlap)), pred_depth)
 
         
 def define_loader(orto_img, lab = None):
