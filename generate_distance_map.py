@@ -8,14 +8,24 @@ from osgeo import osr
 from scipy.ndimage import distance_transform_edt
 from scipy.ndimage import gaussian_filter
 from skimage.measure import label
-from src.utils import check_folder, array2raster, read_tiff, read_yaml
-
+from src.utils import check_folder, array2raster, read_tiff, read_yaml, print_sucess
+import pandas as pd
 import matplotlib.pyplot as plt
+
 args = read_yaml("args.yaml")
 
 
-def generate_gaussian_distance_map(input_file, output_file):
-    # load the reference image
+def apply_gaussian_distance_map(input_file, output_file):
+    """Apply distance map with a gaussian filter to the ground truth segmentantion
+    and save it as a tiff file
+
+    Parameters
+    ----------
+    input_file : str
+        File name of the input image in the DATA_PATH folder
+    output_file : str
+        Output file name to be saved in the DATA_PATH folder
+    """
     DATA_PATH = args.data_path
     input_image_path = os.path.join(DATA_PATH, input_file)
     
@@ -42,12 +52,38 @@ def generate_gaussian_distance_map(input_file, output_file):
 
 
 #%%
-input_train_file = "samples_A1_train2tif.tif"
-input_test_file = "samples_A1_test2tif.tif"
-output_train_file = "train_depth.tif"
-output_test_file = "test_depth.tif"
 
-generate_gaussian_distance_map(input_train_file, output_train_file)
-generate_gaussian_distance_map(input_test_file, output_test_file)
+
+
+def is_generated(output_file):
+    """Check if the distance map has already been generated
+
+    Returns
+    -------
+    bool
+        True if the distance map has already been generated, False otherwise
+    """
+    if os.path.exists(os.path.join(args.data_path, "before_iter")):
+        return os.path.exists(os.path.join(args.data_path, "before_iter", output_file))
+        
+    else:
+        return False
+
+    return False
+
+
 
 # %%
+def generate_distance_map(input_image, output_image):
+    if not is_generated(output_image):
+        check_folder(os.path.join(args.data_path, "before_iter"))
+        output_path = os.path.join(args.data_path, "before_iter", output_image)
+        input_path = os.path.join(args.data_path,"segmentation", input_image)
+        apply_gaussian_distance_map(input_path, output_path)
+        
+
+def generate_train_test_map():
+    generate_distance_map(args.train_segmentation_file, "train_distance_map.tif")
+    generate_distance_map(args.test_segmentation_file, "test_distance_map.tif")
+    print_sucess("Distance map generated successfully")
+
