@@ -6,32 +6,33 @@ import numpy as np
 from src.utils import read_tiff
 import matplotlib.pyplot as plt
 import seaborn as sns
-from src.utils import array2raster, read_yaml
+from src.utils import array2raster, read_yaml, check_folder
 
 def pred2raster(current_iter_folder, args):
+
+    output_folder = os.path.join(current_iter_folder, 'raster_prediction')
+    check_folder(output_folder)
+
     plt.rcParams.update({'font.size': 10})
     sns.set_style("darkgrid")
     
     raster_path = os.path.join(args.data_path, "segmentation", args.train_segmentation_file)
     raster_src = gdal.Open(raster_path)
 
-    # raster_test = read_tiff(raster_path)
+    
 
     prediction_file = os.path.join(
-        current_iter_folder,
-        'prediction',
+        output_folder,
         f'join_class_itc{args.test_itc}_{np.sum(args.overlap)}.TIF'
         )
     
     prob_file = os.path.join(
-        current_iter_folder,
-        'prediction',
+        output_folder,
         f'join_prob_itc{args.test_itc}_{np.sum(args.overlap)}.TIF')
     
     
     depth_file = os.path.join(
-        current_iter_folder,
-        'prediction',
+        output_folder,
         f'depth_itc{args.test_itc}_{np.sum(args.overlap)}.TIF')
                
     
