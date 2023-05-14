@@ -370,7 +370,10 @@ class AverageMeter(object):
         self.avg = self.sum / self.count
 
 
-def read_tiff(tiff_file):
+def read_tiff(tiff_file)->np.array:
+    # verify if file exist
+    if not os.path.isfile(tiff_file):
+        raise FileNotFoundError("File not found: {}".format(tiff_file))
     print(tiff_file)
     data = gdal.Open(tiff_file).ReadAsArray()
     return data
@@ -481,12 +484,10 @@ def read_yaml(yaml_path:str)->dict:
         
     # for each value try to convert to float
     for key in yaml_attrdict.keys():
-        # eval values
         try:
             yaml_attrdict[key] = ast.literal_eval(yaml_attrdict[key])
         except:
             pass
-
 
     return yaml_attrdict
 
