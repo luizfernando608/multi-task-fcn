@@ -255,7 +255,7 @@ def train(train_loader:torch.utils.data.DataLoader, model:nn.Module, optimizer:t
 
 
 
-def save_checkpoint(last_checkpoint_path:str, model:nn.Module, optimizer:torch.optim.Optimizer, epoch:int):
+def save_checkpoint(last_checkpoint_path:str, model:nn.Module, optimizer:torch.optim.Optimizer, epoch:int, best_acc:float, count_early:int):
     """Save model checkpoint at last_checkpoint_path
 
     Parameters
@@ -268,10 +268,15 @@ def save_checkpoint(last_checkpoint_path:str, model:nn.Module, optimizer:torch.o
         Pytorch optimizer at the end of epoch
     epoch : int
         Current epoch
+    best_acc : float
+        Best accuracy achieved so far
     """
     save_dict = {
         "epoch": epoch + 1,
         "state_dict": model.state_dict(),
         "optimizer": optimizer.state_dict(),
+        # "is_iter_finished": is_iter_finished,
+        "best_acc": best_acc,
+        "count_early": count_early,
     }
     torch.save(save_dict,last_checkpoint_path)
