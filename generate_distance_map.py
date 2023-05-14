@@ -69,7 +69,6 @@ def is_generated(output_file):
     else:
         return False
 
-    return False
 
 
 
