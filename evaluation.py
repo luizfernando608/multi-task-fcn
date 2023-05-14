@@ -1,7 +1,10 @@
+#%%
 import argparse
 import math
 import os
 from logging import getLogger
+
+import gc
 
 import numpy as np
 import torch
@@ -9,7 +12,7 @@ import torch.nn as nn
 import torch.nn.parallel
 import torch.backends.cudnn as cudnn
 import torch.optim
-from src.metrics import evaluate_metrics
+
 import glob
 from osgeo import gdal
 from sklearn.model_selection import train_test_split
@@ -18,10 +21,9 @@ from skimage.morphology import dilation, disk
 
 from tqdm import tqdm
 
+from src.metrics import evaluate_metrics
 from src.logger import create_logger
-
 from src.utils import extract_patches_coord, add_padding_new, array2raster
-
 from src.utils import (
     bool_flag,
     read_tiff,
@@ -32,173 +34,31 @@ from src.utils import (
 
 from src.multicropdataset import DatasetFromCoord
 from src.resnet import ResUnet
+from src.model import build_model, load_weights
+
+args = read_yaml("args.yaml")
 
 
-
-parser = argparse.ArgumentParser(description="Inference of CNN-patch")
-
-#########################
-#### data parameters ####
-#########################
-# parser.add_argument('--orto_img', type=str, default='D:/Projects/PUC-PoC/data_new/amazonas/ITC_annotation/NNDiffusePanSharpening_REFLECTANCE_TIFF_NOCLOUDS_8bits.tif',
-#                         help="Path containing the raster image")
-
-# parser.add_argument('--orto_img', type=str, default='/home/luiz/multi-task-fcn/Data/orthoimages/new_ortoA1_25tiff.tif',
-#                         help="Path containing the raster image")
-# parser.add_argument('--ref_path',type=str, default=None, 
-#                     help="Path containing the refrence and mask data for training")
-# parser.add_argument("--overlap", type=float, default=[0.1,0.3,0.5], 
-#                     help="samples per epoch")
-# parser.add_argument("--size_crops", type=int, default=256, 
-#                     help="True for training 4 disjoint regions")
-# parser.add_argument("--nb_class", type=int, default=8, 
-#                     help="samples per epoch")
-# parser.add_argument("--test_itc", type=bool, default=False, 
-#                     help="True for predicting only the test ITCs")
-
-#########################
-#### model parameters ###
-#########################
-parser.add_argument("--patch_wise", default=False, type=bool, 
-                    help="True for patch wise classification")
-parser.add_argument("--arch", default="deeplabv3_resnet50", type=str, 
-                    help="convnet architecture --> 'resnet18','resnet34','resnet50','resnet101', 'deeplabv3_resnet50'")
-parser.add_argument("--load_model_from_path", default=True, type=bool, 
-                    help="True for load model from path")
-
-
-##########################
-#### others parameters ###
-##########################
-parser.add_argument("--workers", default=0, type=int,
-                    help="number of data loading workers")
-parser.add_argument("--checkpoint_freq", type=int, default=1,
-                    help="Save the model periodically")
-parser.add_argument("--use_fp16", type=bool_flag, default=True,
-                    help="whether to train with mixed precision or not")
-parser.add_argument("--sync_bn", type=str, default="pytorch", help="synchronize bn")
-parser.add_argument("--syncbn_process_group_size", type=int, default=8, help=""" see
-                    https://github.com/NVIDIA/apex/blob/master/apex/parallel/__init__.py#L58-L67""")
-parser.add_argument("--dump_path", type=str, default="./exp_deeplab_v4",
-                    help="experiment dump path for checkpoints and log")
-parser.add_argument("--seed", type=int, default=31, help="seed")
-
-
-#########################
-#### model parameters ###
-#########################
-# Usar o último modelo treinado
-parser.add_argument("--pretrained", default="checkpoint.pth.tar", type=str, 
-                    help="path to pretrained weights")
-
-
-#########################
-#### optim parameters ###
-#########################
-parser.add_argument("--batch_size", default=8, type=int,
-                    help="batch size ")
-
-
-def main(overlap):
-    global args
-    # args = parser.parse_args()
-    args = read_yaml("args.yaml")
-    args.pretrained_file_checkpoint = os.path.join(args.model_dir, args.pretrained_file_checkpoint)
-    
-    args.overlap = overlap
-
-    ######## get data #####
-
-    
-    # create a logger
-    logger = create_logger(os.path.join(args.model_dir, "inference.log"),rank=0)
-    logger.info("============ Initialized logger ============")
-    logger.info(
-        "\n".join("%s: %s" % (k, str(v)) for k, v in sorted(dict(vars(args)).items()))
-    )
-
-    if args.test_itc:
-        ref = read_tiff(args.ref_path_evaluation)
-        image, coords, stride, step_row, step_col, overlap  = define_loader(args.orto_img, ref)
-
-    else:
-        ref = None
-        image, coords, stride, step_row, step_col, overlap = define_loader(args.ortho_image, ref)
-    
-
-    pred_prob = np.zeros(shape = (image.shape[1],image.shape[2],args.nb_class), dtype='float16')
-    pred_depth = np.zeros(shape = (image.shape[1],image.shape[2]), dtype='float16')
-
-    # build data for test set
-    test_dataset = DatasetFromCoord(
-        image,
-        labels = None,
-        depth_img = None,
-        coords = coords,
-        psize = args.size_crops,
-        evaluation = True,
-    )
-    test_loader = torch.utils.data.DataLoader(
-        test_dataset,
-        batch_size=args.batch_size,
-        num_workers=args.workers,
-        pin_memory=True,
-        drop_last=False,
-        shuffle=False,
-    )
         
-    logger.info("Building data done with {} patches loaded.".format(coords.shape[0]))
-
-    # build model
-    if args.load_model_from_path:
-        model_path = os.path.join('./pretrained_models',args.arch)
-    else:
-        model_path = os.path.join('./random_w_models',args.arch)
-        
-    if os.path.isdir(model_path):
-        model_file = os.listdir(model_path)
-        model = torch.load(os.path.join(model_path,model_file[0]))
+def define_test_loader(ortho_image, size_crops, overlap, test_itc, lab = None,):
     
-    model.backbone.conv1 = nn.Conv2d(image.shape[0], 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
-    model.aux_classifier[4] = nn.Conv2d(256, 1, kernel_size=(1, 1), stride=(1, 1))
-    model.classifier[4] = nn.Conv2d(256, args.nb_class, kernel_size=(1, 1), stride=(1, 1))
+    if not test_itc:
+        image = read_tiff(ortho_image)
+        lab = np.ones(image.shape[1:])
+        lab[np.sum(image,axis=0)==(11*image.shape[0])] = 0
+        del image
 
-
+    image = load_norm(ortho_image)
     
-    # model to gpu
-    model = model.cuda()
-    model.eval()
+    coords, _ = extract_patches_coord(lab, size_crops, overlap)
+    image, stride, step_row, step_col, overlap, _, _ = add_padding_new(image, size_crops, overlap)
 
-    # load weights
-    if os.path.isfile(args.pretrained_file_checkpoint):
-        state_dict = torch.load(args.pretrained_file_checkpoint, map_location="cuda:0")
-        if "state_dict" in state_dict:
-            state_dict = state_dict["state_dict"]
-        # remove prefixe "module."
-        state_dict = {k.replace("module.", ""): v for k, v in state_dict.items()}
-        for k, v in model.state_dict().items():
-            if k not in list(state_dict):
-                logger.info('key "{}" could not be found in provided state dict'.format(k))
-            elif state_dict[k].shape != v.shape:
-                logger.info('key "{}" is of different shape in model and provided state dict'.format(k))
-                state_dict[k] = v
-        msg = model.load_state_dict(state_dict, strict=False)
-        logger.info("Load pretrained model with msg: {}".format(msg))
-    else:
-        logger.info("No pretrained weights found => training with random weights")
+    return image, coords, stride, step_row, step_col, overlap
 
-    cudnn.benchmark = True
 
-    check_folder(os.path.join(args.model_dir,'prediction'))
+def predict_network(ortho_image_shape,dataloader, model, batch_size, coords, pred_prob, pred_depth,
+                     stride, step_row, step_col, overlap):
     
-    predict_network(test_loader, model, coords, pred_prob, pred_depth, 
-                    stride, step_row, step_col, overlap, logger)
-
-    logger.info("============ Inference finished ============")
-
-def predict_network(dataloader, model, coords, pred_prob, pred_depth,
-                     stride, step_row, step_col, overlap, logger):
-      
     model.eval()
     
     soft = nn.Softmax(dim=1).cuda()
@@ -223,8 +83,8 @@ def predict_network(dataloader, model, coords, pred_prob, pred_depth,
             depth_out = sig(out_pred['aux']).data.cpu().numpy()
             
             c, x, y, cl = out_batch.shape
-            coord_x = coords[j:j+args.batch_size,0]
-            coord_y = coords[j:j+args.batch_size,1]
+            coord_x = coords[j:j+batch_size,0]
+            coord_y = coords[j:j+batch_size,1]
             for b in range(c):
                 pred_prob[coord_x[b]-st:coord_x[b]+st+stride%2,
                         coord_y[b]-st:coord_y[b]+st+stride%2] = out_batch[b,overlap//2:x-ovr+overlap%2,overlap//2:y-ovr+overlap%2]
@@ -232,13 +92,13 @@ def predict_network(dataloader, model, coords, pred_prob, pred_depth,
                 pred_depth[coord_x[b]-st:coord_x[b]+st+stride%2,
                         coord_y[b]-st:coord_y[b]+st+stride%2] = depth_out[b,0,overlap//2:x-ovr+overlap%2,overlap//2:y-ovr+overlap%2]
 
-            
             j+=out_batch.shape[0] 
             
             
-        raster_src = gdal.Open(args.ortho_image)
-        
-        row, col = raster_src.RasterYSize, raster_src.RasterXSize
+        # raster_src = gdal.Open(ortho_image)
+        # row, col = raster_src.RasterYSize, raster_src.RasterXSize
+        row = ortho_image_shape[0]
+        col = ortho_image_shape[1]
         
         pred_prob = pred_prob[overlap//2:,overlap//2:]
         pred_prob = pred_prob[:row,:col]
@@ -246,28 +106,122 @@ def predict_network(dataloader, model, coords, pred_prob, pred_depth,
         pred_depth = pred_depth[overlap//2:,overlap//2:]
         pred_depth = pred_depth[:row,:col]
         
-        np.save(os.path.join(args.model_dir,'prediction','prob_map_itc{}_{}'.format(args.test_itc,args.overlap)), pred_prob)
-        np.save(os.path.join(args.model_dir,'prediction','pred_class_itc{}_{}'.format(args.test_itc,args.overlap)), np.argmax(pred_prob,axis=-1))    
-        np.save(os.path.join(args.model_dir,'prediction','depth_map_itc{}_{}'.format(args.test_itc,args.overlap)), pred_depth)
+        # np.save(os.path.join(args.model_dir,'prediction','prob_map_itc{}_{}'.format(args.test_itc,args.overlap)), pred_prob)
+        # np.save(os.path.join(args.model_dir,'prediction','pred_class_itc{}_{}'.format(args.test_itc,args.overlap)), np.argmax(pred_prob,axis=-1))    
+        # np.save(os.path.join(args.model_dir,'prediction','depth_map_itc{}_{}'.format(args.test_itc,args.overlap)), pred_depth)
+        return pred_prob, np.argmax(pred_prob,axis=-1), pred_depth
 
-        
-def define_loader(orto_img, lab = None):
-    
-    if not args.test_itc:
-        image = read_tiff(orto_img)
-        lab = np.ones(image.shape[1:])
-        lab[np.sum(image,axis=0)==(11*image.shape[0])] = 0
-        del image
-
-    image = load_norm(orto_img)
-        
-    coords, _ = extract_patches_coord(lab, args.size_crops, args.overlap)
-    image, stride, step_row, step_col, overlap, _, _ = add_padding_new(image, args.size_crops, args.overlap)
-
-    return image, coords, stride, step_row, step_col, overlap
+#%%
 
 
+
+def evaluate_overlap(overlap, ref, current_iter_folder, ortho_image_shape,logger, size_crops=args.size_crops, num_classes=args.nb_class,
+                     ortho_image=args.ortho_image, test_itc=args.test_itc, batch_size=args.batch_size, workers=args.workers, 
+                     checkpoint_file=args.checkpoint_file, arch=args.arch, filters=args.filters, is_pretrained=args.is_pretrained):
+                    
+
+    image, coords, stride, step_row, step_col, overlap_in_pixels = define_test_loader(ortho_image, size_crops, overlap, test_itc, ref)
+
+    pred_prob = np.zeros(shape = (image.shape[1],image.shape[2], num_classes), dtype='float16')
+    pred_depth = np.zeros(shape = (image.shape[1],image.shape[2]), dtype='float16')
+
+    test_dataset = DatasetFromCoord(
+            image,
+            labels = None,
+            depth_img = None,
+            coords = coords,
+            psize = size_crops,
+            evaluation = True,
+        )
+
+    test_loader = torch.utils.data.DataLoader(
+            test_dataset,
+            batch_size=batch_size,
+            num_workers=workers,
+            pin_memory=True,
+            drop_last=False,
+            shuffle=False,
+    )
+
+    logger.info("Building data done with {} patches loaded.".format(coords.shape[0]))
+    model = build_model(image, num_classes, arch, filters, is_pretrained)
+
+    last_checkpoint = os.path.join(current_model_folder, checkpoint_file)
+    model = load_weights(model, last_checkpoint, logger)
+
+    # Load model to GPU
+    model = model.cuda()
+
+    cudnn.benchmark = True
+
+    check_folder(os.path.join(current_iter_folder, 'prediction'))
+
+    prob_map, pred_class, depth_map = predict_network(
+        ortho_image_shape=ortho_image_shape,
+        dataloader=test_loader,
+        model=model,
+        batch_size=batch_size,
+        coords=coords,
+        pred_prob=pred_prob,
+        pred_depth=pred_depth,
+        stride=stride,
+        step_row=step_row,
+        step_col=step_col,
+        overlap=overlap_in_pixels,
+    )
+    prob_map_path = os.path.join(current_iter_folder, 'prediction', f'prob_map_itc{test_itc}_{overlap}.npy')
+    np.save(prob_map_path, prob_map)
+    del prob_map
+    pred_class_path = os.path.join(current_iter_folder, 'prediction', f'pred_class_itc{test_itc}_{overlap}.npy')
+    np.save(pred_class_path, pred_class)
+    del pred_class    
+    depth_map_path = os.path.join(current_iter_folder, 'prediction', f'depth_map_itc{test_itc}_{overlap}.npy')
+    np.save(depth_map_path, depth_map)
+
+
+
+
+def evaluate_iteration(current_iter_folder, args):
+    logger = create_logger(os.path.join(current_iter_folder, "inference.log"),rank=0)
+    logger.info("============ Initialized logger ============")
+    ## show each args
+    # logger.info("\n".join("%s: %s" % (k, str(v)) for k, v in sorted(dict(vars(args)).items())))
+    overlaps = args.overlap
+    test_itc = args.test_itc
+
+    segmentation_img_path = os.path.join(args.data_path, "segmentation", args.train_segmentation_file)
+
+    temp_image = gdal.Open(args.ortho_image)
+    ortho_image_shape = (temp_image.RasterYSize, temp_image.RasterXSize)
+    del temp_image
+
+    if test_itc:
+        ref = read_tiff(segmentation_img_path)
+    else:
+        ref = None
+
+    for overlap in overlaps:
+        is_depth_done = os.path.exists(os.path.join(current_iter_folder, 'prediction', f'depth_map_itc{test_itc}_{overlap}.npy'))
+        is_prob_done = os.path.exists(os.path.join(current_iter_folder, 'prediction', f'prob_map_itc{test_itc}_{overlap}.npy'))
+        is_pred_done = os.path.exists(os.path.join(current_iter_folder, 'prediction', f'pred_class_itc{test_itc}_{overlap}.npy'))
+        if is_depth_done and is_prob_done and is_pred_done:
+            logger.info(f"Overlap {overlap} is already done. Skipping...")
+            continue
+        evaluate_overlap(overlap, ref, current_iter_folder, ortho_image_shape, logger)
+
+
+##############################
+#### E V A L U A T I O N #####
+##############################
 if __name__ == "__main__":
-    overlaps = [0.1, 0.4, 0.6]
-    for ov in overlaps:
-        main(ov)
+    ## arguments
+    args = read_yaml("args.yaml")
+    # external parameters
+    current_iter_folder = "/home/luiz/multi-task-fcn/MyData/iter_1"
+    current_iter = int(current_iter_folder.split("_")[-1])
+    current_model_folder = os.path.join(current_iter_folder, args.model_dir)
+
+
+    evaluate_iteration(current_iter_folder, args)
+
+
