@@ -489,3 +489,10 @@ def read_yaml(yaml_path:str)->dict:
 
 
     return yaml_attrdict
+
+def print_sucess(message:str):
+    """Print success message in green color
+    Args:
+        message (str): message to be printed
+    """
+    print("\033[92m {}\033[00m" .format(message))
