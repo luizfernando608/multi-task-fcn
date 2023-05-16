@@ -29,15 +29,16 @@ def define_loader(orto_img, gt_lab, size_crops, test=False):
     return image, coords, gt_lab, gt_lab[gt_lab!=0]
 
 
-def build_model(image:np.array, num_classes:int, arch:str, filters:list, pretrained:bool)->nn.Module:
+def build_model(image_shape:list, num_classes:int, arch:str, filters:list, pretrained:bool)->nn.Module:
     """Build model according to architecture
     The architecture can be 'resunet' or 'deeplabv3_resnet50'
     The model can be pretrained or randomly initialized
 
     Parameters
     ----------
-    image : np.array
-        Input image. Used to get the dimension of the input channel
+    image_shape : list
+        List with the shape of the input image
+
     num_classes : int
         Num of unique classes in the dataset
     arch : str
@@ -53,12 +54,13 @@ def build_model(image:np.array, num_classes:int, arch:str, filters:list, pretrai
     nn.Module
         Pytorch model with the specified architecture
     """
-    
+
+
     # build model
     if arch == 'resunet':    # trained ResUnet from scratch
         model = ResUnet(
-            channel=image.shape[0], 
-            nb_classes = len(np.unique(image)), 
+            channel=image_shape[0], 
+            nb_classes = num_classes, 
             filters=filters)
 
     # build model
@@ -85,7 +87,7 @@ def build_model(image:np.array, num_classes:int, arch:str, filters:list, pretrai
         
         # modify initial conv and classfiers
         model.backbone.conv1 = nn.Conv2d(
-            in_channels = image.shape[0],
+            in_channels = image_shape[0],
             out_channels= 64, 
             kernel_size=(7, 7), 
             stride=(2, 2), 
@@ -255,7 +257,7 @@ def train(train_loader:torch.utils.data.DataLoader, model:nn.Module, optimizer:t
 
 
 
-def save_checkpoint(last_checkpoint_path:str, model:nn.Module, optimizer:torch.optim.Optimizer, epoch:int, best_acc:float, count_early:int):
+def save_checkpoint(last_checkpoint_path:str, model:nn.Module, optimizer:torch.optim.Optimizer, epoch:int, best_acc:float, count_early:int, is_iter_finished=False):
     """Save model checkpoint at last_checkpoint_path
 
     Parameters
@@ -275,8 +277,8 @@ def save_checkpoint(last_checkpoint_path:str, model:nn.Module, optimizer:torch.o
         "epoch": epoch + 1,
         "state_dict": model.state_dict(),
         "optimizer": optimizer.state_dict(),
-        # "is_iter_finished": is_iter_finished,
+        "is_iter_finished": is_iter_finished,
         "best_acc": best_acc,
         "count_early": count_early,
     }
-    torch.save(save_dict,last_checkpoint_path)
+    torch.save(save_dict, last_checkpoint_path)
