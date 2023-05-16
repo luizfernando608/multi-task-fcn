@@ -2,10 +2,10 @@
 ### FILE PATHS ###
 ##################
 # experiment directory
-model_dir: ./exp_deeplab_v4
+model_dir: exp_deeplab_v4
 # the same of dump_path
 # Path containing the refrence and mask data for training
-raster_gt: /home/luiz/multi-task-fcn/Data/samples_A1_train2tif.tif
+# raster_gt: /home/luiz/multi-task-fcn/Data/samples_A1_train2tif.tif
 # the same of ref_path
 # Path containing the raster image
 ortho_image: /home/luiz/multi-task-fcn/Data/orthoimages/fixed_ortoA1_25tiff.tif
@@ -17,13 +17,14 @@ depth_path: /home/luiz/multi-task-fcn/MyData
 # Path to save the images
 out_path: /home/luiz/multi-task-fcn/exp_deeplab_v4/annotation
 # problems
-pretrained_file_checkpoint: checkpoint.pth.tar
+
 
 data_path: /home/luiz/multi-task-fcn/MyData
 # Path of the ground truth dataset
 # the same of itc_id
-train_segmentation_path: /home/luiz/multi-task-fcn/Data/samples_A1_train2tif.tif
-test_segmentation_path: /home/luiz/multi-task-fcn/Data/samples_A1_test2tif.tif
+train_segmentation_file: "samples_A1_train2tif.tif"
+test_segmentation_file: "samples_A1_test2tif.tif"
+checkpoint_file: checkpoint.pth.tar
 
 
 ##################
@@ -60,7 +61,7 @@ augment: False
 # convnet architecture --> 'resunet','deeplabv3_resnet50'
 arch: deeplabv3_resnet50
 # True for load pretrained weights from Imagenet
-pretrained: True
+is_pretrained: True
 
 # True for frozen the resnet backbone
 frozen: False
@@ -76,12 +77,13 @@ batch_size: 8
 base_lr: 0.01
 # final learning rate
 final_lr: 0.0001
-# weight decay
-wd: 1e-06
 # number of warmup epochs
 warmup_epochs: 5
 # initial warmup learning rate
 start_warmup: 0.0
+
+# weight decay
+weight_decay: 1e-06
 
 ### dist parameters ###
 # url used to set up distributed training; see https://pytorch.org/docs/stable/distributed.html
@@ -106,8 +108,8 @@ seed: [31, 10, 75, 102, 40]
 
 # True for training 4 disjoint regions
 size_crops: 256
-# samples per epoch
-nb_class: 8
+# Número de classes
+nb_class: 14
 
 # True for patch wise classification
 patch_wise: False
