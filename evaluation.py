@@ -115,7 +115,7 @@ def predict_network(ortho_image_shape,dataloader, model, batch_size, coords, pre
 
 
 
-def evaluate_overlap(overlap, ref, current_iter_folder, ortho_image_shape,logger, size_crops=args.size_crops, num_classes=args.nb_class,
+def evaluate_overlap(overlap, ref, current_iter_folder,current_model_folder, ortho_image_shape,logger, size_crops=args.size_crops, num_classes=args.nb_class,
                      ortho_image=args.ortho_image, test_itc=args.test_itc, batch_size=args.batch_size, workers=args.workers, 
                      checkpoint_file=args.checkpoint_file, arch=args.arch, filters=args.filters, is_pretrained=args.is_pretrained):
                     
@@ -144,7 +144,7 @@ def evaluate_overlap(overlap, ref, current_iter_folder, ortho_image_shape,logger
     )
 
     logger.info("Building data done with {} patches loaded.".format(coords.shape[0]))
-    model = build_model(image, num_classes, arch, filters, is_pretrained)
+    model = build_model(image.shape, num_classes, arch, filters, is_pretrained)
 
     last_checkpoint = os.path.join(current_model_folder, checkpoint_file)
     model = load_weights(model, last_checkpoint, logger)
@@ -177,19 +177,22 @@ def evaluate_overlap(overlap, ref, current_iter_folder, ortho_image_shape,logger
     del pred_class    
     depth_map_path = os.path.join(current_iter_folder, 'prediction', f'depth_map_itc{test_itc}_{overlap}.npy')
     np.save(depth_map_path, depth_map)
+    del depth_map
 
 
 
 
 def evaluate_iteration(current_iter_folder, args):
     logger = create_logger(os.path.join(current_iter_folder, "inference.log"),rank=0)
-    logger.info("============ Initialized logger ============")
+    logger.info("============ Initialized Evaluation ============")
     ## show each args
     # logger.info("\n".join("%s: %s" % (k, str(v)) for k, v in sorted(dict(vars(args)).items())))
     overlaps = args.overlap
     test_itc = args.test_itc
 
     segmentation_img_path = os.path.join(args.data_path, "segmentation", args.train_segmentation_file)
+
+    current_model_folder = os.path.join(current_iter_folder, args.model_dir)
 
     temp_image = gdal.Open(args.ortho_image)
     ortho_image_shape = (temp_image.RasterYSize, temp_image.RasterXSize)
@@ -207,7 +210,10 @@ def evaluate_iteration(current_iter_folder, args):
         if is_depth_done and is_prob_done and is_pred_done:
             logger.info(f"Overlap {overlap} is already done. Skipping...")
             continue
-        evaluate_overlap(overlap, ref, current_iter_folder, ortho_image_shape, logger)
+        
+        evaluate_overlap(overlap, ref, current_iter_folder,current_model_folder, ortho_image_shape, logger)
+        gc.collect()
+        torch.cuda.empty_cache()
 
 
 ##############################
@@ -223,5 +229,6 @@ if __name__ == "__main__":
 
 
     evaluate_iteration(current_iter_folder, args)
+    
 
 
