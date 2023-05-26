@@ -19,8 +19,6 @@ def pred2raster(current_iter_folder, args):
     raster_path = os.path.join(args.data_path, "segmentation", args.train_segmentation_file)
     raster_src = gdal.Open(raster_path)
 
-    
-
     prediction_file = os.path.join(
         output_folder,
         f'join_class_itc{args.test_itc}_{np.sum(args.overlap)}.TIF'
@@ -41,7 +39,7 @@ def pred2raster(current_iter_folder, args):
         for ov in args.overlap:
             try:
                 prediction_path = os.path.join(current_iter_folder,'prediction',f'prob_map_itc{args.test_itc}_{ov}.npy')
-                prediction_test = np.add(prediction_test,np.load(prediction_path))
+                prediction_test = np.add(prediction_test, np.load(prediction_path))
                 
                 depth_path = os.path.join(current_iter_folder,'prediction',f'depth_map_itc{args.test_itc}_{ov}.npy')
                 depth_test = np.add(depth_test,np.load(depth_path))

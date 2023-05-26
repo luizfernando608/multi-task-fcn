@@ -8,7 +8,11 @@ from .resnet import ResUnet
 from .metrics import evaluate_metrics
 from .utils import check_folder, load_norm, AverageMeter, plot_figures
 
+import gc
+
 from logging import Logger
+
+from tqdm import tqdm
 
 
 def define_loader(orto_img, gt_lab, size_crops, test=False):
@@ -192,7 +196,7 @@ def train(train_loader:torch.utils.data.DataLoader, model:nn.Module, optimizer:t
     criterion = nn.NLLLoss(reduction='none').cuda()
     aux_criterion = nn.L1Loss(reduction='none').cuda()
 
-    for it, (inp_img, depth, ref) in enumerate(train_loader):      
+    for it, (inp_img, depth, ref) in enumerate(tqdm(train_loader)):      
 
         # update learning rate
         iteration = epoch * len(train_loader) + it
@@ -230,6 +234,8 @@ def train(train_loader:torch.utils.data.DataLoader, model:nn.Module, optimizer:t
         
         # update the average loss
         loss_avg.update(loss.item())
+
+        gc.collect()
 
         # Evaluate summaries only once in a while
         if it % 50 == 0:
@@ -270,15 +276,15 @@ def save_checkpoint(last_checkpoint_path:str, model:nn.Module, optimizer:torch.o
         Pytorch optimizer at the end of epoch
     epoch : int
         Current epoch
-    best_acc : float
+    best_val : float
         Best accuracy achieved so far
     """
     save_dict = {
-        "epoch": epoch + 1,
+        "epoch": epoch,
         "state_dict": model.state_dict(),
         "optimizer": optimizer.state_dict(),
         "is_iter_finished": is_iter_finished,
-        "best_acc": best_acc,
+        "best_val": best_acc,
         "count_early": count_early,
     }
     torch.save(save_dict, last_checkpoint_path)

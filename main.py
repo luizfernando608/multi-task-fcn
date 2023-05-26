@@ -19,28 +19,27 @@ import torch.optim
 
 from tqdm import tqdm
 
-from generate_distance_map import generate_train_test_map, is_generated
+from generate_distance_map import generate_train_test_map
 
 from src.logger import create_logger
 from src.metrics import evaluate_metrics
 from src.model import define_loader, build_model, load_weights, train, save_checkpoint
 from src.multicropdataset import DatasetFromCoord
-from src.resnet import ResUnet
 from src.utils import (
     initialize_exp,
     restart_from_checkpoint,
     fix_random_seeds,
-    AverageMeter,
     read_tiff,
-    load_norm,
     check_folder,
-    plot_figures,
     print_sucess,
     oversamp,
     read_yaml
 )
 from evaluation import evaluate_iteration
 from pred2raster import pred2raster
+import gc
+gc.set_threshold(0)
+
 def first_output_exists(data_path, test_itc, overlap):
     output_path = os.path.join(data_path, "iter_1", "raster_prediction")
     
@@ -55,15 +54,7 @@ def first_output_exists(data_path, test_itc, overlap):
 
     return is_depth_done and is_prob_done and is_class_done
 
-# def is_first_iter(data_path, test_itc, overlap):
-#     """Check if it is the first iteration of the training process
 
-#     Returns
-#     -------
-#     bool
-#         True if it is the first iteration, False otherwise
-#     """
-#     return "iter_" not in os.listdir(data_path) and not first_output_exists(data_path, test_itc, overlap)
 
 def get_current_iter_folder(data_path, test_itc, overlap):
     """Get the current iteration folder
@@ -84,7 +75,9 @@ def get_current_iter_folder(data_path, test_itc, overlap):
     """
 
     folders = pd.Series(os.listdir(data_path))
-    iter_folders = folders[folders.str.contains("iter_")].sort_values(ascending=False).to_list()
+    folders = folders[folders.str.contains("iter_")]
+    num_folders = folders.str.replace("iter_", "").astype(int).sort_values(ascending=False)
+    iter_folders = ["iter_"+str(i) for i in num_folders.to_list()]
 
     for idx, iter_folder_name in enumerate(iter_folders[1:]):
         iter_path = os.path.join(data_path, iter_folder_name)
@@ -106,19 +99,6 @@ def get_current_iter_folder(data_path, test_itc, overlap):
     else:
         raise FileExistsError("No finished iteration folder found. Try execute generate_distance_map first.")
     
-# # deprecated
-# def get_iter_folder(data_path, test_itc, overlap):
-#     if is_first_iter(data_path, test_itc, overlap):
-#         print("First iteration")
-#         return os.path.join(data_path, "iter_1")
-#     else:
-#         paths = pd.Series(os.listdir(data_path))
-#         paths = paths[paths.str.contains("iter")].sort_values()
-#         last_iter_folder = paths.iloc[-1]
-#         # is_iter_finished = is_generated(last_iter_folder,os.path.join(data_path, last_iter_folder, "before_iter", "train_distance_map.tif"))
-        
-#         # return os.path.join(data_path, last_iter_folder)
-
 
 def read_last_segmentation(current_iter_folder, data_path, train_segmentation_file, test_itc, overlap):
     current_iter = int(current_iter_folder.split("_")[-1])
@@ -203,6 +183,8 @@ def train_epochs(last_checkpoint, start_epoch, num_epochs, best_val, train_loade
         # train the network
         scores_tr = train(train_loader, model, optimizer, epoch, lr_schedule, figures_path, logger)
         
+        gc.collect()
+
         training_stats.update(scores_tr)
         
         print_sucess("scores_tr: {}".format(scores_tr[1]))
@@ -211,13 +193,13 @@ def train_epochs(last_checkpoint, start_epoch, num_epochs, best_val, train_loade
 
         # save checkpoints
         if rank == 0:
-            if is_best:
+            if is_best: 
                 logger.info("============ Saving best models at epoch %i ... ============" % epoch)
                 best_val = scores_tr[1]
-                save_checkpoint(last_checkpoint, model, optimizer, epoch, best_val)
+                save_checkpoint(last_checkpoint, model, optimizer, epoch+1, best_val, count_early) 
             else:
                 count_early+=1
-                
+
             
     print_sucess("Training done !")
     
@@ -226,6 +208,8 @@ def train_epochs(last_checkpoint, start_epoch, num_epochs, best_val, train_loade
 
 
 def train_iteration(current_iter_folder, args):
+    logger = create_logger(os.path.join(current_iter_folder, "train.log"), rank=0)
+    logger.info("============ Initialized Training ============")
     ######### Define Loader ############
     raster_train = read_last_segmentation(current_iter_folder, args.data_path, args.train_segmentation_file, args.test_itc, args.overlap)
     depth_img = read_last_distance_map(current_iter_folder, args.data_path, args.test_itc, args.overlap)
@@ -233,7 +217,7 @@ def train_iteration(current_iter_folder, args):
     image, coords_train, raster_train, labs_coords_train = define_loader(args.ortho_image, raster_train, args.size_crops)    
 
     ######## do oversampling in minor classes
-    coords_train = oversamp(coords_train, labs_coords_train,under=False)
+    coords_train = oversamp(coords_train, labs_coords_train, under=False)
 
     if args.samples > coords_train.shape[0]:
         args.samples = None
@@ -260,9 +244,9 @@ def train_iteration(current_iter_folder, args):
 
     logger.info("Building data done with {} images loaded.".format(len(train_loader)))
 
-    num_classes = len(np.unique(labs_coords_train))
+    
 
-    model = build_model(image.shape, num_classes,  args.arch, args.filters, args.is_pretrained)
+    model = build_model(image.shape, args.nb_class,  args.arch, args.filters, args.is_pretrained)
 
     last_checkpoint = os.path.join(current_model_folder, args.checkpoint_file)
     model = load_weights(model, last_checkpoint, logger)
@@ -273,6 +257,7 @@ def train_iteration(current_iter_folder, args):
 
     if args.rank == 0:
         logger.info(model)
+
     logger.info("Building model done.")
 
     # build optimizer
@@ -294,7 +279,7 @@ def train_iteration(current_iter_folder, args):
     logger.info("Building optimizer done.")
 
 
-    to_restore = {"epoch": 0, "best_acc":(0.), "count_early": 0,"is_iter_finished":False}
+    to_restore = {"epoch": 0, "best_val":(100.), "count_early": 0,"is_iter_finished":False}
     restart_from_checkpoint(
         last_checkpoint,
         run_variables=to_restore,
@@ -302,19 +287,21 @@ def train_iteration(current_iter_folder, args):
         optimizer=optimizer
     )
     start_epoch = to_restore["epoch"]
-    best_val = to_restore["best_acc"]
+    best_val = to_restore["best_val"]
     count_early = to_restore["count_early"]
     cudnn.benchmark = True
     
-    # if to_restore["is_iter_finished"]:
-    #     return
-    
-    train_epochs(last_checkpoint, start_epoch, args.epochs, best_val , train_loader, model, optimizer, lr_schedule, args.rank, count_early)
+    gc.collect()
 
-    # load models weights again to change status
+    if not to_restore["is_iter_finished"]:
+        train_epochs(last_checkpoint, start_epoch, args.epochs, best_val , train_loader, model, optimizer, lr_schedule, args.rank, count_early)
+
+    gc.collect()
+
+    # load models weights again to change status to is_iter_finished=True
     model = load_weights(model, last_checkpoint, logger)
 
-    to_restore = {"epoch": 0, "best_acc":(0.), "count_early": 0, "is_iter_finished":False}
+    to_restore = {"epoch": 0, "best_val":(100.), "count_early": 0, "is_iter_finished":False}
     restart_from_checkpoint(
         last_checkpoint,
         run_variables=to_restore,
@@ -322,23 +309,27 @@ def train_iteration(current_iter_folder, args):
         optimizer=optimizer
     )
     
-    # save here next iteration
-    save_checkpoint(last_checkpoint, model, optimizer, to_restore["epoch"], to_restore["best_acc"],to_restore["count_early"] ,is_iter_finished=True)
     
-    next_iter_folder = os.path.join(args.data_path, args.model_dir, "iter_"+str(current_iter+1))
+    save_checkpoint(last_checkpoint, model, optimizer, to_restore["epoch"], to_restore["best_val"],to_restore["count_early"] ,is_iter_finished=True)
+    
+    next_iter_folder = os.path.join(args.data_path, "iter_"+str(current_iter+1))
     check_folder(next_iter_folder)
-    save_checkpoint(os.path.join(next_iter_folder, args.checkpoint_file), model, optimizer, 0, 100, 0 ,is_iter_finished=False)
+    # save here next iteration
+    next_model_folder = os.path.join(next_iter_folder, args.model_dir)
+    check_folder(next_model_folder)
+    next_model_path = os.path.join(next_model_folder, args.checkpoint_file)
+    save_checkpoint(next_model_path, model, optimizer, 0, 100.0, 0 ,is_iter_finished=False)
 
     with torch.no_grad():
         torch.cuda.empty_cache()
-
+    gc.collect()
 
 
 #############
 ### SETUP ###
 #############
 
-logger = getLogger('swav_model')
+
 args = read_yaml("args.yaml")
 
 
@@ -354,9 +345,9 @@ for i in range(0,20):
     current_iter_folder = get_current_iter_folder(args.data_path, args.test_itc, args.overlap)
     current_iter = int(current_iter_folder.split("_")[-1])
 
-    # Create model folder for checkpoint
+    # Get current mode folder
     current_model_folder = os.path.join(current_iter_folder, args.model_dir)
-    check_folder(current_model_folder)
+    # check_folder(current_model_folder)
 
     logger, training_stats = initialize_exp(args, "epoch", "loss")
 
@@ -365,6 +356,15 @@ for i in range(0,20):
     evaluate_iteration(current_iter_folder, args)
 
     pred2raster(current_iter_folder, args)
+
+    """
+    Está faltando alguns passos entre cada iteração:
+    - Gerar novas labels com o modelo treinado
+    - Selecionar labels com maior probabilidade de acerto
+    - Selecionar labels de modo que o número de amostras esteja balanceado
+    - Aplicar distance map nas novas labels
+    - Treinar modelo com as novas labels
+    """
 
 
 

@@ -3,21 +3,13 @@
 ##################
 # experiment directory
 model_dir: exp_deeplab_v4
-# the same of dump_path
-# Path containing the refrence and mask data for training
-# raster_gt: /home/luiz/multi-task-fcn/Data/samples_A1_train2tif.tif
-# the same of ref_path
 # Path containing the raster image
 ortho_image: /home/luiz/multi-task-fcn/Data/orthoimages/fixed_ortoA1_25tiff.tif
 # the same of image_path
 # Path containing the refrence depth image for training
-depth_path: /home/luiz/multi-task-fcn/MyData
-# Path of the ITC unique id raster image
-# mask_cluster: D:/Projects/PUC-PoC/data_new/amazonas/isa_upa/clustered_shape.TIF
+# depth_path;: /home/luiz/multi-task-fcn/MyData
 # Path to save the images
-out_path: /home/luiz/multi-task-fcn/exp_deeplab_v4/annotation
-# problems
-
+# out_path: /home/luiz/multi-task-fcn/exp_deeplab_v4/annotation
 
 data_path: /home/luiz/multi-task-fcn/MyData
 # Path of the ground truth dataset
@@ -27,15 +19,9 @@ test_segmentation_file: "samples_A1_test2tif.tif"
 checkpoint_file: checkpoint.pth.tar
 
 
-##################
-### AMBIGUITY ###
-##################
 # pred2raster
 # Path containing the refrence and mask data for training
 ref_path_pred2raster: "/home/luiz/multi-task-fcn/Data/samples_A1_train2tif.tif"
-# main
-# ref_path: 'D:/Projects/PUC-PoC/data_new/amazonas/ITC_annotation/ITC_CLASS.tif'
-# evaluation
 ref_path_evaluation: None
 
 
@@ -50,10 +36,7 @@ small_train_set: False
 test_itc: False
 
 
-##############
-#### main ####
-##############
-# nb samples per epoch
+# num samples per epoch
 samples: 2500
 # True for data augmentation during training
 augment: False
