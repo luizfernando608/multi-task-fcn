@@ -168,6 +168,52 @@ def filter_components_by_geometric_properties(components_pred_map: np.array, pre
         component_stats=stats_pred_data,
     )
 
+def get_selected_labels(delta_components_img:np.array, delta_pred_map:np.array, old_pred_map:np.array)->np.array:
+    """Select the best labels from the new components predicted.
+    Use undersampling to select the best labels and to avoid unbalanced classes
+
+    Parameters
+    ----------
+    delta_components_img : np.array
+        New components predicted that were not in the old components predicted
+    delta_pred_map : np.array
+        New labels predicted that were not in the old labels predicted
+    old_pred_map : np.array
+        Old labels predicted in the last iteration
+
+    Returns
+    -------
+    np.array
+        New labels predicted with the best components and balanced classes
+    """
+    
+    # Select balanced sample
+    stats_delta = get_components_stats(components_img=delta_components_img, label_img=delta_pred_map)
+
+    stats_delta["area_by_convex"] = stats_delta["area"] / stats_delta["convex_area"]
+
+    # stats_und_label_delta = undersample(stats_delta, "tree_type")
+
+    # Undersampling selecting the samples
+    min_category_num =  stats_delta.groupby("tree_type").size().min()
+
+    # create a score for best quality
+    stats_delta["score"] = (stats_delta["area_by_convex"]/stats_delta["area_by_convex"].max()) +\
+                            (stats_delta["area"]/stats_delta["area"].max())
+    
+    stats_delta.sort_values(by="score", ascending=False, inplace=True)
+
+    stats_und_label_delta = stats_delta.groupby("tree_type").head(min_category_num)
+
+    id_selected_components = np.array(stats_und_label_delta.index, dtype=int)
+
+    selected_labels_set = np.where(
+        np.isin(delta_components_img, id_selected_components),
+        delta_pred_map,
+        old_pred_map,
+    )
+
+    return selected_labels_set
 
 
 def get_new_segmentation_sample(old_pred_map:np.array, new_pred_map:np.array, new_prob_map:np.array)->Tuple[np.array, np.array, np.array]:
@@ -224,17 +270,10 @@ def get_new_segmentation_sample(old_pred_map:np.array, new_pred_map:np.array, ne
     # join all labels set
     all_labes_set = np.where(components_delta != 0, delta_old_new_labels, old_pred_map)
 
-    # Select balanced sample
-    stats_delta = get_components_stats(components_img=components_delta, label_img=delta_old_new_labels)
-
-    stats_und_label_delta = undersample(stats_delta, "tree_type")
-
-    id_selected_components = np.array(stats_und_label_delta.index, dtype=int)
-
-    selected_labels_set = np.where(
-        np.isin(components_delta, id_selected_components),
-        delta_old_new_labels,
-        old_pred_map,
+    selected_labels_set = get_selected_labels(
+        delta_components_img = components_delta,
+        delta_pred_map = delta_old_new_labels,
+        old_pred_map = old_pred_map,
     )
 
     return all_labes_set, selected_labels_set, delta_old_new_labels
