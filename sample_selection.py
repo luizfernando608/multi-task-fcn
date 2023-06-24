@@ -15,12 +15,12 @@ import matplotlib.pyplot as plt
 
 from imblearn.under_sampling import RandomUnderSampler
 
+from typing import List, Tuple
 
-def undersample(data:pd.DataFrame, column_category:str):
-
+def undersample(data: pd.DataFrame, column_category: str):
     X = data.drop(column_category, axis=1).copy()
-    
-    X.reset_index(inplace=True,names=["index"] )
+
+    X.reset_index(inplace=True, names=["index"])
 
     y = data[column_category].copy()
     # define undersample strategy
@@ -36,7 +36,6 @@ def undersample(data:pd.DataFrame, column_category:str):
     undersampled_data.set_index("index", inplace=True)
 
     return undersampled_data
-    
 
 
 def get_components_stats(components_img: np.array, label_img: np.array):
@@ -74,7 +73,6 @@ def remove_components_by_index(
     label_img: np.array,
     component_stats: pd.DataFrame,
 ):
-
     for idx in component_ids_to_remove:
         label_img[components_img == idx] = 0
 
@@ -84,8 +82,9 @@ def remove_components_by_index(
     component_stats.drop(component_ids_to_remove, inplace=True)
 
 
-
-def get_labels_delta( old_components_img:np.array, new_components_img:np.array, new_label_img:np.array)->np.array:
+def get_labels_delta(
+    old_components_img: np.array, new_components_img: np.array, new_label_img: np.array
+) -> np.array:
     """Get the components labels that are in the new image but not in the old image
 
     Parameters
@@ -96,94 +95,149 @@ def get_labels_delta( old_components_img:np.array, new_components_img:np.array, 
         New image map with more components than the old image
     new_label_img : np.array
         New image map with the label classes (tree type)
-    
+
     """
-    ### CREATE NEW SET ###
-    # all_label_set = ground_truth_img.copy()
 
     label_delta = np.zeros_like(new_components_img)
 
     components_to_iter = np.unique(new_components_img)
-    components_to_iter = components_to_iter[components_to_iter!=0]
+    components_to_iter = components_to_iter[components_to_iter != 0]
 
     for idx in components_to_iter:
-        # se mais de 90% do componente é vazio será adicionado a nova amostra predita
-        if np.mean(old_components_img[new_components_img==idx] == 0) > 0.9:
+        # if more than 90% of the component is empty it will be added to the new predicted sample
+        if np.mean(old_components_img[new_components_img == idx] == 0) > 0.9:
             # count labels
-            unique_labels, count_labels = np.unique(new_label_img[new_components_img==idx], return_counts=True)
-                
+            unique_labels, count_labels = np.unique(
+                new_label_img[new_components_img == idx], return_counts=True
+            )
+
             # remove 0 count
-            unique_labels = unique_labels[unique_labels!=0]
-            count_labels = count_labels[unique_labels!=0]
+            unique_labels = unique_labels[unique_labels != 0]
+            count_labels = count_labels[unique_labels != 0]
 
             # get valeu of class with higher count
             class_common_idx = np.argmax(count_labels)
             class_common = unique_labels[class_common_idx]
-            
+
             # all_label_set[components_pred_map==idx] = class_common
-            label_delta[new_components_img==idx] = class_common
-    
+            label_delta[new_components_img == idx] = class_common
+
     return label_delta
 
+def filter_components_by_geometric_properties(components_pred_map: np.array, pred_labels: np.array):
+    """Filter components by geometric properties\n
+    The filter rules are:
+    - Area < 200 pixels
+    - Area/Convex Area < 0.85
 
+    Parameters
+    ----------
+    components_pred_map : np.array
+        Predicted components map
+    pred_labels : np.array
+        Predicted labels map
 
-def get_new_segmentation_sample(ground_truth_img, pred_map, prob_map):
-    # set labels at the same scale as ground truth labels
-    pred_map += 1
+    """
 
-    pred_map_99 = np.where(prob_map > 0.99, pred_map, 0)
-
-    components_pred_map = label(pred_map_99)
-    components_gt_label = label(ground_truth_img)
-
-    stats_pred_data = get_components_stats(components_pred_map, pred_map_99)
-    stats_gt_data = get_components_stats(components_gt_label, ground_truth_img)
-
+    stats_pred_data = get_components_stats(components_pred_map, pred_labels)
+    
     # FILTER AREA WITH LESS THAN 200 pixels of area
     filter_area = stats_pred_data["area"] < 200
 
-    component_ids_to_remove = np.array(stats_pred_data[filter_area].index.astype(int))
+    component_ids_to_remove = stats_pred_data[filter_area].index
+    component_ids_to_remove = np.array(component_ids_to_remove, dtype=int)
 
     remove_components_by_index(
-        component_ids_to_remove = component_ids_to_remove,
-        components_img = components_pred_map,
-        label_img = pred_map_99,
-        component_stats = stats_pred_data,
+        component_ids_to_remove=component_ids_to_remove,
+        components_img=components_pred_map,
+        label_img=pred_labels,
+        component_stats=stats_pred_data,
     )
 
 
     # FILTER BY CONVEX/AREA
-    filter_ratio_convex_area = (stats_pred_data["area"]/stats_pred_data["convex_area"]) < 0.85
+    filter_ratio_convex_area = (stats_pred_data["area"] / stats_pred_data["convex_area"]) < 0.85
 
-    component_ids_to_remove = np.array(stats_pred_data[filter_ratio_convex_area].index.astype(int))
-    
+    component_ids_to_remove = stats_pred_data[filter_ratio_convex_area].index
+    component_ids_to_remove = np.array(component_ids_to_remove.astype(int))
+
     remove_components_by_index(
         component_ids_to_remove,
-        components_img = components_pred_map,
-        label_img = pred_map_99,
-        component_stats = stats_pred_data
+        components_img=components_pred_map,
+        label_img=pred_labels,
+        component_stats=stats_pred_data,
     )
 
-    # get the new components that are not in the old components
-    delta_gt_pred_labels = get_labels_delta(old_components_img=components_gt_label, new_components_img=components_pred_map, new_label_img=pred_map_99)
-    components_delta = label(delta_gt_pred_labels)
-    
-    # join all labels set 
-    all_labes_set = np.where(components_delta!=0, delta_gt_pred_labels, ground_truth_img)
 
+
+def get_new_segmentation_sample(old_pred_map:np.array, new_pred_map:np.array, new_prob_map:np.array)->Tuple[np.array, np.array, np.array]:
+    """ Get the new segmentation sample based on the segmentation from the last iteration and the new segmentation prediction set
+    
+    Parameters
+    ----------
+    old_pred_map : np.array
+        Segmentation map from the last iteration with tree two labels
+    new_pred_map : np.array
+        New segmentation map with tree type labels
+    new_prob_map : np.array
+        New segmentation map with confidence/probability at each pixel
+    
+    Returns
+    -------
+    all_labes_set : np.array
+        New segmentation map with tree type labels with all components with confidence higher than 0.99
+
+    selected_labels_set : np.array
+        The same set as all_labels_set but with some filters applied to minimize unbalanced classes problem
+    
+    delta_labels_set : np.array
+        The difference between the new segmentation map and the segmentation map from the last iteration
+
+    """
+    
+    # set labels at the same scale as ground truth labels
+    new_pred_map += 1
+    
+    # Select only the components with confidence higher than 0.99
+    new_pred_99 = np.where(new_prob_map > 0.99, new_pred_map, 0)
+
+    old_components_pred_map = label(old_pred_map)
+
+    new_components_pred_map = label(new_pred_99)
+    
+    # filter components by geometric properties
+    filter_components_by_geometric_properties(
+        components_pred_map = new_components_pred_map, 
+        pred_labels = new_pred_99
+    )
+
+
+    # get the delta between the new components and the components from the last iteration
+    delta_old_new_labels = get_labels_delta(
+        old_components_img=old_components_pred_map,
+        new_components_img=new_components_pred_map,
+        new_label_img=new_pred_99,
+    )
+
+    components_delta = label(delta_old_new_labels)
+
+    # join all labels set
+    all_labes_set = np.where(components_delta != 0, delta_old_new_labels, old_pred_map)
 
     # Select balanced sample
-    stats_delta = get_components_stats(components_img=components_delta, label_img=delta_gt_pred_labels)
-    
+    stats_delta = get_components_stats(components_img=components_delta, label_img=delta_old_new_labels)
+
     stats_und_label_delta = undersample(stats_delta, "tree_type")
 
     id_selected_components = np.array(stats_und_label_delta.index, dtype=int)
 
-    selected_labels_set = np.where(np.isin(components_delta, id_selected_components), delta_gt_pred_labels, ground_truth_img)
-    
-    
-    return selected_labels_set, all_labes_set, delta_gt_pred_labels
+    selected_labels_set = np.where(
+        np.isin(components_delta, id_selected_components),
+        delta_old_new_labels,
+        old_pred_map,
+    )
 
+    return all_labes_set, selected_labels_set, delta_old_new_labels
 
 
 if __name__ == "__main__":
@@ -216,6 +270,17 @@ if __name__ == "__main__":
     ground_truth_path = os.path.join(args.data_path, args.train_segmentation_file)
     ground_truth_img = read_tiff(ground_truth_path)
 
-    get_new_segmentation_sample(ground_truth_img, pred, prob)
+    all_labels, new_labels, delta_labels = get_new_segmentation_sample(ground_truth_img, pred, prob)
 
-    print("Hello World!")
+    # fig, ax = plt.subplots(1, 3, figsize=(15, 5))
+    # ax[0].imshow(all_labels)
+    # ax[1].imshow(new_labels)
+    # ax[2].imshow(delta_labels)
+    # # set title
+    # ax[0].set_title("All labels")
+    # ax[1].set_title("Selected labels")
+    # ax[2].set_title("Delta labels")
+
+    # # save figure
+    # plt.savefig("sample_selection_test.png", dpi=600)
+
