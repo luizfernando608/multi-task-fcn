@@ -379,7 +379,12 @@ def read_tiff(tiff_file)->np.array:
     return data
 
 def load_norm(path, mask=[0], mask_indx = 0):
-    image = read_tiff(path).astype('float32')
+    
+    image = read_tiff(path)
+
+    if image.dtype != np.float32:
+        image = np.float32(image)
+
     print("Image shape: ", image.shape, " Min value: ", image.min(), " Max value: ", image.max())
     if len(image.shape) < 3:
         image = np.expand_dims(image, 0)
