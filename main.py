@@ -372,7 +372,7 @@ while current_iter < 30:
 
     evaluate_iteration(current_iter_folder, args)
 
-    # pred2raster(current_iter_folder, args)
+    pred2raster(current_iter_folder, args)
 
 
     # get new samples to train
