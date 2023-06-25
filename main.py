@@ -405,6 +405,11 @@ while current_iter < 30:
     check_folder(os.path.dirname(selected_labels_path))
     array2raster(selected_labels_path, raster_src, selected_labels_set, "Byte")
 
+    # GENERATE DISTANCE MAP
+    all_labels_distance_map_path = os.path.join(current_iter_folder, "distance_map", f'all_labels_distance_map.tif')
+    check_folder(os.path.dirname(all_labels_distance_map_path))
+    generate_distance_map(all_labels_path, all_labels_distance_map_path)
+    
 
     selected_distance_map_path = os.path.join(current_iter_folder, "distance_map", f'selected_distance_map.tif')
     check_folder(os.path.dirname(selected_distance_map_path))
