@@ -387,7 +387,7 @@ while current_iter < 30:
 
     else:
         last_iter_folder = "iter_"+str(current_iter-1)
-        old_pred_file = os.path.join(args.data_path, last_iter_folder, "raster_prediction", f'join_class_itc{args.test_itc}_{np.sum(args.overlap)}.TIF')
+        old_pred_file = os.path.join(args.data_path, last_iter_folder, "new_labels", f'all_labels_set.tif')
     
     old_pred_map = read_tiff(old_pred_file)
 
