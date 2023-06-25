@@ -178,7 +178,7 @@ def get_learning_rate_schedule(train_loader: torch.utils.data.DataLoader,base_lr
     return lr_schedule
 
 
-def train_epochs(last_checkpoint, start_epoch, num_epochs, best_val, train_loader, model, optimizer, lr_schedule, rank, count_early, patience:int=20):
+def train_epochs(last_checkpoint, start_epoch, num_epochs, best_val, train_loader, model, optimizer, lr_schedule, rank, count_early, patience:int=5):
     # Create figures folder to save training figures every epoch
     figures_path = os.path.join(os.path.dirname(last_checkpoint), 'figures')
     check_folder(figures_path)
@@ -204,7 +204,7 @@ def train_epochs(last_checkpoint, start_epoch, num_epochs, best_val, train_loade
         
         print_sucess("scores_tr: {}".format(scores_tr[1]))
 
-        is_best = scores_tr[1] <= best_val
+        is_best = (best_val - scores_tr[1] ) > 0.0001
 
         # save checkpoints
         if rank == 0:
