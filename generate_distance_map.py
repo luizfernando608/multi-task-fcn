@@ -76,7 +76,8 @@ def generate_distance_map(input_image_path:str, output_image_path:str):
     
     output_img = apply_gaussian_distance_map(input_img)
 
-    array2raster(output_image_path, img_lazy_load, output_img, 'Byte')
+    
+    array2raster(output_image_path, img_lazy_load, output_img, "Float32")
 
 
 if __name__ == "__main__":
