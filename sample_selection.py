@@ -38,7 +38,7 @@ def undersample(data: pd.DataFrame, column_category: str):
     return undersampled_data
 
 
-def get_components_stats(components_img: np.array, label_img: np.array):
+def get_components_stats(components_img: np.ndarray, label_img: np.ndarray):
     properties = [
         "area",
         "convex_area",
@@ -68,9 +68,9 @@ def get_components_stats(components_img: np.array, label_img: np.array):
 
 
 def remove_components_by_index(
-    component_ids_to_remove: np.array,
-    components_img: np.array,
-    label_img: np.array,
+    component_ids_to_remove: np.ndarray,
+    components_img: np.ndarray,
+    label_img: np.ndarray,
     component_stats: pd.DataFrame,
 ):
     for idx in component_ids_to_remove:
@@ -83,8 +83,8 @@ def remove_components_by_index(
 
 
 def get_labels_delta(
-    old_components_img: np.array, new_components_img: np.array, new_label_img: np.array
-) -> np.array:
+    old_components_img: np.ndarray, new_components_img: np.ndarray, new_label_img: np.ndarray
+) -> np.ndarray:
     """Get the components labels that are in the new image but not in the old image
 
     Parameters
@@ -124,7 +124,7 @@ def get_labels_delta(
 
     return label_delta
 
-def filter_components_by_geometric_properties(components_pred_map: np.array, pred_labels: np.array):
+def filter_components_by_geometric_properties(components_pred_map: np.ndarray, pred_labels: np.ndarray):
     """Filter components by geometric properties\n
     The filter rules are:
     - Area < 200 pixels
@@ -168,7 +168,7 @@ def filter_components_by_geometric_properties(components_pred_map: np.array, pre
         component_stats=stats_pred_data,
     )
 
-def get_selected_labels(delta_components_img:np.array, delta_pred_map:np.array, old_pred_map:np.array)->np.array:
+def get_selected_labels(delta_components_img:np.ndarray, delta_pred_map:np.ndarray, old_pred_map:np.ndarray)->np.ndarray:
     """Select the best labels from the new components predicted.
     Use undersampling to select the best labels and to avoid unbalanced classes
 
@@ -216,7 +216,7 @@ def get_selected_labels(delta_components_img:np.array, delta_pred_map:np.array, 
     return selected_labels_set
 
 
-def get_new_segmentation_sample(old_pred_map:np.array, new_pred_map:np.array, new_prob_map:np.array)->Tuple[np.array, np.array, np.array]:
+def get_new_segmentation_sample(old_pred_map:np.ndarray, new_pred_map:np.ndarray, new_prob_map:np.ndarray)->Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """ Get the new segmentation sample based on the segmentation from the last iteration and the new segmentation prediction set
     
     Parameters
@@ -246,7 +246,7 @@ def get_new_segmentation_sample(old_pred_map:np.array, new_pred_map:np.array, ne
     
     # Select only the components with confidence higher than 0.99
     new_pred_99 = np.where(new_prob_map > 0.99, new_pred_map, 0)
-
+    
     old_components_pred_map = label(old_pred_map)
 
     new_components_pred_map = label(new_pred_99)
@@ -287,7 +287,7 @@ if __name__ == "__main__":
     sum_overlap = 1.1
 
     # paths to the files from one iteration
-    current_iter_folder = "/home/luiz/multi-task-fcn/MyData/iter_1"
+    current_iter_folder = "/home/luiz/multi-task-fcn/MyData/iter_3"
     depth_path = os.path.join(
         current_iter_folder, "raster_prediction", f"depth_itc{itc}_{sum_overlap}.TIF"
     )
@@ -310,16 +310,20 @@ if __name__ == "__main__":
     ground_truth_img = read_tiff(ground_truth_path)
 
     all_labels, new_labels, delta_labels = get_new_segmentation_sample(ground_truth_img, pred, prob)
+    
+    print("All labels", np.unique(all_labels))
+    print("Selected labels", np.unique(new_labels))
+    print("Delta labels", np.unique(delta_labels))
 
-    # fig, ax = plt.subplots(1, 3, figsize=(15, 5))
-    # ax[0].imshow(all_labels)
-    # ax[1].imshow(new_labels)
-    # ax[2].imshow(delta_labels)
-    # # set title
-    # ax[0].set_title("All labels")
-    # ax[1].set_title("Selected labels")
-    # ax[2].set_title("Delta labels")
+    fig, ax = plt.subplots(1, 3, figsize=(15, 5))
+    ax[0].imshow(all_labels)
+    ax[1].imshow(new_labels)
+    ax[2].imshow(delta_labels)
+    # set title
+    ax[0].set_title("All labels")
+    ax[1].set_title("Selected labels")
+    ax[2].set_title("Delta labels")
 
     # # save figure
-    # plt.savefig("sample_selection_test.png", dpi=600)
+    plt.savefig("debug_images/sample_selection_test.png", dpi=600)
 
