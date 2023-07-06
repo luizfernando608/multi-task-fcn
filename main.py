@@ -296,7 +296,8 @@ def train_iteration(current_iter_folder, args):
 
 
     if args.rank == 0:
-        logger.info(model)
+        # logger.info(model)
+        pass
 
     logger.info("Building model done.")
 
