@@ -21,6 +21,7 @@ from tqdm import tqdm
 
 from generate_distance_map import generate_distance_map
 
+import matplotlib.pyplot as plt
 
 from src.logger import create_logger
 from src.metrics import evaluate_metrics
@@ -204,7 +205,7 @@ def train_epochs(last_checkpoint, start_epoch, num_epochs, best_val, train_loade
         
         print_sucess("scores_tr: {}".format(scores_tr[1]))
 
-        is_best = (best_val - scores_tr[1] ) > 0.0001
+        is_best = (best_val - scores_tr[1] ) > 0.001
 
         # save checkpoints
         if rank == 0:
@@ -315,7 +316,7 @@ def train_iteration(current_iter_folder, args):
     # load models weights again to change status to is_iter_finished=True
     model = load_weights(model, last_checkpoint, logger)
 
-    to_restore = {"epoch": 0, "count_early": 0, "is_iter_finished":False}
+    to_restore = {"epoch": 0, "count_early": 0, "is_iter_finished":False, "best_val":(100.)}
     restart_from_checkpoint(
         last_checkpoint,
         run_variables=to_restore,
@@ -324,13 +325,15 @@ def train_iteration(current_iter_folder, args):
     )
     
     
-    save_checkpoint(last_checkpoint, model, optimizer, to_restore["epoch"], 100, 0, is_iter_finished=True)
+    save_checkpoint(last_checkpoint, model, optimizer, to_restore["epoch"], to_restore["best_val"], to_restore["count_early"], is_iter_finished=True)
     
     next_iter_folder = os.path.join(args.data_path, "iter_"+str(current_iter+1))
     check_folder(next_iter_folder)
+    
     # save here next iteration
     next_model_folder = os.path.join(next_iter_folder, args.model_dir)
     check_folder(next_model_folder)
+    
     next_model_path = os.path.join(next_model_folder, args.checkpoint_file)
     save_checkpoint(next_model_path, model, optimizer, 0, 100.0, 0 ,is_iter_finished=False)
 
@@ -362,7 +365,7 @@ while current_iter < 30:
     current_iter_folder = get_current_iter_folder(args.data_path, args.test_itc, args.overlap)
     current_iter = int(current_iter_folder.split("_")[-1])
 
-    # Get current mode folder
+    # Get current model folder
     current_model_folder = os.path.join(current_iter_folder, args.model_dir)
     # check_folder(current_model_folder)
 
@@ -374,8 +377,8 @@ while current_iter < 30:
 
     pred2raster(current_iter_folder, args)
 
-
-    # get new samples to train
+    #####################################################
+    ######### GENERATE LABELS FOR NEXT ITERATION #########
     new_pred_file = os.path.join(current_iter_folder, "raster_prediction", f'join_class_itc{args.test_itc}_{np.sum(args.overlap)}.TIF')
     new_pred_map = read_tiff(new_pred_file)
 
@@ -388,24 +391,28 @@ while current_iter < 30:
     else:
         last_iter_folder = "iter_"+str(current_iter-1)
         old_pred_file = os.path.join(args.data_path, last_iter_folder, "new_labels", f'all_labels_set.tif')
-    
+
     old_pred_map = read_tiff(old_pred_file)
 
     all_labels_set, selected_labels_set, delta_labels_set = get_new_segmentation_sample(old_pred_map=old_pred_map, new_pred_map=new_pred_map, new_prob_map=new_prob_map)
-    
 
-    # Get tiff file to get georeference
+
     raster_src = gdal.Open(old_pred_file)
 
     all_labels_path = os.path.join(current_iter_folder, "new_labels", f'all_labels_set.tif')
+    
     check_folder(os.path.dirname(all_labels_path))
     array2raster(all_labels_path, raster_src, all_labels_set, "Byte")
 
+
     selected_labels_path = os.path.join(current_iter_folder, "new_labels", f'selected_labels_set.tif')
+
     check_folder(os.path.dirname(selected_labels_path))
     array2raster(selected_labels_path, raster_src, selected_labels_set, "Byte")
-
-    # GENERATE DISTANCE MAP
+    
+    
+    #######################################
+    ######## GENERATE DISTANCE MAP ########
     all_labels_distance_map_path = os.path.join(current_iter_folder, "distance_map", f'all_labels_distance_map.tif')
     check_folder(os.path.dirname(all_labels_distance_map_path))
     generate_distance_map(all_labels_path, all_labels_distance_map_path)
@@ -414,18 +421,8 @@ while current_iter < 30:
     selected_distance_map_path = os.path.join(current_iter_folder, "distance_map", f'selected_distance_map.tif')
     check_folder(os.path.dirname(selected_distance_map_path))
     generate_distance_map(selected_labels_path, selected_distance_map_path)
-
- 
-
     
-    """
-    Está faltando alguns passos entre cada iteração:
-    - Gerar novas labels com o modelo treinado OK
-    - Selecionar labels com maior probabilidade de acerto OK
-    - Selecionar labels de modo que o número de amostras esteja balanceado OK
-    - Aplicar distance map nas novas labels OK
-    - Treinar modelo com as novas labels OK
-    """
-
+    print_sucess("Distance map generated")
+ 
 
 
