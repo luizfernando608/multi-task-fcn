@@ -27,7 +27,7 @@ FALSY_STRINGS = {"off", "false", "0"}
 TRUTHY_STRINGS = {"on", "true", "1"}
 
 
-logger = getLogger()
+plt.set_loglevel (level = 'warning')
 
 
 def array2raster(newRasterfn, dataset, array, dtype):
@@ -297,7 +297,7 @@ def initialize_exp(params, *args, dump_params=True):
     return logger, training_stats
 
 
-def restart_from_checkpoint(ckp_paths, run_variables=None, **kwargs):
+def restart_from_checkpoint(ckp_paths, logger, run_variables=None, **kwargs):
     """
     Re-start from checkpoint
     """

@@ -161,7 +161,7 @@ def load_weights(model: nn.Module, checkpoint_file_path:str, logger: Logger)-> n
     return model
 
 
-def train(train_loader:torch.utils.data.DataLoader, model:nn.Module, optimizer:torch.optim.Optimizer, epoch:int, lr_schedule:np.array, figures_path:str, logger: Logger):
+def train(train_loader:torch.utils.data.DataLoader, model:nn.Module, optimizer:torch.optim.Optimizer, epoch:int, lr_schedule:np.ndarray, figures_path:str, logger: Logger):
     """Train model for one epoch
 
     Parameters

@@ -325,7 +325,8 @@ def train_iteration(current_iter_folder, args):
         last_checkpoint,
         run_variables=to_restore,
         state_dict=model,
-        optimizer=optimizer
+        optimizer=optimizer,
+        logger=logger
     )
 
     if loaded_from_last_checkpoint:
@@ -356,7 +357,8 @@ def train_iteration(current_iter_folder, args):
         last_checkpoint,
         run_variables=to_restore,
         state_dict=model,
-        optimizer=optimizer
+        optimizer=optimizer,
+        logger=logger
     )
     
     
