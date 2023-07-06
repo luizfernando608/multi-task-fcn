@@ -236,6 +236,8 @@ def train_epochs(last_checkpoint, start_epoch, num_epochs, best_val, train_loade
 
 
 def train_iteration(current_iter_folder, args):
+    
+    loaded_from_last_checkpoint = False
 
     current_iter = int(current_iter_folder.split("_")[-1])
 
@@ -279,14 +281,13 @@ def train_iteration(current_iter_folder, args):
     
     model = build_model(image.shape, args.nb_class,  args.arch, args.filters, args.is_pretrained)
 
-    ## Se nesta iteração, não tiver checkpoint, carrega o checkpoint da iteração anterior
-    ## Se for a iteração 1, não carrega checkpoint
-
     last_checkpoint = os.path.join(current_model_folder, args.checkpoint_file)
     
     if not os.path.isfile(last_checkpoint):
         if current_iter > 1:
             last_checkpoint = os.path.join(args.data_path, f"iter_{current_iter-1:03d}", args.checkpoint_file)
+            loaded_from_last_checkpoint = True
+            print_sucess("Loaded_from_last_checkpoint")
 
     model = load_weights(model, last_checkpoint, logger)
 
@@ -326,9 +327,17 @@ def train_iteration(current_iter_folder, args):
         optimizer=optimizer
     )
 
-    start_epoch = to_restore["epoch"]
-    best_val = to_restore["best_val"]
-    count_early = to_restore["count_early"]
+    if loaded_from_last_checkpoint:
+        start_epoch = 0
+        best_val = 0
+        count_early = 0
+
+    else:
+        start_epoch = to_restore["epoch"]
+        best_val = to_restore["best_val"]
+        count_early = to_restore["count_early"]
+
+    
     cudnn.benchmark = True
     
     gc.collect()
