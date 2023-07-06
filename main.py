@@ -2,6 +2,9 @@
 import argparse
 import math
 import os
+
+from os.path import dirname
+
 from logging import getLogger
 from logging import Logger
 
@@ -46,24 +49,22 @@ from sample_selection import get_new_segmentation_sample
 import gc
 gc.set_threshold(0)
 
-def first_output_exists(data_path, test_itc, overlap):
-    output_path = os.path.join(data_path, "iter_1", "raster_prediction")
+
+def is_iter_0_done(data_path):
+    path_distance_map = os.path.join(data_path, "distance_map")
+    is_test_map_done = os.path.exists(os.path.join(path_distance_map, "test_distance_map.tif"))
+    is_train_map_done = os.path.exists(os.path.join(path_distance_map, "train_distance_map.tif"))
     
-    depth_path = os.path.join(output_path, f"depth_itc{test_itc}_{np.sum(overlap)}.TIF")
-    is_depth_done = os.path.isfile(depth_path)
-
-    prob_path = os.path.join(output_path, f"join_prob_itc{test_itc}_{np.sum(overlap)}.TIF")
-    is_prob_done = os.path.isfile(prob_path)
-
-    class_path = os.path.join(output_path, f"join_class_itc{test_itc}_{np.sum(overlap)}.TIF")
-    is_class_done = os.path.isfile(class_path)
-
-    return is_depth_done and is_prob_done and is_class_done
-
+    if is_test_map_done and is_test_map_done:
+        return True
+    
+    else:
+        return False
 
 
 def get_current_iter_folder(data_path, test_itc, overlap):
     """Get the current iteration folder
+    This function verify which iteration folder isn't finished yet and return the path to it.
 
     Parameters
     ----------
@@ -81,12 +82,15 @@ def get_current_iter_folder(data_path, test_itc, overlap):
     """
 
     folders = pd.Series(os.listdir(data_path))
-    # TO-DO change here to a best logic
+
     folders = folders[folders.str.contains("iter_")]
 
-    num_folders = folders.str.replace("iter_", "").astype(int).sort_values(ascending=False)
+    # num_folders = folders.str.replace("iter_", "").astype(int).sort_values(ascending=False)
 
-    iter_folders = ["iter_"+str(i) for i in num_folders.to_list()]
+    # iter_folders = ["iter_"+str(i) for i in num_folders.to_list()]
+
+    iter_folders = folders.sort_values(ascending=False)
+
 
     for idx, iter_folder_name in enumerate(iter_folders[1:]):
         
@@ -96,46 +100,56 @@ def get_current_iter_folder(data_path, test_itc, overlap):
         
         is_folder_generated = os.path.exists(prediction_path)
         is_depth_done = os.path.isfile(os.path.join(prediction_path, f"depth_itc{test_itc}_{np.sum(overlap)}.TIF"))
-        is_class_done = os.path.isfile(os.path.join(prediction_path, f"join_class_itc{test_itc}_{np.sum(overlap)}.TIF"))
+        is_pred_done = os.path.isfile(os.path.join(prediction_path, f"join_class_itc{test_itc}_{np.sum(overlap)}.TIF"))
         is_prob_done = os.path.isfile(os.path.join(prediction_path, f"join_prob_itc{test_itc}_{np.sum(overlap)}.TIF"))
         
         distance_map_path = os.path.join(iter_path, "distance_map")
         is_distance_map_done = os.path.isfile(os.path.join(distance_map_path, "selected_distance_map.tif"))
 
-        if is_folder_generated and is_depth_done and is_class_done and is_prob_done and is_distance_map_done:
+        if is_folder_generated and is_depth_done and is_pred_done and is_prob_done and is_distance_map_done:
             current_folder = iter_folders[idx]
             current_path = os.path.join(data_path, current_folder)
             return current_path
     
-    iter_1_path = os.path.join(data_path, "iter_1")
-
-    if os.path.exists(iter_1_path):
-        return iter_1_path
-    else:
-        raise FileExistsError("No finished iteration folder found. Try execute generate_distance_map first.")
+    if is_iter_0_done:
+        return os.path.join(data_path, f"iter_{1:03d}")
     
 
-def read_last_segmentation(current_iter_folder, data_path, train_segmentation_file):
+    iter_0_path = os.path.join(data_path, "iter_000")
+    # create iter_0 folder if not exists
+    check_folder(iter_0_path)
+
+    return iter_0_path
+    # else:
+        # raise FileExistsError("No finished iteration folder found. Try execute generate_distance_map first.")
+    
+
+def read_last_segmentation(current_iter_folder, train_segmentation_path):
     
     current_iter = int(current_iter_folder.split("_")[-1])
+    data_path = dirname(current_iter_folder)
+
     if current_iter==1:
-        image_path = os.path.join(data_path, "segmentation", train_segmentation_file)
+        image_path = os.path.join(data_path, train_segmentation_path)
         
     else:
-        image_path = os.path.join(data_path, "iter_"+str(current_iter-1), "new_labels", "selected_labels_set.tif")
+        image_path = os.path.join(data_path, f"iter_{current_iter-1:03d}", "new_labels", "selected_labels_set.tif")
 
     image = read_tiff(image_path)
     return image
 
     
 
-def read_last_distance_map(current_iter_folder, data_path):
+def read_last_distance_map(current_iter_folder):
     current_iter = int(current_iter_folder.split("_")[-1])
-    if current_iter == 1 :
-        image_path = os.path.join(data_path, "before_iter", "train_distance_map.tif")
-        
+    data_path = dirname(current_iter_folder)
+
+    if current_iter == 1:
+        distance_map_filename = "train_distance_map.tif"
     else:
-        image_path = os.path.join(data_path, "iter_"+str(current_iter-1), "distance_map", "selected_distance_map.tif")
+        distance_map_filename = "selected_distance_map.tif"
+
+    image_path = os.path.join(data_path, f"iter_{current_iter-1:03d}", "distance_map", distance_map_filename)
         
     image = read_tiff(image_path)
     return image
@@ -222,12 +236,15 @@ def train_epochs(last_checkpoint, start_epoch, num_epochs, best_val, train_loade
 
 
 def train_iteration(current_iter_folder, args):
+
+    current_iter = int(current_iter_folder.split("_")[-1])
+
     logger = create_logger(os.path.join(current_iter_folder, "train.log"), rank=0)
     logger.info("============ Initialized Training ============")
     
     ######### Define Loader ############
-    raster_train = read_last_segmentation(current_iter_folder, args.data_path, args.train_segmentation_file)
-    depth_img = read_last_distance_map(current_iter_folder, args.data_path)
+    raster_train = read_last_segmentation(current_iter_folder, args.train_segmentation_path)
+    depth_img = read_last_distance_map(current_iter_folder)
 
     image, coords_train, raster_train, labs_coords_train = define_loader(args.ortho_image, raster_train, args.size_crops)    
 
@@ -262,7 +279,15 @@ def train_iteration(current_iter_folder, args):
     
     model = build_model(image.shape, args.nb_class,  args.arch, args.filters, args.is_pretrained)
 
+    ## Se nesta iteração, não tiver checkpoint, carrega o checkpoint da iteração anterior
+    ## Se for a iteração 1, não carrega checkpoint
+
     last_checkpoint = os.path.join(current_model_folder, args.checkpoint_file)
+    
+    if not os.path.isfile(last_checkpoint):
+        if current_iter > 1:
+            last_checkpoint = os.path.join(args.data_path, f"iter_{current_iter-1:03d}", args.checkpoint_file)
+
     model = load_weights(model, last_checkpoint, logger)
 
     # Load model to GPU
@@ -327,15 +352,15 @@ def train_iteration(current_iter_folder, args):
     
     save_checkpoint(last_checkpoint, model, optimizer, to_restore["epoch"], to_restore["best_val"], to_restore["count_early"], is_iter_finished=True)
     
-    next_iter_folder = os.path.join(args.data_path, "iter_"+str(current_iter+1))
-    check_folder(next_iter_folder)
+    # next_iter_folder = os.path.join(args.data_path, "iter_"+str(current_iter+1))
+    # check_folder(next_iter_folder)
     
-    # save here next iteration
-    next_model_folder = os.path.join(next_iter_folder, args.model_dir)
-    check_folder(next_model_folder)
+    # # save here next iteration
+    # next_model_folder = os.path.join(next_iter_folder, args.model_dir)
+    # check_folder(next_model_folder)
     
-    next_model_path = os.path.join(next_model_folder, args.checkpoint_file)
-    save_checkpoint(next_model_path, model, optimizer, 0, 100.0, 0 ,is_iter_finished=False)
+    # next_model_path = os.path.join(next_model_folder, args.checkpoint_file)
+    # save_checkpoint(next_model_path, model, optimizer, 0, 100.0, 0 ,is_iter_finished=False)
 
     with torch.no_grad():
         torch.cuda.empty_cache()
@@ -352,9 +377,6 @@ args = read_yaml("args.yaml")
 
 ##### LOOP #####
 
-# Generate distance map if necessary
-# generate_train_test_map()
-
 # Set random seed
 fix_random_seeds(args.seed[0])
 
@@ -364,10 +386,28 @@ while current_iter < 30:
     # get current iteration folder
     current_iter_folder = get_current_iter_folder(args.data_path, args.test_itc, args.overlap)
     current_iter = int(current_iter_folder.split("_")[-1])
+    print("Current iteration folder: ", current_iter_folder)
+    
+    if current_iter == 0:
+        
+        test_segmentation_path = os.path.join(args.data_path, args.test_segmentation_path)
+        test_distance_map_output = os.path.join(current_iter_folder, "distance_map", "test_distance_map.tif")
+        
+        check_folder(dirname(test_distance_map_output))
+
+        generate_distance_map(test_segmentation_path, test_distance_map_output)
+
+        train_segmentation_path = os.path.join(args.data_path, args.train_segmentation_path)
+        train_distance_map = os.path.join(current_iter_folder, "distance_map", "train_distance_map.tif")
+
+        check_folder(dirname(train_distance_map))
+
+        generate_distance_map(train_segmentation_path, train_distance_map)
+        continue
 
     # Get current model folder
     current_model_folder = os.path.join(current_iter_folder, args.model_dir)
-    # check_folder(current_model_folder)
+    check_folder(current_model_folder)
 
     logger, training_stats = initialize_exp(args, "epoch", "loss")
 
