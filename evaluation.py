@@ -170,20 +170,28 @@ def evaluate_overlap(overlap, ref, current_iter_folder,current_model_folder, ort
         step_col=step_col,
         overlap=overlap_in_pixels,
     )
+    gc.collect()
+
     prob_map_path = os.path.join(current_iter_folder, 'prediction', f'prob_map_itc{test_itc}_{overlap}.npy')
     np.save(prob_map_path, prob_map)
     del prob_map
+    gc.collect()
     logger.info("Probability map done and saved.")
+    
 
     pred_class_path = os.path.join(current_iter_folder, 'prediction', f'pred_class_itc{test_itc}_{overlap}.npy')
     np.save(pred_class_path, pred_class)
     del pred_class
+    gc.collect()
     logger.info("Prediction done and saved.")
+    
     
     depth_map_path = os.path.join(current_iter_folder, 'prediction', f'depth_map_itc{test_itc}_{overlap}.npy')
     np.save(depth_map_path, depth_map)
     del depth_map
+    gc.collect()
     logger.info("Depth map done and saved.")
+
 
 
 
