@@ -148,6 +148,7 @@ def evaluate_overlap(overlap, ref, current_iter_folder,current_model_folder, ort
 
     last_checkpoint = os.path.join(current_model_folder, checkpoint_file)
     model = load_weights(model, last_checkpoint, logger)
+    logger.info("Model loaded from {}".format(last_checkpoint))
 
     # Load model to GPU
     model = model.cuda()
@@ -172,12 +173,17 @@ def evaluate_overlap(overlap, ref, current_iter_folder,current_model_folder, ort
     prob_map_path = os.path.join(current_iter_folder, 'prediction', f'prob_map_itc{test_itc}_{overlap}.npy')
     np.save(prob_map_path, prob_map)
     del prob_map
+    logger.info("Probability map done and saved.")
+
     pred_class_path = os.path.join(current_iter_folder, 'prediction', f'pred_class_itc{test_itc}_{overlap}.npy')
     np.save(pred_class_path, pred_class)
-    del pred_class    
+    del pred_class
+    logger.info("Prediction done and saved.")
+    
     depth_map_path = os.path.join(current_iter_folder, 'prediction', f'depth_map_itc{test_itc}_{overlap}.npy')
     np.save(depth_map_path, depth_map)
     del depth_map
+    logger.info("Depth map done and saved.")
 
 
 
@@ -212,6 +218,8 @@ def evaluate_iteration(current_iter_folder, args):
             continue
         
         evaluate_overlap(overlap, ref, current_iter_folder,current_model_folder, ortho_image_shape, logger)
+        logger.info(f"Overlap {overlap} done.")
+
         gc.collect()
         torch.cuda.empty_cache()
 
