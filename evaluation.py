@@ -196,7 +196,7 @@ def evaluate_iteration(current_iter_folder, args):
     overlaps = args.overlap
     test_itc = args.test_itc
 
-    segmentation_img_path = os.path.join(args.data_path, "segmentation", args.train_segmentation_file)
+    segmentation_img_path = os.path.join(args.data_path, args.train_segmentation_path)
 
     current_model_folder = os.path.join(current_iter_folder, args.model_dir)
 

@@ -16,7 +16,7 @@ def pred2raster(current_iter_folder, args):
     plt.rcParams.update({'font.size': 10})
     sns.set_style("darkgrid")
     
-    raster_path = os.path.join(args.data_path, "segmentation", args.train_segmentation_file)
+    raster_path = os.path.join(args.data_path, args.train_segmentation_path)
     raster_src = gdal.Open(raster_path)
 
     prediction_file = os.path.join(
