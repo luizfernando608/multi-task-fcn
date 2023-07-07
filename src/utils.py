@@ -409,9 +409,9 @@ def filter_outliers(img, bins=10000, bth=0.01, uth=0.99, mask=[0], mask_indx = 0
 
 def normalize(img):
     '''image shape: [row, cols, channels]'''
-    # img = 2*(img -img.min(axis=(0,1), keepdims=True))/(img.max(axis=(0,1), keepdims=True) - img.min(axis=(0,1), keepdims=True)) - 1
-    # img = (img -img.min(axis=(1,2), keepdims=True))/(img.max(axis=(1,2), keepdims=True) - img.min(axis=(1,2), keepdims=True))
-    img = img/255
+    for band in range(img.shape[0]):
+        img[band, :,:,] = img[band, :,:,]/255
+    
     return img
 
 
