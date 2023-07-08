@@ -306,9 +306,9 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray, old_pred_map:np.nda
             delta_gt_new_labels[component==old_components_pred_map] = pred_label[0]
 
     # join all labels set
-    all_labes_set = np.where(ground_truth_img == 0, delta_gt_new_labels, ground_truth_img)
+    all_labes_set = np.where(ground_truth_map == 0, delta_gt_new_labels, ground_truth_map)
     
-    # in this version we didnt apply sampling
+    # in this version we didnt apply sampling balancing
     selected_labels_set = all_labes_set.copy()
 
     return all_labes_set, selected_labels_set
