@@ -215,6 +215,7 @@ def get_selected_labels(delta_components_img:np.ndarray, delta_pred_map:np.ndarr
 
     return selected_labels_set
 
+def filter_components_by_mask(data_path:str, components_pred_map:np.ndarray, pred_map:np.ndarray):
     
     mask = read_tiff(os.path.join(data_path, "mask.tif"))
     mask = np.where(mask==99, 0, 1)
