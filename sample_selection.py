@@ -234,11 +234,12 @@ def filter_components_by_mask(data_path:str, components_pred_map:np.ndarray, pre
     mask = np.where(mask==99, 0, 1)
 
     for component in np.unique(components_pred_map):
-        area_out_mask = np.mean( mask[components_pred_map==component])
+        component_filter = components_pred_map==component
+        area_out_mask = np.mean( mask[component_filter])
         
         if area_out_mask >= 0.20:
-            pred_map[components_pred_map==component] = 0
-            components_pred_map[components_pred_map==component] = 0
+            pred_map[component_filter] = 0
+            components_pred_map[component_filter] = 0
 
             
 
