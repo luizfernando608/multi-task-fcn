@@ -124,25 +124,38 @@ def get_labels_delta(
 
     return label_delta
 
-def filter_components_by_geometric_properties(components_pred_map: np.ndarray, pred_labels: np.ndarray):
-    """Filter components by geometric properties\n
-    The filter rules are:
-    - Area < 200 pixels
-    - Area/Convex Area < 0.85
+def filter_components_by_geometric_properties(old_components_pred_map:np.ndarray, old_pred_labels:np.ndarray, components_pred_map: np.ndarray, pred_labels: np.ndarray):
+    """_summary_
 
     Parameters
     ----------
-    components_pred_map : np.array
-        Predicted components map
-    pred_labels : np.array
-        Predicted labels map
-
+    old_components_pred_map : np.ndarray
+        _description_
+    old_pred_labels : np.ndarray
+        _description_
+    components_pred_map : np.ndarray
+        _description_
+    pred_labels : np.ndarray
+        _description_
     """
 
     stats_pred_data = get_components_stats(components_pred_map, pred_labels)
     
-    # FILTER AREA WITH LESS THAN 200 pixels of area
-    filter_area = stats_pred_data["area"] < 200
+    old_stats_pred_data = get_components_stats(old_components_pred_map, old_pred_labels)
+
+
+    min_area = old_stats_pred_data.groupby(["tree_type"])["area"].min()
+    min_limit = min_area-min_area*0.1
+    min_limit.name = "min_limit"
+
+
+    max_area = old_stats_pred_data.groupby(["tree_type"])["area"].max()
+    max_limit = max_area+max_area*0.1
+    max_limit.name = "max_limit"
+
+    stats_pred_data = stats_pred_data.merge(min_limit, on="tree_type", how="left").merge(max_limit, on="tree_type", how="left").copy()
+
+    filter_area = ~stats_pred_data["area"].between(stats_pred_data["min_limit"], stats_pred_data["max_limit"], inclusive="both")
 
     component_ids_to_remove = stats_pred_data[filter_area].index
     component_ids_to_remove = np.array(component_ids_to_remove, dtype=int)
@@ -229,7 +242,7 @@ def filter_components_by_mask(data_path:str, components_pred_map:np.ndarray, pre
 
             
 
-def get_new_segmentation_sample(old_pred_map:np.ndarray, new_pred_map:np.ndarray, new_prob_map:np.ndarray, data_path:str)->Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def get_new_segmentation_sample(ground_truth_map:np.ndarray, old_pred_map:np.ndarray, new_pred_map:np.ndarray, new_prob_map:np.ndarray, data_path:str)->Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """ Get the new segmentation sample based on the segmentation from the last iteration and the new segmentation prediction set
     
     Parameters
@@ -270,8 +283,10 @@ def get_new_segmentation_sample(old_pred_map:np.ndarray, new_pred_map:np.ndarray
 
     # filter components by geometric properties
     filter_components_by_geometric_properties(
+        old_components_pred_map=old_components_pred_map,
+        old_pred_labels=old_pred_map,
         components_pred_map = new_components_pred_map, 
-        pred_labels = new_pred_99
+        pred_labels = new_pred
     )
 
 
