@@ -220,12 +220,12 @@ def get_selected_labels(delta_components_img:np.ndarray, delta_pred_map:np.ndarr
     mask = np.where(mask==99, 0, 1)
 
     for component in np.unique(components_pred_map):
-        area_out_mask =np.mean( mask[components_pred_map==component])
+        area_out_mask = np.mean( mask[components_pred_map==component])
         
         if area_out_mask >= 0.20:
-            pred_map = np.where(components_pred_map==component, 0, pred_map)
-            components_pred_map = np.where(components_pred_map==component, 0, components_pred_map)
-    
+            pred_map[components_pred_map==component] = 0
+            components_pred_map[components_pred_map==component] = 0
+
             
 
 def get_new_segmentation_sample(old_pred_map:np.ndarray, new_pred_map:np.ndarray, new_prob_map:np.ndarray, data_path:str)->Tuple[np.ndarray, np.ndarray, np.ndarray]:
