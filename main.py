@@ -92,7 +92,7 @@ def get_current_iter_folder(data_path, test_itc, overlap):
     iter_folders = folders.sort_values(ascending=False)
 
 
-    for idx, iter_folder_name in enumerate(iter_folders[1:]):
+    for idx, iter_folder_name in enumerate(iter_folders):
         
         iter_path = os.path.join(data_path, iter_folder_name)
 
@@ -107,11 +107,15 @@ def get_current_iter_folder(data_path, test_itc, overlap):
         is_distance_map_done = os.path.isfile(os.path.join(distance_map_path, "selected_distance_map.tif"))
 
         if is_folder_generated and is_depth_done and is_pred_done and is_prob_done and is_distance_map_done:
-            current_folder = iter_folders[idx]
-            current_path = os.path.join(data_path, current_folder)
-            return current_path
+            
+            next_iter = int(iter_folder_name.split("_")[-1]) + 1
+            next_iter_path = os.path.join(data_path, f"iter_{next_iter:03d}")
+            
+            check_folder(next_iter_path)
+
+            return next_iter_path
     
-    if is_iter_0_done:
+    if is_iter_0_done(args.data_path):
         return os.path.join(data_path, f"iter_{1:03d}")
     
 
@@ -438,15 +442,21 @@ while current_iter < 30:
     new_prob_map = read_tiff(new_prob_file)
 
     if current_iter == 1:
-        old_pred_file = os.path.join(args.data_path, "before_iter", "train_distance_map.tif")
+        old_pred_file = os.path.join(args.data_path, "iter_000", "distance_map", "train_distance_map.tif")
 
     else:
-        last_iter_folder = "iter_"+str(current_iter-1)
-        old_pred_file = os.path.join(args.data_path, last_iter_folder, "new_labels", f'all_labels_set.tif')
+        old_pred_file = os.path.join(args.data_path, f"iter_{current_iter-1:03d}", "new_labels", f'all_labels_set.tif')
 
     old_pred_map = read_tiff(old_pred_file)
 
-    all_labels_set, selected_labels_set, delta_labels_set = get_new_segmentation_sample(old_pred_map=old_pred_map, new_pred_map=new_pred_map, new_prob_map=new_prob_map)
+    ground_truth_segmentation = read_tiff(os.path.join(args.data_path, args.train_segmentation_path))
+
+    all_labels_set, selected_labels_set = get_new_segmentation_sample(
+        ground_truth_map = ground_truth_segmentation,
+        old_pred_map=old_pred_map, 
+        new_pred_map=new_pred_map, new_prob_map=new_prob_map, 
+        data_path=args.data_path,
+    )
 
 
     raster_src = gdal.Open(old_pred_file)
