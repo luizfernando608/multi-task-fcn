@@ -215,8 +215,20 @@ def get_selected_labels(delta_components_img:np.ndarray, delta_pred_map:np.ndarr
 
     return selected_labels_set
 
+    
+    mask = read_tiff(os.path.join(data_path, "mask.tif"))
+    mask = np.where(mask==99, 0, 1)
 
-def get_new_segmentation_sample(old_pred_map:np.ndarray, new_pred_map:np.ndarray, new_prob_map:np.ndarray)->Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    for component in np.unique(components_pred_map):
+        area_out_mask =np.mean( mask[components_pred_map==component])
+        
+        if area_out_mask >= 0.20:
+            pred_map = np.where(components_pred_map==component, 0, pred_map)
+            components_pred_map = np.where(components_pred_map==component, 0, components_pred_map)
+    
+            
+
+def get_new_segmentation_sample(old_pred_map:np.ndarray, new_pred_map:np.ndarray, new_prob_map:np.ndarray, data_path:str)->Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """ Get the new segmentation sample based on the segmentation from the last iteration and the new segmentation prediction set
     
     Parameters
@@ -249,8 +261,12 @@ def get_new_segmentation_sample(old_pred_map:np.ndarray, new_pred_map:np.ndarray
     
     old_components_pred_map = label(old_pred_map)
 
-    new_components_pred_map = label(new_pred_99)
+    new_components_pred_map = label(new_pred)
     
+
+    filter_components_by_mask(data_path, new_components_pred_map, new_pred)
+
+
     # filter components by geometric properties
     filter_components_by_geometric_properties(
         components_pred_map = new_components_pred_map, 
