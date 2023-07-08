@@ -12,6 +12,11 @@ from src.metrics import evaluate_metrics, evaluate_metrics_pred
 import pandas as pd
 
 import matplotlib.pyplot as plt
+import matplotlib
+
+from tqdm import tqdm
+
+matplotlib.use('TkAgg', force=True)
 
 from imblearn.under_sampling import RandomUnderSampler
 
@@ -168,18 +173,7 @@ def filter_components_by_geometric_properties(old_components_pred_map:np.ndarray
     )
 
 
-    # FILTER BY CONVEX/AREA
-    filter_ratio_convex_area = (stats_pred_data["area"] / stats_pred_data["convex_area"]) < 0.85
 
-    component_ids_to_remove = stats_pred_data[filter_ratio_convex_area].index
-    component_ids_to_remove = np.array(component_ids_to_remove.astype(int))
-
-    remove_components_by_index(
-        component_ids_to_remove,
-        components_img=components_pred_map,
-        label_img=pred_labels,
-        component_stats=stats_pred_data,
-    )
 
 def get_selected_labels(delta_components_img:np.ndarray, delta_pred_map:np.ndarray, old_pred_map:np.ndarray)->np.ndarray:
     """Select the best labels from the new components predicted.
@@ -267,7 +261,6 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray, old_pred_map:np.nda
         The difference between the new segmentation map and the segmentation map from the last iteration
 
     """
-    
     # set labels at the same scale as ground truth labels
     new_pred_map += 1
     
@@ -281,7 +274,6 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray, old_pred_map:np.nda
 
     filter_components_by_mask(data_path, new_components_pred_map, new_pred)
 
-
     # filter components by geometric properties
     filter_components_by_geometric_properties(
         old_components_pred_map=old_components_pred_map,
@@ -291,25 +283,35 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray, old_pred_map:np.nda
     )
 
 
-    # get the delta between the new components and the components from the last iteration
-    delta_old_new_labels = get_labels_delta(
-        old_components_img=old_components_pred_map,
+    # get the delta between the new components and the ground truth components
+    delta_gt_new_labels = get_labels_delta(
+        old_components_img=ground_truth_map,
         new_components_img=new_components_pred_map,
         new_label_img=new_pred,
     )
 
-    components_delta = label(delta_old_new_labels)
+    components_delta = label(delta_gt_new_labels)
+
+    # Adding component from last iteration prediction
+    for component in np.unique(old_components_pred_map[np.nonzero(old_components_pred_map)]):
+        
+        overlap_new_old_comp = np.mean(components_delta[old_components_pred_map==component] != 0)
+
+        if overlap_new_old_comp < 0.10:
+            
+            labels_matrix = old_pred_map[(old_components_pred_map==component)]
+
+            pred_label = np.unique(labels_matrix[np.nonzero(labels_matrix)])
+
+            delta_gt_new_labels[component==old_components_pred_map] = pred_label[0]
 
     # join all labels set
-    all_labes_set = np.where(components_delta != 0, delta_old_new_labels, old_pred_map)
+    all_labes_set = np.where(ground_truth_img == 0, delta_gt_new_labels, ground_truth_img)
+    
+    # in this version we didnt apply sampling
+    selected_labels_set = all_labes_set.copy()
 
-    selected_labels_set = get_selected_labels(
-        delta_components_img = components_delta,
-        delta_pred_map = delta_old_new_labels,
-        old_pred_map = old_pred_map,
-    )
-
-    return all_labes_set, selected_labels_set, delta_old_new_labels
+    return all_labes_set, selected_labels_set
 
 
 if __name__ == "__main__":
@@ -320,7 +322,7 @@ if __name__ == "__main__":
     sum_overlap = 1.1
 
     # paths to the files from one iteration
-    current_iter_folder = "/home/luiz/multi-task-fcn/MyData/iter_3"
+    current_iter_folder = "/home/luiz/multi-task-fcn/MyData/iter_001"
     depth_path = os.path.join(
         current_iter_folder, "raster_prediction", f"depth_itc{itc}_{sum_overlap}.TIF"
     )
@@ -339,23 +341,30 @@ if __name__ == "__main__":
     prob = read_tiff(prob_path)
     pred = read_tiff(pred_path)
 
-    ground_truth_path = os.path.join(args.data_path, args.train_segmentation_file)
+    ground_truth_path = os.path.join(args.data_path, args.train_segmentation_path)
     ground_truth_img = read_tiff(ground_truth_path)
 
-    all_labels, new_labels, delta_labels = get_new_segmentation_sample(ground_truth_img, pred, prob)
+    # at the first iteration old prediction is the same of ground truth segmentation
+    old_pred_map = ground_truth_img.copy()
+    all_labels, new_labels =  get_new_segmentation_sample(
+        ground_truth_map=ground_truth_img, 
+        old_pred_map = old_pred_map,
+        new_pred_map = pred,
+        new_prob_map = prob, 
+        data_path=args.data_path)
     
     print("All labels", np.unique(all_labels))
     print("Selected labels", np.unique(new_labels))
-    print("Delta labels", np.unique(delta_labels))
+    print("Ground Truth labels", np.unique(ground_truth_img))
 
     fig, ax = plt.subplots(1, 3, figsize=(15, 5))
     ax[0].imshow(all_labels)
     ax[1].imshow(new_labels)
-    ax[2].imshow(delta_labels)
+    ax[2].imshow(ground_truth_img)
     # set title
     ax[0].set_title("All labels")
     ax[1].set_title("Selected labels")
-    ax[2].set_title("Delta labels")
+    ax[2].set_title("ground truth")
 
     # # save figure
     plt.savefig("debug_images/sample_selection_test.png", dpi=600)
