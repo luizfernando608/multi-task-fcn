@@ -379,7 +379,22 @@ def read_tiff(tiff_file)->np.array:
     return data
 
 def load_norm(path, mask=[0], mask_indx = 0):
-    
+    """Read image from `path` divide all values by 255
+
+    Parameters
+    ----------
+    path : str
+        Path to load image
+    mask : list, optional
+        _description_, by default [0]
+    mask_indx : int, optional
+        _description_, by default 0
+
+    Returns
+    -------
+    Image normalized
+        Tensor image with the format [channels, row, cols]
+    """
     image = read_tiff(path)
 
     if image.dtype != np.float32:
@@ -388,10 +403,13 @@ def load_norm(path, mask=[0], mask_indx = 0):
     print("Image shape: ", image.shape, " Min value: ", image.min(), " Max value: ", image.max())
     if len(image.shape) < 3:
         image = np.expand_dims(image, 0)
-    # image = filter_outliers(image, mask=mask, mask_indx = mask_indx)
-    # print("Filter Outliers, Min value: ", image.min(), " Max value: ", image.max())
-    image = normalize(image)
+    
+    print("Before normalize, Min value: ", image.min(), " Max value: ", image.max())
+
+    normalize(img=image)
+
     print("Normalize, Min value: ", image.min(), " Max value: ", image.max())
+
     return image
 
 def filter_outliers(img, bins=10000, bth=0.01, uth=0.99, mask=[0], mask_indx = 0):
@@ -407,13 +425,13 @@ def filter_outliers(img, bins=10000, bth=0.01, uth=0.99, mask=[0], mask_indx = 0
         img[band, :,:,][img[band, :,:,]<min_value] = min_value
     return img
 
-def normalize(img):
-    '''image shape: [row, cols, channels]'''
-    for band in range(img.shape[0]):
-        img[band, :,:,] = img[band, :,:,]/255
-    
-    return img
+def normalize(img:np.ndarray):
+    '''image shape: [channels, row, cols ]'''
+    # iterate through channels and divide by 255
+    for i in range(img.shape[0]):
 
+        img[i] = img[i]/255
+    
 
 def fun_sort(x):
     return int(x.split('_')[0])
