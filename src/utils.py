@@ -23,6 +23,10 @@ import random
 import matplotlib.pyplot as plt
 import yaml
 
+import gc
+
+import matplotlib.pyplot as plt
+
 FALSY_STRINGS = {"off", "false", "0"}
 TRUTHY_STRINGS = {"on", "true", "1"}
 
