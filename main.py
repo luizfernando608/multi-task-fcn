@@ -324,7 +324,7 @@ def train_iteration(current_iter_folder, args):
     logger.info("Building optimizer done.")
 
 
-    to_restore = {"epoch": 0, "best_val":(100.), "count_early": 0,"is_iter_finished":False}
+    to_restore = {"epoch": 0, "best_val":(100.), "count_early": 0, "is_iter_finished":False}
     restart_from_checkpoint(
         last_checkpoint,
         run_variables=to_restore,
@@ -334,27 +334,29 @@ def train_iteration(current_iter_folder, args):
     )
 
     if loaded_from_last_checkpoint:
-        start_epoch = 0
-        best_val = 0
-        count_early = 0
-
+        to_restore["epoch"] = 0
+        to_restore["best_val"] = 100.
+        to_restore["count_early"] = 0
+        to_restore["is_iter_finished"] = False
+    
     else:
         start_epoch = to_restore["epoch"]
         best_val = to_restore["best_val"]
         count_early = to_restore["count_early"]
 
+    current_checkpoint = os.path.join(current_model_folder, args.checkpoint_file)
     
     cudnn.benchmark = True
     
     gc.collect()
 
     if not to_restore["is_iter_finished"]:
-        train_epochs(last_checkpoint, start_epoch, args.epochs, best_val , train_loader, model, optimizer, lr_schedule, args.rank, count_early)
+        train_epochs(current_checkpoint, to_restore["epoch"], args.epochs, to_restore["best_val"] , train_loader, model, optimizer, lr_schedule, args.rank, to_restore["count_early"])
 
     gc.collect()
 
     # load models weights again to change status to is_iter_finished=True
-    model = load_weights(model, last_checkpoint, logger)
+    model = load_weights(model, current_checkpoint, logger)
 
     to_restore = {"epoch": 0, "count_early": 0, "is_iter_finished":False, "best_val":(100.)}
     restart_from_checkpoint(
@@ -366,20 +368,11 @@ def train_iteration(current_iter_folder, args):
     )
     
     
-    save_checkpoint(last_checkpoint, model, optimizer, to_restore["epoch"], to_restore["best_val"], to_restore["count_early"], is_iter_finished=True)
+    save_checkpoint(current_checkpoint, model, optimizer, to_restore["epoch"], to_restore["best_val"], to_restore["count_early"], is_iter_finished=True)
     
-    # next_iter_folder = os.path.join(args.data_path, "iter_"+str(current_iter+1))
-    # check_folder(next_iter_folder)
-    
-    # # save here next iteration
-    # next_model_folder = os.path.join(next_iter_folder, args.model_dir)
-    # check_folder(next_model_folder)
-    
-    # next_model_path = os.path.join(next_model_folder, args.checkpoint_file)
-    # save_checkpoint(next_model_path, model, optimizer, 0, 100.0, 0 ,is_iter_finished=False)
-
     with torch.no_grad():
         torch.cuda.empty_cache()
+    
     gc.collect()
 
 
