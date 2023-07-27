@@ -3,20 +3,15 @@ from osgeo import gdal
 import os
 import numpy as np
 
-
 from skimage.measure import label, regionprops_table
 
-from src.utils import read_tiff, load_norm, array2raster, read_yaml
-from src.metrics import evaluate_metrics, evaluate_metrics_pred
+from src.utils import read_tiff, read_yaml
 
 import pandas as pd
 
 import matplotlib.pyplot as plt
-import matplotlib
 
 from tqdm import tqdm
-
-matplotlib.use('TkAgg', force=True)
 
 from imblearn.under_sampling import RandomUnderSampler
 
@@ -76,15 +71,17 @@ def remove_components_by_index(
     component_ids_to_remove: np.ndarray,
     components_img: np.ndarray,
     label_img: np.ndarray,
-    component_stats: pd.DataFrame,
 ):
     for idx in component_ids_to_remove:
         label_img[components_img == idx] = 0
 
         components_img[components_img == idx] = 0
+    
+    # id_selection = np.argwhere(np.isin(components_img, component_ids_to_remove))
 
-    # remove from dataframe
-    component_stats.drop(component_ids_to_remove, inplace=True)
+    # components_img[id_selection[:, 0], id_selection[:, 1]] = 0
+    # label_img[id_selection[:, 0], id_selection[:, 1]] = 0
+    
 
 
 def get_labels_delta(
@@ -129,6 +126,8 @@ def get_labels_delta(
 
     return label_delta
 
+
+
 def filter_components_by_geometric_properties(old_components_pred_map:np.ndarray, old_pred_labels:np.ndarray, components_pred_map: np.ndarray, pred_labels: np.ndarray):
     """_summary_
 
@@ -145,15 +144,17 @@ def filter_components_by_geometric_properties(old_components_pred_map:np.ndarray
     """
 
     stats_pred_data = get_components_stats(components_pred_map, pred_labels)
-    
+    stats_pred_data.reset_index(inplace=True)
+
     old_stats_pred_data = get_components_stats(old_components_pred_map, old_pred_labels)
+    old_stats_pred_data.reset_index(inplace=True)
 
-
+    # get min area by tree_type
     min_area = old_stats_pred_data.groupby(["tree_type"])["area"].min()
     min_limit = min_area-min_area*0.1
     min_limit.name = "min_limit"
 
-
+    # get max area by tree_type
     max_area = old_stats_pred_data.groupby(["tree_type"])["area"].max()
     max_limit = max_area+max_area*0.1
     max_limit.name = "max_limit"
@@ -162,14 +163,13 @@ def filter_components_by_geometric_properties(old_components_pred_map:np.ndarray
 
     filter_area = ~stats_pred_data["area"].between(stats_pred_data["min_limit"], stats_pred_data["max_limit"], inclusive="both")
 
-    component_ids_to_remove = stats_pred_data[filter_area].index
+    component_ids_to_remove = stats_pred_data[filter_area]["label"]
     component_ids_to_remove = np.array(component_ids_to_remove, dtype=int)
 
     remove_components_by_index(
-        component_ids_to_remove=component_ids_to_remove,
-        components_img=components_pred_map,
-        label_img=pred_labels,
-        component_stats=stats_pred_data,
+        component_ids_to_remove = component_ids_to_remove,
+        components_img = components_pred_map,
+        label_img = pred_labels
     )
 
 
@@ -271,7 +271,6 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray, old_pred_map:np.nda
 
     new_components_pred_map = label(new_pred)
     
-
     filter_components_by_mask(data_path, new_components_pred_map, new_pred)
 
     # filter components by geometric properties

@@ -442,7 +442,7 @@ while current_iter < 30:
     new_prob_map = read_tiff(new_prob_file)
 
     if current_iter == 1:
-        old_pred_file = os.path.join(args.data_path, "iter_000", "distance_map", "train_distance_map.tif")
+        old_pred_file = os.path.join(args.data_path, args.train_segmentation_path)
 
     else:
         old_pred_file = os.path.join(args.data_path, f"iter_{current_iter-1:03d}", "new_labels", f'all_labels_set.tif')
@@ -453,9 +453,10 @@ while current_iter < 30:
 
     all_labels_set, selected_labels_set = get_new_segmentation_sample(
         ground_truth_map = ground_truth_segmentation,
-        old_pred_map=old_pred_map, 
-        new_pred_map=new_pred_map, new_prob_map=new_prob_map, 
-        data_path=args.data_path,
+        old_pred_map = old_pred_map, 
+        new_pred_map = new_pred_map, 
+        new_prob_map = new_prob_map, 
+        data_path = args.data_path,
     )
 
 
