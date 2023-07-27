@@ -5,8 +5,7 @@ import os
 
 from os.path import dirname
 
-from logging import getLogger
-from logging import Logger
+import subprocess
 
 from osgeo import gdal
 
@@ -25,9 +24,9 @@ from tqdm import tqdm
 from generate_distance_map import generate_distance_map
 
 import matplotlib.pyplot as plt
+plt.set_loglevel(level = 'info')
 
 from src.logger import create_logger
-from src.metrics import evaluate_metrics
 from src.model import define_loader, build_model, load_weights, train, save_checkpoint
 from src.multicropdataset import DatasetFromCoord
 from src.utils import (
@@ -55,7 +54,7 @@ def is_iter_0_done(data_path):
     is_test_map_done = os.path.exists(os.path.join(path_distance_map, "test_distance_map.tif"))
     is_train_map_done = os.path.exists(os.path.join(path_distance_map, "train_distance_map.tif"))
     
-    if is_test_map_done and is_test_map_done:
+    if is_test_map_done and is_train_map_done:
         return True
     
     else:
@@ -124,8 +123,6 @@ def get_current_iter_folder(data_path, test_itc, overlap):
     check_folder(iter_0_path)
 
     return iter_0_path
-    # else:
-        # raise FileExistsError("No finished iteration folder found. Try execute generate_distance_map first.")
     
 
 def read_last_segmentation(current_iter_folder, train_segmentation_path):
@@ -230,7 +227,7 @@ def train_epochs(last_checkpoint, start_epoch, num_epochs, best_val, train_loade
             if is_best: 
                 logger.info("============ Saving best models at epoch %i ... ============" % epoch)
                 best_val = scores_tr[1]
-                save_checkpoint(last_checkpoint, model, optimizer, epoch+1, best_val, count_early) 
+                save_checkpoint(last_checkpoint, model, optimizer, epoch+1, best_val, count_early)                 
             else:
                 count_early+=1
 
@@ -252,7 +249,9 @@ def train_iteration(current_iter_folder, args):
     raster_train = read_last_segmentation(current_iter_folder, args.train_segmentation_path)
     depth_img = read_last_distance_map(current_iter_folder)
 
-    image, coords_train, raster_train, labs_coords_train = define_loader(args.ortho_image, raster_train, args.size_crops)    
+    image, coords_train, raster_train, labs_coords_train = define_loader(args.ortho_image, 
+                                                                         raster_train, 
+                                                                         args.size_crops)
 
     ######## do oversampling in minor classes
     coords_train = oversamp(coords_train, labs_coords_train, under=False)
@@ -339,10 +338,6 @@ def train_iteration(current_iter_folder, args):
         to_restore["count_early"] = 0
         to_restore["is_iter_finished"] = False
     
-    else:
-        start_epoch = to_restore["epoch"]
-        best_val = to_restore["best_val"]
-        count_early = to_restore["count_early"]
 
     current_checkpoint = os.path.join(current_model_folder, args.checkpoint_file)
     
