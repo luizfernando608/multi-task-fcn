@@ -28,6 +28,7 @@ from src.utils import (
     bool_flag,
     read_tiff,
     load_norm,
+    normalize,
     check_folder,
     read_yaml
 )
@@ -41,15 +42,16 @@ args = read_yaml("args.yaml")
 
         
 def define_test_loader(ortho_image, size_crops, overlap, test_itc, lab = None,):
-    
+    image = read_tiff(ortho_image)
+
     if not test_itc:
-        image = read_tiff(ortho_image)
         lab = np.ones(image.shape[1:])
         lab[np.sum(image,axis=0)==(11*image.shape[0])] = 0
-        del image
 
-    image = load_norm(ortho_image)
-    
+    # image = load_norm(ortho_image)
+    # image = normalize(image)
+    normalize(image)
+
     coords, _ = extract_patches_coord(lab, size_crops, overlap)
     image, stride, step_row, step_col, overlap, _, _ = add_padding_new(image, size_crops, overlap)
 
