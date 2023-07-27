@@ -49,6 +49,15 @@ import gc
 gc.set_threshold(0)
 
 
+def clear_ram_cache():
+    clear_command = 'sync && echo 3 | sudo tee /proc/sys/vm/drop_caches'
+    p = subprocess.Popen(clear_command, shell=True).wait()
+    
+    # alias freecachemem='sync && echo 3 | sudo tee /proc/sys/vm/drop_caches > /dev/null'
+    clear_command_alias = "alias freecachemem='sync && echo 3 | sudo tee /proc/sys/vm/drop_caches > /dev/null'"
+    p = subprocess.Popen(clear_command_alias, shell=True).wait()
+
+
 def is_iter_0_done(data_path):
     path_distance_map = os.path.join(data_path, "distance_map")
     is_test_map_done = os.path.exists(os.path.join(path_distance_map, "test_distance_map.tif"))
@@ -387,6 +396,7 @@ fix_random_seeds(args.seed[0])
 current_iter = 0
 
 while current_iter < 30:
+    clear_ram_cache()
     # get current iteration folder
     current_iter_folder = get_current_iter_folder(args.data_path, args.test_itc, args.overlap)
     current_iter = int(current_iter_folder.split("_")[-1])
