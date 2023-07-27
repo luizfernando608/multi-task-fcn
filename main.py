@@ -59,7 +59,7 @@ def clear_ram_cache():
 
 
 def is_iter_0_done(data_path):
-    path_distance_map = os.path.join(data_path, "distance_map")
+    path_distance_map = os.path.join(data_path, "iter_000", "distance_map")
     is_test_map_done = os.path.exists(os.path.join(path_distance_map, "test_distance_map.tif"))
     is_train_map_done = os.path.exists(os.path.join(path_distance_map, "train_distance_map.tif"))
     
