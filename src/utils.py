@@ -109,9 +109,12 @@ def add_padding_new(img, psize, overl, const = 0):
     else:        
         npad_img = ((overlap//2, step_row+overlap), (overlap//2, step_col+overlap))  
         
+    gc.collect()
+
     # padd with symetric (espelhado)    
     pad_img = np.pad(img, npad_img, mode='constant', constant_values=const)
 
+    gc.collect()
     # Number of patches: k1xk2
     k1, k2 = (row+step_row)//stride, (col+step_col)//stride
     print('Number of patches: %d' %(k1 * k2))
@@ -370,12 +373,16 @@ class AverageMeter(object):
         self.avg = self.sum / self.count
 
 
-def read_tiff(tiff_file)->np.array:
+def read_tiff(tiff_file)->np.ndarray:
+    
     # verify if file exist
     if not os.path.isfile(tiff_file):
         raise FileNotFoundError("File not found: {}".format(tiff_file))
+    
     print(tiff_file)
+
     data = gdal.Open(tiff_file).ReadAsArray()
+
     return data
 
 def load_norm(path, mask=[0], mask_indx = 0):
