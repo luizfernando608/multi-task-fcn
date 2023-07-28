@@ -38,6 +38,7 @@ def undersample(data: pd.DataFrame, column_category: str):
     return undersampled_data
 
 
+
 def get_components_stats(components_img: np.ndarray, label_img: np.ndarray):
     properties = [
         "area",
@@ -65,6 +66,7 @@ def get_components_stats(components_img: np.ndarray, label_img: np.ndarray):
     components_stats["tree_type"] = components_stats["tree_type"].astype(int)
 
     return components_stats
+
 
 
 def remove_components_by_index(
@@ -106,7 +108,7 @@ def get_labels_delta(
     components_to_iter = components_to_iter[components_to_iter != 0]
 
     for idx in components_to_iter:
-        # if more than 90% of the component is empty it will be added to the new predicted sample
+        # if more than 90% of the area is empty it will be added to the new predicted sample
         if np.mean(old_components_img[new_components_img == idx] == 0) > 0.9:
             # count labels
             unique_labels, count_labels = np.unique(
@@ -222,6 +224,8 @@ def get_selected_labels(delta_components_img:np.ndarray, delta_pred_map:np.ndarr
 
     return selected_labels_set
 
+
+
 def filter_components_by_mask(data_path:str, components_pred_map:np.ndarray, pred_map:np.ndarray):
     
     mask = read_tiff(os.path.join(data_path, "mask.tif"))
@@ -235,7 +239,50 @@ def filter_components_by_mask(data_path:str, components_pred_map:np.ndarray, pre
             pred_map[component_filter] = 0
             components_pred_map[component_filter] = 0
 
+
+
+def join_labels_set(high_priority_labels:np.ndarray, low_priority_labels:np.ndarray, overlap_limit:int=0.9) -> np.ndarray:
+    """Join the high priority labels with the low priority labels based on the components area
+    The join doesnt overlap the component or cut any component by the other
+    If there is an overlap, the component from the high priority labels is kept
+
+    Parameters
+    ----------
+    high_priority_labels : np.ndarray
+        The image arrary with the segmentation labels with high priority.
+
+    low_priority_labels : np.ndarray
+        The image arrary with the segmentation labels with low priority.
+    
+    overlap_limit : float
+        The limit of the overlap between the components
+        If there is an overlap between the components lower than the limit
+        the component from low priority labels is added to the high priority labels
+
+    Returns
+    -------
+    np.ndarray
+        The image arrary with the segmentation labels with high and low priority.
+    """
+
+    labels_union = high_priority_labels.copy()
+    # np.nonzero(old_components_pred_map)
+
+    for component in np.unique(low_priority_labels[np.nonzero(low_priority_labels)]):
+        
+        overlap = np.mean(labels_union[low_priority_labels==component]>0)
+
+        if overlap < overlap_limit:
+            low_id = low_priority_labels[(low_priority_labels==component)]
             
+            low_id = np.unique(low_id[low_id>0])[0]
+            
+            labels_union[low_priority_labels==component] = low_id
+            
+            
+    return labels_union
+
+
 
 def get_new_segmentation_sample(ground_truth_map:np.ndarray, old_pred_map:np.ndarray, new_pred_map:np.ndarray, new_prob_map:np.ndarray, data_path:str)->Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """ Get the new segmentation sample based on the segmentation from the last iteration and the new segmentation prediction set
@@ -280,37 +327,16 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray, old_pred_map:np.nda
         components_pred_map = new_components_pred_map, 
         pred_labels = new_pred
     )
-
-
-    # get the delta between the new components and the ground truth components
-    delta_gt_new_labels = get_labels_delta(
-        old_components_img=ground_truth_map,
-        new_components_img=new_components_pred_map,
-        new_label_img=new_pred,
-    )
-
-    components_delta = label(delta_gt_new_labels)
-
-    # Adding component from last iteration prediction
-    for component in np.unique(old_components_pred_map[np.nonzero(old_components_pred_map)]):
-        
-        overlap_new_old_comp = np.mean(components_delta[old_components_pred_map==component] != 0)
-
-        if overlap_new_old_comp < 0.10:
-            
-            labels_matrix = old_pred_map[(old_components_pred_map==component)]
-
-            pred_label = np.unique(labels_matrix[np.nonzero(labels_matrix)])
-
-            delta_gt_new_labels[component==old_components_pred_map] = pred_label[0]
-
-    # join all labels set
-    all_labes_set = np.where(ground_truth_map == 0, delta_gt_new_labels, ground_truth_map)
     
-    # in this version we didnt apply sampling balancing
-    selected_labels_set = all_labes_set.copy()
+    all_labels_set = join_labels_set(new_pred, old_pred_map, 0.01)
 
-    return all_labes_set, selected_labels_set
+    all_labels_set = join_labels_set(ground_truth_map, all_labels_set, 0.01)
+
+    # in this version we didnt apply sampling balancing
+    selected_labels_set = all_labels_set.copy()
+
+    return all_labels_set, selected_labels_set
+
 
 
 if __name__ == "__main__":
