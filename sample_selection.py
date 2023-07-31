@@ -265,18 +265,26 @@ def join_labels_set(high_priority_labels:np.ndarray, low_priority_labels:np.ndar
     """
 
     labels_union = high_priority_labels.copy()
-    # np.nonzero(old_components_pred_map)
+    
+    # get low priority components
+    low_priority_comp = label(low_priority_labels)
 
-    for component in np.unique(low_priority_labels[np.nonzero(low_priority_labels)]):
+    for component in np.unique(low_priority_comp[np.nonzero(low_priority_comp)]):
         
-        overlap = np.mean(labels_union[low_priority_labels==component]>0)
+        overlap = np.mean(labels_union[low_priority_comp==component]>0)
 
+        # If the overlap is lower than the limit, add the component to the high priority labels
         if overlap < overlap_limit:
-            low_id = low_priority_labels[(low_priority_labels==component)]
+            low_id = low_priority_labels[(low_priority_comp==component)]
             
-            low_id = np.unique(low_id[low_id>0])[0]
+            low_id = np.unique(low_id[np.nonzero(low_id)])[0]
             
-            labels_union[low_priority_labels==component] = low_id
+            labels_union[low_priority_comp==component] = low_id
+            
+        
+        else:
+            # if has overlap, keep the high priority labels
+            pass
             
             
     return labels_union
