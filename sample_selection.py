@@ -240,7 +240,7 @@ def filter_components_by_mask(data_path:str, components_pred_map:np.ndarray, pre
 
 
 
-def join_labels_set(high_priority_labels:np.ndarray, low_priority_labels:np.ndarray, overlap_limit:int=0.9) -> np.ndarray:
+def join_labels_set(high_priority_labels:np.ndarray, low_priority_labels:np.ndarray, overlap_limit:int=0.05) -> np.ndarray:
     """Join the high priority labels with the low priority labels based on the components area
     The join doesnt overlap the component or cut any component by the other
     If there is an overlap, the component from the high priority labels is kept
@@ -280,7 +280,7 @@ def join_labels_set(high_priority_labels:np.ndarray, low_priority_labels:np.ndar
             low_id = np.unique(low_id[np.nonzero(low_id)])[0]
             
             labels_union[low_priority_comp==component] = low_id
-            
+
         
         else:
             # if has overlap, keep the high priority labels
@@ -349,56 +349,88 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray, old_pred_map:np.nda
 
 if __name__ == "__main__":
     args = read_yaml("args.yaml")
-
-    # data parameters
-    itc = False
-    sum_overlap = 1.1
-
-    # paths to the files from one iteration
-    current_iter_folder = "/home/luiz/multi-task-fcn/MyData/iter_001"
-    depth_path = os.path.join(
-        current_iter_folder, "raster_prediction", f"depth_itc{itc}_{sum_overlap}.TIF"
-    )
-    prob_path = os.path.join(
-        current_iter_folder,
-        "raster_prediction",
-        f"join_prob_itc{itc}_{sum_overlap}.TIF",
-    )
-    pred_path = os.path.join(
-        current_iter_folder,
-        "raster_prediction",
-        f"join_class_itc{itc}_{sum_overlap}.TIF",
-    )
-
-    depth = read_tiff(depth_path)
-    prob = read_tiff(prob_path)
-    pred = read_tiff(pred_path)
-
-    ground_truth_path = os.path.join(args.data_path, args.train_segmentation_path)
-    ground_truth_img = read_tiff(ground_truth_path)
-
-    # at the first iteration old prediction is the same of ground truth segmentation
-    old_pred_map = ground_truth_img.copy()
-    all_labels, new_labels =  get_new_segmentation_sample(
-        ground_truth_map=ground_truth_img, 
-        old_pred_map = old_pred_map,
-        new_pred_map = pred,
-        new_prob_map = prob, 
-        data_path=args.data_path)
     
-    print("All labels", np.unique(all_labels))
-    print("Selected labels", np.unique(new_labels))
-    print("Ground Truth labels", np.unique(ground_truth_img))
+    from pytictoc import TicToc
 
-    fig, ax = plt.subplots(1, 3, figsize=(15, 5))
-    ax[0].imshow(all_labels)
-    ax[1].imshow(new_labels)
-    ax[2].imshow(ground_truth_img)
-    # set title
-    ax[0].set_title("All labels")
-    ax[1].set_title("Selected labels")
-    ax[2].set_title("ground truth")
+    # create instance of class
+    t = TicToc()
 
-    # # save figure
-    plt.savefig("debug_images/sample_selection_test.png", dpi=600)
+
+    # # save the parameters
+    # np.save("debug_arrays/component_ids_to_remove.npy", component_ids_to_remove)
+    # np.save("debug_arrays/components_img.npy", components_img)
+    # np.save("debug_arrays/label_img.npy", label_img)
+
+    component_ids_to_remove = np.load("debug_arrays/component_ids_to_remove.npy")
+    components_img = np.load("debug_arrays/components_img.npy")
+    label_img = np.load("debug_arrays/label_img.npy")
+
+    t.tic()
+    remove_components_by_index(component_ids_to_remove, components_img, label_img)
+    t.toc()
+
+    print("Foi")
+    # old_pred_map = np.load("debug_arrays/old_pred_map.npy")
+    # new_pred = np.load("debug_arrays/new_pred.npy")
+    # ground_truth_map = np.load("debug_arrays/ground_truth_map.npy")
+    # new_prob_map = np.load("debug_arrays/new_prob_map.npy")
+
+
+    # all_labels_set, selected_labels_set = get_new_segmentation_sample(ground_truth_map, old_pred_map, new_pred, new_prob_map, args.data_path)
+
+
+
+
+    # get_new_segmentation_sample
+    # # data parameters
+    # itc = False
+    # sum_overlap = 1.1
+
+    # # paths to the files from one iteration
+    # current_iter_folder = "/home/luiz/multi-task-fcn/MyData/iter_001"
+    # depth_path = os.path.join(
+    #     current_iter_folder, "raster_prediction", f"depth_itc{itc}_{sum_overlap}.TIF"
+    # )
+    # prob_path = os.path.join(
+    #     current_iter_folder,
+    #     "raster_prediction",
+    #     f"join_prob_itc{itc}_{sum_overlap}.TIF",
+    # )
+    # pred_path = os.path.join(
+    #     current_iter_folder,
+    #     "raster_prediction",
+    #     f"join_class_itc{itc}_{sum_overlap}.TIF",
+    # )
+
+    # depth = read_tiff(depth_path)
+    # prob = read_tiff(prob_path)
+    # pred = read_tiff(pred_path)
+
+    # ground_truth_path = os.path.join(args.data_path, args.train_segmentation_path)
+    # ground_truth_img = read_tiff(ground_truth_path)
+
+    # # at the first iteration old prediction is the same of ground truth segmentation
+    # old_pred_map = ground_truth_img.copy()
+    # all_labels, new_labels =  get_new_segmentation_sample(
+    #     ground_truth_map=ground_truth_img, 
+    #     old_pred_map = old_pred_map,
+    #     new_pred_map = pred,
+    #     new_prob_map = prob, 
+    #     data_path=args.data_path)
+    
+    # print("All labels", np.unique(all_labels))
+    # print("Selected labels", np.unique(new_labels))
+    # print("Ground Truth labels", np.unique(ground_truth_img))
+
+    # fig, ax = plt.subplots(1, 3, figsize=(15, 5))
+    # ax[0].imshow(all_labels)
+    # ax[1].imshow(new_labels)
+    # ax[2].imshow(ground_truth_img)
+    # # set title
+    # ax[0].set_title("All labels")
+    # ax[1].set_title("Selected labels")
+    # ax[2].set_title("ground truth")
+
+    # # # save figure
+    # plt.savefig("debug_images/sample_selection_test.png", dpi=600)
 
