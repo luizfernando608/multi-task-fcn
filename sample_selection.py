@@ -74,15 +74,14 @@ def remove_components_by_index(
     components_img: np.ndarray,
     label_img: np.ndarray,
 ):
-    for idx in component_ids_to_remove:
-        label_img[components_img == idx] = 0
-
-        components_img[components_img == idx] = 0
+    # for idx in component_ids_to_remove:
+    #     label_img[components_img == idx] = 0
+    #     components_img[components_img == idx] = 0
     
-    # id_selection = np.argwhere(np.isin(components_img, component_ids_to_remove))
-
-    # components_img[id_selection[:, 0], id_selection[:, 1]] = 0
-    # label_img[id_selection[:, 0], id_selection[:, 1]] = 0
+    id_selection = np.argwhere(np.isin(components_img, component_ids_to_remove))
+    
+    components_img[id_selection[:, 0], id_selection[:, 1]] = 0
+    label_img[id_selection[:, 0], id_selection[:, 1]] = 0
     
 
 
