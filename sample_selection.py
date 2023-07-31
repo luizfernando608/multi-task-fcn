@@ -335,7 +335,8 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray, old_pred_map:np.nda
         pred_labels = new_pred
     )
     
-    all_labels_set = join_labels_set(new_pred, old_pred_map, 0.01)
+
+    all_labels_set = join_labels_set(new_pred, old_pred_map, 0.10)
 
     all_labels_set = join_labels_set(ground_truth_map, all_labels_set, 0.01)
 
