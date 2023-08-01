@@ -8,6 +8,8 @@ from .resnet import ResUnet
 from .metrics import evaluate_metrics
 from .utils import check_folder, load_norm, AverageMeter, plot_figures
 
+from typing import Tuple
+
 import gc
 
 from logging import Logger
@@ -15,7 +17,33 @@ from logging import Logger
 from tqdm import tqdm
 
 
-def define_loader(orto_img, gt_lab, size_crops, test=False):
+def define_loader(orto_img:str, gt_lab:np.ndarray, size_crops:int, test=False) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Define how the image will be loaded to the model
+
+    Parameters
+    ----------
+    orto_img : str
+        The file path to the map image. The image was generated from remote sensing
+    gt_lab : np.ndarray
+        The 2D array with segmentation labels
+    size_crops : int
+        The borders from the image to cut
+    test : bool, optional
+        Define if it is loaded for testing, by default False
+
+    Returns
+    -------
+    Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]
+        - image :  np.ndarray
+            The image from remote sensing with shape [row, col, bands]
+        - coords : np.ndarray
+            The positions in the image where the values are different of 0.
+        - gt_lab : 
+            The segmentation image with borders removed
+        - gt_lab[gt_lab!=0]
+            The position where the segmentation is different of 0.
+    """
+
     if not test:
         image = load_norm(orto_img)
     
@@ -23,6 +51,7 @@ def define_loader(orto_img, gt_lab, size_crops, test=False):
     gt_lab[-size_crops:,:] = 0
     gt_lab[:,:size_crops] = 0
     gt_lab[:,-size_crops:] = 0
+
     coords = np.where(gt_lab!=0)
     coords = np.array(coords)
     coords = np.rollaxis(coords, 1, 0)
@@ -36,13 +65,12 @@ def define_loader(orto_img, gt_lab, size_crops, test=False):
 def build_model(image_shape:list, num_classes:int, arch:str, filters:list, pretrained:bool)->nn.Module:
     """Build model according to architecture
     The architecture can be 'resunet' or 'deeplabv3_resnet50'
-    The model can be pretrained or randomly initialized
+    The model can be either pretrained or randomly initialized
 
     Parameters
     ----------
     image_shape : list
-        List with the shape of the input image
-
+        List with the shape of the input image.
     num_classes : int
         Num of unique classes in the dataset
     arch : str
@@ -68,19 +96,26 @@ def build_model(image_shape:list, num_classes:int, arch:str, filters:list, pretr
             filters=filters)
 
     # build model
-    elif arch == "deeplabv3_resnet50":  
+    elif arch == "deeplabv3_resnet50":
+
         # use deeplabv3_resnet50 pretrained or randomly initialized
         if pretrained:
-            # create folder
+            # If is pretrained, the model is loaded from pretrained_models folder.
+            # the weights model were downloaded from pytorch hub
             model_path = os.path.join('./pretrained_models', arch)
+
         else:
+            # If is not pretrained, doesnt download/load model with pretrained weights
             model_path = os.path.join('./random_w_models', arch)
-            
+
+
         if os.path.isdir(model_path):
             model_file = os.listdir(model_path)
             model = torch.load(os.path.join(model_path, model_file[0]))
 
+
         else:
+            # If doesnt have the model, download from pytorch hub
             check_folder(model_path)
             model = torch.hub.load('pytorch/vision:v0.10.0', 
                 arch, 
@@ -89,7 +124,8 @@ def build_model(image_shape:list, num_classes:int, arch:str, filters:list, pretr
             
             torch.save(model, os.path.join(model_path,'model'))
         
-        # modify initial conv and classfiers
+
+        # modify initial conv and classfiers to the input image shape and num of classes
         model.backbone.conv1 = nn.Conv2d(
             in_channels = image_shape[0],
             out_channels= 64, 
@@ -98,6 +134,8 @@ def build_model(image_shape:list, num_classes:int, arch:str, filters:list, pretr
             padding=(3, 3), 
             bias=False
         )
+
+        # Adding an auxiliar classifier for distance map task
         model.aux_classifier[4] = nn.Conv2d(
             in_channels = 256, 
             out_channels = 1, 
@@ -105,6 +143,7 @@ def build_model(image_shape:list, num_classes:int, arch:str, filters:list, pretr
             stride=(1, 1)
         )
         
+        # modify classifier to the num of classes
         model.classifier[4] = nn.Conv2d(
             in_channels = 256, 
             out_channels = num_classes, 
@@ -119,6 +158,7 @@ def build_model(image_shape:list, num_classes:int, arch:str, filters:list, pretr
 
 def load_weights(model: nn.Module, checkpoint_file_path:str, logger: Logger)-> nn.Module:
     """Load weights for model from checkpoint file
+    If the checkpoint file doesnt exist, the model is loaded with random weights
 
     Parameters
     ----------
@@ -134,6 +174,7 @@ def load_weights(model: nn.Module, checkpoint_file_path:str, logger: Logger)-> n
     nn.Module
         Pytorch model with loaded weights
     """
+    
     # load weights
     if os.path.isfile(checkpoint_file_path):
 
@@ -145,7 +186,10 @@ def load_weights(model: nn.Module, checkpoint_file_path:str, logger: Logger)-> n
         # remove prefixe "module."
         state_dict = {k.replace("module.", ""): v for k, v in state_dict.items()}
 
+
+        # Execute some verifications about the stat dict loaded from checkpoint
         for k, v in model.state_dict().items():
+            
             if k not in list(state_dict):
                 logger.info(f'key "{k}" could not be found in provided state dict')
             
@@ -153,8 +197,12 @@ def load_weights(model: nn.Module, checkpoint_file_path:str, logger: Logger)-> n
                 logger.info(f'key "{k}" is of different shape in model and provided state dict')
                 state_dict[k] = v
         
+
+        # Set the model weights
         msg = model.load_state_dict(state_dict, strict=False)
         logger.info(f"Load pretrained model with msg: {msg}")
+
+    
     else:
         logger.info("No pretrained weights found => training with random weights")
     

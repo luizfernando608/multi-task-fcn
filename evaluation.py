@@ -42,6 +42,7 @@ args = read_yaml("args.yaml")
 
         
 def define_test_loader(ortho_image, size_crops, overlap, test_itc, lab = None,):
+
     image = read_tiff(ortho_image)
 
     if not test_itc:
@@ -50,7 +51,11 @@ def define_test_loader(ortho_image, size_crops, overlap, test_itc, lab = None,):
 
     # image = load_norm(ortho_image)
     # image = normalize(image)
+    print("Before normalize, Min value: ", image.min(), " Max value: ", image.max())
+    
     normalize(image)
+
+    print("Normalize, Min value: ", image.min(), " Max value: ", image.max())
 
     coords, _ = extract_patches_coord(lab, size_crops, overlap)
     image, stride, step_row, step_col, overlap, _, _ = add_padding_new(image, size_crops, overlap)
@@ -117,15 +122,32 @@ def predict_network(ortho_image_shape,dataloader, model, batch_size, coords, pre
 
 
 
-def evaluate_overlap(overlap, ref, current_iter_folder,current_model_folder, ortho_image_shape,logger, size_crops=args.size_crops, num_classes=args.nb_class,
-                     ortho_image=args.ortho_image, test_itc=args.test_itc, batch_size=args.batch_size, workers=args.workers, 
-                     checkpoint_file=args.checkpoint_file, arch=args.arch, filters=args.filters, is_pretrained=args.is_pretrained):
+def evaluate_overlap(overlap, 
+                     ref, 
+                     current_iter_folder,
+                     current_model_folder, 
+                     ortho_image_shape,
+                     logger, 
+                     size_crops=args.size_crops, 
+                     num_classes=args.nb_class,
+                     ortho_image=args.ortho_image, 
+                     test_itc=args.test_itc, 
+                     batch_size=args.batch_size, 
+                     workers=args.workers, 
+                     checkpoint_file=args.checkpoint_file, 
+                     arch=args.arch, 
+                     filters=args.filters, 
+                     is_pretrained=args.is_pretrained):
                     
 
-    image, coords, stride, step_row, step_col, overlap_in_pixels = define_test_loader(ortho_image, size_crops, overlap, test_itc, ref)
+    image, coords, stride, step_row, step_col, overlap_in_pixels = define_test_loader(ortho_image, 
+                                                                                      size_crops, 
+                                                                                      overlap, 
+                                                                                      test_itc, 
+                                                                                      ref)
 
-    pred_prob = np.zeros(shape = (image.shape[1],image.shape[2], num_classes), dtype='float16')
-    pred_depth = np.zeros(shape = (image.shape[1],image.shape[2]), dtype='float16')
+    pred_prob = np.zeros(shape = (image.shape[1], image.shape[2], num_classes), dtype='float16')
+    pred_depth = np.zeros(shape = (image.shape[1], image.shape[2]), dtype='float16')
 
     test_dataset = DatasetFromCoord(
             image,
@@ -198,11 +220,24 @@ def evaluate_overlap(overlap, ref, current_iter_folder,current_model_folder, ort
 
 
 
-def evaluate_iteration(current_iter_folder, args):
-    logger = create_logger(os.path.join(current_iter_folder, "inference.log"),rank=0)
+def evaluate_iteration(current_iter_folder:str, args:dict):
+    """Evaluate the entire image to predict the segmentation map.
+    Evaluate for many overlap values and save the results in the current_iter_folder/prediction folder.
+
+    Parameters
+    ----------
+    current_iter_folder : str
+        Path to the current iteration folder.
+    args : dict
+        Dictionary of arguments.
+    """
+
+    logger = create_logger(os.path.join(current_iter_folder, "inference.log"), rank=0)
     logger.info("============ Initialized Evaluation ============")
+
     ## show each args
     # logger.info("\n".join("%s: %s" % (k, str(v)) for k, v in sorted(dict(vars(args)).items())))
+    
     overlaps = args.overlap
     test_itc = args.test_itc
 
@@ -219,15 +254,28 @@ def evaluate_iteration(current_iter_folder, args):
     else:
         ref = None
 
+    # Iterate over the different overlap values
     for overlap in overlaps:
+
+        # Verify if the prediction is already done
         is_depth_done = os.path.exists(os.path.join(current_iter_folder, 'prediction', f'depth_map_itc{test_itc}_{overlap}.npy'))
         is_prob_done = os.path.exists(os.path.join(current_iter_folder, 'prediction', f'prob_map_itc{test_itc}_{overlap}.npy'))
         is_pred_done = os.path.exists(os.path.join(current_iter_folder, 'prediction', f'pred_class_itc{test_itc}_{overlap}.npy'))
+        
         if is_depth_done and is_prob_done and is_pred_done:
+
             logger.info(f"Overlap {overlap} is already done. Skipping...")
+
             continue
         
-        evaluate_overlap(overlap, ref, current_iter_folder,current_model_folder, ortho_image_shape, logger)
+        logger.info(f"Overlap {overlap} is not done. Starting...")
+        evaluate_overlap(overlap, 
+                         ref, 
+                         current_iter_folder, 
+                         current_model_folder, 
+                         ortho_image_shape, 
+                         logger)
+        
         logger.info(f"Overlap {overlap} done.")
 
         gc.collect()

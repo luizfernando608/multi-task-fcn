@@ -13,12 +13,12 @@ from src.utils import check_folder, array2raster, read_tiff, read_yaml, print_su
 
 
 
-def apply_gaussian_distance_map(input_img:np.array)->np.array:
+def apply_gaussian_distance_map(input_img:np.ndarray)->np.ndarray:
     """Apply euclidean distance transform and gaussian filter to the input image
 
     Parameters
     ----------
-    input_img : np.array
+    input_img : np.ndarray
         Input image matrix with the segmentation
 
     Returns

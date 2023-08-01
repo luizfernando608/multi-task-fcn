@@ -50,6 +50,8 @@ gc.set_threshold(0)
 
 
 def clear_ram_cache():
+    """Execute some command in Unix kernel the free up garbage from the cache
+    """
     clear_command = 'sync && echo 3 | sudo tee /proc/sys/vm/drop_caches'
     p = subprocess.Popen(clear_command, shell=True).wait()
     
@@ -58,7 +60,18 @@ def clear_ram_cache():
     p = subprocess.Popen(clear_command_alias, shell=True).wait()
 
 
-def is_iter_0_done(data_path):
+def is_iter_0_done(data_path:str):
+    """Verify if the distance map from the ground truth segmentation is done
+
+    Parameters
+    ----------
+    data_path : str
+        Root data path
+
+    Returns
+    -------
+    bool
+    """
     path_distance_map = os.path.join(data_path, "iter_000", "distance_map")
     is_test_map_done = os.path.exists(os.path.join(path_distance_map, "test_distance_map.tif"))
     is_train_map_done = os.path.exists(os.path.join(path_distance_map, "train_distance_map.tif"))
@@ -134,23 +147,58 @@ def get_current_iter_folder(data_path, test_itc, overlap):
     return iter_0_path
     
 
-def read_last_segmentation(current_iter_folder, train_segmentation_path):
+def read_last_segmentation(current_iter_folder:str, train_segmentation_path:str)-> np.ndarray:
+    """Read the segmentation labels from the last iteration.
+    If is the first iteration, the function reads the ground_truth_segmentation
+    If is not, the function reads the output from the last iteration in the folder `new_labels/`
+
+    Parameters
+    ----------
+    current_iter_folder : str
+        The folder of the current iteration
+    train_segmentation_path : str
+        The path to the ground truth segmentation
+
+    Returns
+    -------
+    np.ndarray
+        A image array with the segmentation set
+    """
+
     
     current_iter = int(current_iter_folder.split("_")[-1])
+
     data_path = dirname(current_iter_folder)
 
     if current_iter==1:
         image_path = os.path.join(data_path, train_segmentation_path)
         
+
     else:
         image_path = os.path.join(data_path, f"iter_{current_iter-1:03d}", "new_labels", "selected_labels_set.tif")
 
+
     image = read_tiff(image_path)
+
+
     return image
 
     
 
-def read_last_distance_map(current_iter_folder):
+def read_last_distance_map(current_iter_folder:str)->np.ndarray:
+    """Read the last segmentation file with gaussian filter and distance map applied.
+    If the current iter is 1, the distance map from the ground truth segmentation is loaded
+
+    Parameters
+    ----------
+    current_iter_folder : str
+        Current iteration folde
+
+    Returns
+    -------
+    np.ndarray
+        Image with the application of distance map.
+    """
     current_iter = int(current_iter_folder.split("_")[-1])
     data_path = dirname(current_iter_folder)
 
@@ -165,8 +213,15 @@ def read_last_distance_map(current_iter_folder):
     return image
 
 
-def get_learning_rate_schedule(train_loader: torch.utils.data.DataLoader,base_lr:float,final_lr:float, epochs:int, warmup_epochs:int, start_warmup:float)->np.array:
+def get_learning_rate_schedule(train_loader: torch.utils.data.DataLoader, 
+                               base_lr:float,
+                               final_lr:float, 
+                               epochs:int, 
+                               warmup_epochs:int, 
+                               start_warmup:float)->np.ndarray:
     """Get the learning rate schedule using cosine annealing with warmup
+    
+    This schedule start with a warmup learning rate and then decrease to the final learning rate
 
     Parameters
     ----------
@@ -188,22 +243,68 @@ def get_learning_rate_schedule(train_loader: torch.utils.data.DataLoader,base_lr
     np.array
         learning rate schedule
     """
-    # define learning rate schedule
+
+    # define a linear distribuition from start_warmup to base_lr
     warmup_lr_schedule = np.linspace(start_warmup, base_lr, len(train_loader) * warmup_epochs)
+    
     # iteration numbers
     iters = np.arange(len(train_loader) * (epochs - warmup_epochs))
 
     cosine_lr_schedule = []
+
     for t in iters:
+
         lr = final_lr + 0.5 * (base_lr - final_lr) * (1 + math.cos(math.pi * t / (len(train_loader) * (epochs - warmup_epochs))))
+
         cosine_lr_schedule.append(lr)
+
     cosine_lr_schedule = np.array(cosine_lr_schedule)
 
     lr_schedule = np.concatenate((warmup_lr_schedule, cosine_lr_schedule))
+
     return lr_schedule
 
 
-def train_epochs(last_checkpoint, start_epoch, num_epochs, best_val, train_loader, model, optimizer, lr_schedule, rank, count_early, patience:int=5):
+
+def train_epochs(last_checkpoint:str, 
+                 start_epoch:str, 
+                 num_epochs:int, 
+                 best_val:float, 
+                 train_loader:torch.utils.data.DataLoader, 
+                 model:nn.Module, 
+                 optimizer:torch.optim.Optimizer, 
+                 lr_schedule:np.ndarray, 
+                 rank:int, 
+                 count_early:int, 
+                 patience:int=5):
+    """Train the model with the specified epochs numbers
+
+    Parameters
+    ----------
+    last_checkpoint : str
+        last checkpoint file path to load
+    start_epoch : str
+        Epoch num to start from
+    num_epochs : int
+        Total number fo epochs to execute
+    best_val : float
+        Best value got in this iteration
+    train_loader : torch.utils.data.DataLoader
+        The train dataload
+    model : nn.Module
+        Pytorch model
+    optimizer : torch.optim.optimizer
+        Pytorch optimizer
+    lr_schedule : np.ndarray
+        Learning rate schedule to use at each iteration
+    rank : int
+        
+    count_early : int
+        The counting how many epochs we didnt have improving in the loss
+    patience : int, optional
+        The limit of the count early variable, by default 5
+    """
+
     # Create figures folder to save training figures every epoch
     figures_path = os.path.join(os.path.dirname(last_checkpoint), 'figures')
     check_folder(figures_path)
@@ -245,9 +346,20 @@ def train_epochs(last_checkpoint, start_epoch, num_epochs, best_val, train_loade
 
 
 
-def train_iteration(current_iter_folder, args):
+def train_iteration(current_iter_folder:str, args:dict):
+    """Train the model in the current iteration.
+    Load the output and the model trained from the last iteration, and train the model again
+
+    Parameters
+    ----------
+    current_iter_folder : str
+        The current iteration folder
+    args : dict
+        The dict with the parameters for the model.
+        The parameters are defined in the args.yaml file
+    """
+
     
-    loaded_from_last_checkpoint = False
 
     current_iter = int(current_iter_folder.split("_")[-1])
 
@@ -278,6 +390,7 @@ def train_iteration(current_iter_folder, args):
         args.samples,
         augment = args.augment
     )
+
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=args.batch_size,
@@ -291,29 +404,39 @@ def train_iteration(current_iter_folder, args):
     logger.info("Building data done with {} images loaded.".format(len(train_loader)))
 
     
-    model = build_model(image.shape, args.nb_class,  args.arch, args.filters, args.is_pretrained)
+    model = build_model(
+        image.shape, 
+        args.nb_class,  
+        args.arch, 
+        args.filters, 
+        args.is_pretrained)
 
+
+    ########## LOAD MODEL WEIGHTS FROM THE LAST CHECKPOINT ##########
     last_checkpoint = os.path.join(current_model_folder, args.checkpoint_file)
     
+    loaded_from_last_checkpoint = False
+    
+    # If the weights from the current iteration, doenst exist. 
+    # The weigths from the last one is loaded
     if not os.path.isfile(last_checkpoint):
         if current_iter > 1:
             last_checkpoint = os.path.join(args.data_path, f"iter_{current_iter-1:03d}", args.checkpoint_file)
             loaded_from_last_checkpoint = True
             print_sucess("Loaded_from_last_checkpoint")
 
-    model = load_weights(model, last_checkpoint, logger)
 
+    model = load_weights(model, last_checkpoint, logger)
+    ###################################################################
+    
     # Load model to GPU
     model = model.cuda()
 
 
-    if args.rank == 0:
-        # logger.info(model)
-        pass
-
     logger.info("Building model done.")
 
-    # build optimizer
+    
+    ###### BULD OPTMIZER #######
     optimizer = torch.optim.SGD(
         model.parameters(),
         lr=args.base_lr,
@@ -321,6 +444,7 @@ def train_iteration(current_iter_folder, args):
         weight_decay=args.weight_decay
     )
 
+    # define how the learning rate will be changed in the training process.
     lr_schedule = get_learning_rate_schedule(
         train_loader, 
         args.base_lr, 
@@ -332,15 +456,19 @@ def train_iteration(current_iter_folder, args):
     logger.info("Building optimizer done.")
 
 
+    #### LOAD METRICS FROM THE LAST CHECKPOINT ####
     to_restore = {"epoch": 0, "best_val":(100.), "count_early": 0, "is_iter_finished":False}
     restart_from_checkpoint(
         last_checkpoint,
-        run_variables=to_restore,
-        state_dict=model,
-        optimizer=optimizer,
-        logger=logger
+        run_variables = to_restore,
+        state_dict = model,
+        optimizer = optimizer,
+        logger = logger
     )
 
+
+    # If the metrics are from the model from the last iteration, 
+    # the model reset the metrics
     if loaded_from_last_checkpoint:
         to_restore["epoch"] = 0
         to_restore["best_val"] = 100.
@@ -348,17 +476,21 @@ def train_iteration(current_iter_folder, args):
         to_restore["is_iter_finished"] = False
     
 
+    ######## TRAIN MODEL #########
     current_checkpoint = os.path.join(current_model_folder, args.checkpoint_file)
     
     cudnn.benchmark = True
     
     gc.collect()
 
+    # If the model isnt finished yet, train!
     if not to_restore["is_iter_finished"]:
         train_epochs(current_checkpoint, to_restore["epoch"], args.epochs, to_restore["best_val"] , train_loader, model, optimizer, lr_schedule, args.rank, to_restore["count_early"])
 
     gc.collect()
 
+
+    #### CHANGE MODEL STATUS TO FINISHED ####
     # load models weights again to change status to is_iter_finished=True
     model = load_weights(model, current_checkpoint, logger)
 
@@ -374,6 +506,8 @@ def train_iteration(current_iter_folder, args):
     
     save_checkpoint(current_checkpoint, model, optimizer, to_restore["epoch"], to_restore["best_val"], to_restore["count_early"], is_iter_finished=True)
     
+
+    # FREE UP MEMORY
     with torch.no_grad():
         torch.cuda.empty_cache()
     
