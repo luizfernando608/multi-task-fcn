@@ -529,7 +529,7 @@ fix_random_seeds(args.seed[0])
 
 current_iter = 0
 
-while current_iter < 30:
+while current_iter < 10:
     clear_ram_cache()
     # get current iteration folder
     current_iter_folder = get_current_iter_folder(args.data_path, args.test_itc, args.overlap)
@@ -577,7 +577,7 @@ while current_iter < 30:
         old_pred_file = os.path.join(args.data_path, args.train_segmentation_path)
 
     else:
-        old_pred_file = os.path.join(args.data_path, f"iter_{current_iter-1:03d}", "new_labels", f'all_labels_set.tif')
+        old_pred_file = os.path.join(args.data_path, f"iter_{current_iter-1:03d}", "new_labels", f'selected_labels_set.tif')
 
     old_pred_map = read_tiff(old_pred_file)
 

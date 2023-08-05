@@ -135,9 +135,9 @@ def filter_components_by_geometric_properties(old_components_pred_map:np.ndarray
     Parameters
     ----------
     old_components_pred_map : np.ndarray
-        _description_
+        Components map from the previous iteration
     old_pred_labels : np.ndarray
-        _description_
+        Labels map from the previous iteration
     components_pred_map : np.ndarray
         _description_
     pred_labels : np.ndarray
@@ -152,12 +152,12 @@ def filter_components_by_geometric_properties(old_components_pred_map:np.ndarray
 
     # get min area by tree_type
     min_area = old_stats_pred_data.groupby(["tree_type"])["area"].min()
-    min_limit = min_area-min_area*0.1
+    min_limit = min_area-min_area*0.15
     min_limit.name = "min_limit"
 
     # get max area by tree_type
     max_area = old_stats_pred_data.groupby(["tree_type"])["area"].max()
-    max_limit = max_area+max_area*0.1
+    max_limit = max_area+max_area*0.15
     max_limit.name = "max_limit"
 
     stats_pred_data = stats_pred_data.merge(min_limit, on="tree_type", how="left").merge(max_limit, on="tree_type", how="left").copy()
@@ -318,14 +318,16 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray, old_pred_map:np.nda
     # set labels at the same scale as ground truth labels
     new_pred_map += 1
     
-    # Select only the components with confidence higher than 0.90
-    new_pred = np.where(new_prob_map > 0.90, new_pred_map, 0)
+    # Select only the components with confidence higher than 0.60
+    new_pred = np.where(new_prob_map > 0.60, new_pred_map, 0)
     
     old_components_pred_map = label(old_pred_map)
 
     new_components_pred_map = label(new_pred)
     
     filter_components_by_mask(data_path, new_components_pred_map, new_pred)
+
+    no_filter_new_pred = new_pred.copy()
 
     # filter components by geometric properties
     filter_components_by_geometric_properties(
@@ -336,7 +338,12 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray, old_pred_map:np.nda
     )
     
 
-    all_labels_set = join_labels_set(new_pred, old_pred_map, 0.10)
+    selected_labels_set = join_labels_set(new_pred, old_pred_map, 0.10)
+
+    selected_labels_set = join_labels_set(ground_truth_map, selected_labels_set, 0.01)
+
+    
+    all_labels_set = join_labels_set(no_filter_new_pred, old_pred_map, 0.10)
 
     all_labels_set = join_labels_set(ground_truth_map, all_labels_set, 0.01)
 
