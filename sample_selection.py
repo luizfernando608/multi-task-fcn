@@ -130,7 +130,8 @@ def get_labels_delta(
 
 
 def filter_components_by_geometric_properties(old_components_pred_map:np.ndarray, old_pred_labels:np.ndarray, components_pred_map: np.ndarray, pred_labels: np.ndarray):
-    """_summary_
+    """Filter components by geometric properties
+    Selected components with similar area to the previous iteration, considering the area of each tree type
 
     Parameters
     ----------
@@ -139,9 +140,9 @@ def filter_components_by_geometric_properties(old_components_pred_map:np.ndarray
     old_pred_labels : np.ndarray
         Labels map from the previous iteration
     components_pred_map : np.ndarray
-        _description_
+        Components map from the current iteration
     pred_labels : np.ndarray
-        _description_
+        Labels map from the current iteration
     """
 
     stats_pred_data = get_components_stats(components_pred_map, pred_labels)
