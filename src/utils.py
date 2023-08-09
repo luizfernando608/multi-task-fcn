@@ -27,6 +27,10 @@ import gc
 
 import matplotlib.pyplot as plt
 
+from typing import Tuple
+
+plt.set_loglevel(level = 'critical')
+
 FALSY_STRINGS = {"off", "false", "0"}
 TRUTHY_STRINGS = {"on", "true", "1"}
 
@@ -90,16 +94,38 @@ def array2raster(newRasterfn:str, dataset:gdal.Dataset, array:np.ndarray, dtype:
 
 
 
-def add_padding_new(img, psize, overl, const = 0):
-    '''Function to padding image
-        input:
-            patches_size: psize
-            stride: stride
-            img: image (row,col,bands)
-    '''    
+def add_padding_new(img:np.ndarray, psize:int, overl:float, const:int = 0) -> Tuple:
+    """Add padding to the image based on overlap and psize(patches size)
+
+    Parameters
+    ----------
+    img : np.ndarray
+        The image with n bands from remote sensing
+        The fomat : (row, col, bands)
+    psize : int
+        The patch size to cut the segment image into boxes
+    overl : float
+        The overlap value that will have between the patches
+
+    const : int, optional
+        Contant to fill the paddin, by default 0
+
+    Returns
+    -------
+    Tuple
+    - pad_img : Image with padding
+    - stride : The distance between each patch center
+    - step_row
+    - step_col
+    - absolute_overlap = overl*psize
+    - k1 : Num of patches in row axis
+    - k2 : Num of patches in col axis
+        
+    """
 
     try:
         bands, row, col = img.shape
+
     except:
         bands = 0
         row, col = img.shape
@@ -116,22 +142,25 @@ def add_padding_new(img, psize, overl, const = 0):
     step_row = (stride - row % stride) % stride
     step_col = (stride - col % stride) % stride
     
-    if bands>0:
-        npad_img = ((0,0),(overlap//2, step_row+overlap), (overlap//2, step_col+overlap))
+    if bands > 0:
+        npad_img = (
+            (0,0), # padding to the band/channel axis
+            (overlap//2, step_row+overlap), # padding to the row axis
+            (overlap//2, step_col+overlap) # padding to the col axis
+        )
+
     else:        
         npad_img = ((overlap//2, step_row+overlap), (overlap//2, step_col+overlap))  
         
     gc.collect()
 
     # padd with symetric (espelhado)
-    # save numpy img 
-    # np.save('/home/luiz/multi-task-fcn/debug_images/img_to_pad.npy', img)
-    pad_img = np.pad(img, npad_img, mode='constant', constant_values=const)
-    # np.save('/home/luiz/multi-task-fcn/debug_images/pad_img.npy', pad_img)
+    pad_img = np.pad(img, npad_img, mode='constant', constant_values = const)
 
     gc.collect()
+    
     # Number of patches: k1xk2
-    k1, k2 = (row+step_row)//stride, (col+step_col)//stride
+    k1, k2 = (row + step_row)//stride, (col+step_col)//stride
     print('Number of patches: %d' %(k1 * k2))
 
     return pad_img, stride, step_row, step_col, overlap, k1, k2
@@ -142,10 +171,34 @@ def extract_patches_coord(img_gt:np.ndarray,
                           stride:int, 
                           step_row:int, 
                           step_col:int,
-                          overlap:float):
+                          overl:float) -> np.ndarray:
+    """
+    The array of poisition of patches that will be used to evaluate the model
+
+    Parameters
+    ----------
+    img_gt : np.ndarray
+        ground truth segmentation
+    psize : int
+        The patch size to cut the segment image into boxes
+    stride : int
+        
+    step_row : int
+        
+    step_col : int
+        
+    overl : float
+        Overlap rate with the overlap that will have between patches
+        
+    Returns
+    -------
+    np.ndarray
+        The coordinates of the center of each patch
+    """
     
     # add padding to gt raster
     # img_gt, stride, step_row, step_col, overlap,_, _ = add_padding_new(gt, psize, ovrl)
+    overlap = int(round(psize * overl))
     
     row, col = img_gt.shape
     
@@ -161,17 +214,21 @@ def extract_patches_coord(img_gt:np.ndarray,
         # loop over x,y coordinates and extract patches
         coord_list = list()
     
-        for m in range(psize//2,row-step_row-overlap,stride): 
-            for n in range(psize//2,col-step_col-overlap,stride):
+        for m in range(psize//2, row - step_row - overlap, stride): 
+            for n in range(psize//2, col - step_col - overlap, stride):
+                
                 coord = [m,n]
-                class_patch = np.unique(img_gt[m-psize//2:m+psize//2,
-                                     n-psize//2:n+psize//2])
-                if len(class_patch)>1 or class_patch[0] in unique_class:
+                
+                class_patch = np.unique(img_gt[m - psize//2: m + psize//2, n - psize//2 : n+psize//2])
+                
+                if len(class_patch) > 1 or class_patch[0] in unique_class:
+                    
                     coord_list.append(coord)                    
-                            
+
+
         coords = np.array(coord_list)
     
-    return coords, img_gt
+    return coords
 
 
 
@@ -597,6 +654,7 @@ def add_padding(img, psize, val = 0):
 
     return pad_img
 
+
 def oversamp(coords:np.ndarray, lab:np.ndarray, under = False) -> np.ndarray:
     """Sample the data to balance the classes
 
@@ -673,6 +731,7 @@ class AttrDict(dict):
         super(AttrDict, self).__init__(*args, **kwargs)
 
         self.__dict__ = self
+
 
 
 def read_yaml(yaml_path:str)->dict:
