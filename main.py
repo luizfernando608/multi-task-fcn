@@ -424,6 +424,10 @@ def train_iteration(current_iter_folder:str, args:dict):
             last_checkpoint = os.path.join(args.data_path, f"iter_{current_iter-1:03d}", args.checkpoint_file)
             loaded_from_last_checkpoint = True
             print_sucess("Loaded_from_last_checkpoint")
+        
+        elif current_iter == 1:
+            # The model will start with random weights
+            pass
 
 
     model = load_weights(model, last_checkpoint, logger)

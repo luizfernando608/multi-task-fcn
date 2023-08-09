@@ -372,6 +372,7 @@ def initialize_exp(params, *args, dump_params=True):
 
 def restart_from_checkpoint(ckp_paths:str, logger, run_variables:dict=None, **kwargs):
     """Load weights and hyperparameters from a checkpoint file in ckp_paths.
+    If the checkpoint is not found, the model dont change run_variables and model state_dict
 
     Parameters
     ----------
@@ -382,10 +383,6 @@ def restart_from_checkpoint(ckp_paths:str, logger, run_variables:dict=None, **kw
     run_variables : dict, optional
         Hypertparameters to load from the checkpoint file, by default None
 
-    Raises
-    ------
-    FileNotFoundError
-        If no checkpoint is found.
     """
     
     # look for a checkpoint in exp repository
@@ -403,8 +400,7 @@ def restart_from_checkpoint(ckp_paths:str, logger, run_variables:dict=None, **kw
 
     if not os.path.isfile(ckp_path):
         logger.info("No checkpoint found.")
-        raise FileNotFoundError("No checkpoint found.")
-
+        return
 
 
     logger.info("Found checkpoint at {}".format(ckp_path))
