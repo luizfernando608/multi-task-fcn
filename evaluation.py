@@ -96,7 +96,7 @@ def define_test_loader(ortho_image:str, size_crops:int, overlap_rate:float, test
         stride = stride, 
         step_row = step_row,
         step_col = step_col,
-        ovlr = overlap
+        overl = overlap_rate
     )
 
     return image, coords, stride, overlap
@@ -227,14 +227,11 @@ def evaluate_overlap(overlap,
                      is_pretrained=args.is_pretrained):
 
 
-    image, coords, stride, step_row, step_col, overlap_in_pixels = define_test_loader(ortho_image, 
-                                                                                      size_crops, 
-                                                                                      overlap, 
-                                                                                      test_itc, 
-                                                                                      ref)
-
-    pred_prob = np.zeros(shape = (image.shape[1], image.shape[2], num_classes), dtype='float16')
-    pred_depth = np.zeros(shape = (image.shape[1], image.shape[2]), dtype='float16')
+    image, coords, stride, overlap_in_pixels = define_test_loader(ortho_image, 
+                                                                    size_crops, 
+                                                                    overlap, 
+                                                                    test_itc, 
+                                                                    ref)
 
     test_dataset = DatasetFromCoord(
             image,
@@ -268,6 +265,9 @@ def evaluate_overlap(overlap,
 
     check_folder(os.path.join(current_iter_folder, 'prediction'))
 
+    pred_prob = np.zeros(shape = (image.shape[1], image.shape[2], num_classes), dtype='float16')
+    pred_depth = np.zeros(shape = (image.shape[1], image.shape[2]), dtype='float16')
+
     prob_map, pred_class, depth_map = predict_network(
         ortho_image_shape=ortho_image_shape,
         dataloader=test_loader,
@@ -277,10 +277,9 @@ def evaluate_overlap(overlap,
         pred_prob=pred_prob,
         pred_depth=pred_depth,
         stride=stride,
-        step_row=step_row,
-        step_col=step_col,
         overlap=overlap_in_pixels,
     )
+
     gc.collect()
 
     prob_map_path = os.path.join(current_iter_folder, 'prediction', f'prob_map_itc{test_itc}_{overlap}.npy')
