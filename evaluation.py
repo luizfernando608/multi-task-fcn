@@ -57,10 +57,19 @@ def define_test_loader(ortho_image, size_crops, overlap, test_itc, lab = None,):
 
     print("Normalize, Min value: ", image.min(), " Max value: ", image.max())
 
-    coords, _ = extract_patches_coord(lab, size_crops, overlap)
+    
     image, stride, step_row, step_col, overlap, _, _ = add_padding_new(image, size_crops, overlap)
+    
+    coords = extract_patches_coord(
+        image_gt = image, 
+        psize = size_crops,
+        stride = stride, 
+        step_row = step_row,
+        step_col = step_col,
+        ovlr = overlap
+    )
 
-    return image, coords, stride, step_row, step_col, overlap
+    return image, coords, stride, overlap
 
 
 def predict_network(ortho_image_shape,dataloader, model, batch_size, coords, pred_prob, pred_depth,

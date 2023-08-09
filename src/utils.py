@@ -137,23 +137,22 @@ def add_padding_new(img, psize, overl, const = 0):
     return pad_img, stride, step_row, step_col, overlap, k1, k2
 
 
-def extract_patches_coord(gt, psize, ovrl):
-    '''Function to extract patches coordinates from rater images
-        input:
-            img: raster image  
-            gt: shpafile raster
-            psize: image patch size
-            ovrl: overlap to extract patches
-            model: model type
-
-    '''
+def extract_patches_coord(img_gt:np.ndarray, 
+                          psize:int, 
+                          stride:int, 
+                          step_row:int, 
+                          step_col:int,
+                          overlap:float):
+    
     # add padding to gt raster
-    img_gt, stride, step_row, step_col, overlap,_, _ = add_padding_new(gt, psize, ovrl)
-    row,col = img_gt.shape
+    # img_gt, stride, step_row, step_col, overlap,_, _ = add_padding_new(gt, psize, ovrl)
+    
+    row, col = img_gt.shape
     
     unique_class = np.unique(img_gt[img_gt!=0])
     
     if stride == 1:
+    
         coords = np.where(img_gt!=0)
         coords = np.array(coords)
         coords = np.rollaxis(coords, 1, 0)
