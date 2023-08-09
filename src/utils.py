@@ -35,7 +35,6 @@ FALSY_STRINGS = {"off", "false", "0"}
 TRUTHY_STRINGS = {"on", "true", "1"}
 
 
-plt.set_loglevel(level = 'notset')
 
 
 def array2raster(newRasterfn:str, dataset:gdal.Dataset, array:np.ndarray, dtype:str):
@@ -624,9 +623,6 @@ def normalize(img:np.ndarray):
 
         img[i] = img[i]/255
     
-
-def fun_sort(x):
-    return int(x.split('_')[0])
 
 
 def add_padding(img, psize, val = 0):
