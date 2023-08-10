@@ -37,14 +37,18 @@ from src.multicropdataset import DatasetFromCoord
 from src.resnet import ResUnet
 from src.model import build_model, load_weights
 
-from typing import Tuple
+from typing import Tuple, Union, Iterable
+from logging import Logger
 
 args = read_yaml("args.yaml")
 
 
         
 def define_test_loader(ortho_image:str, size_crops:int, overlap_rate:float, test_itc:bool, lab:np.ndarray = None,)->Tuple:
-    """_summary_
+    """Define the PyTorch loader for evaluation.\\
+    This loader is different from the trainning loader.\\
+    Here, the loader gets patches from the entire image map.\\
+    On the other hand, the training loader just loads patches with some segmentation
 
     Parameters
     ----------
@@ -112,7 +116,7 @@ def predict_network(ortho_image_shape:Tuple,
                     stride:int, 
                     overlap:int):
     """
-    Runs the inference of the entire image map
+    It runs the inference of the entire image map.\\
     Get depth values and the probability of each class
 
     Parameters
@@ -209,22 +213,64 @@ def predict_network(ortho_image_shape:Tuple,
 
 
 
-def evaluate_overlap(overlap, 
-                     ref, 
-                     current_iter_folder,
-                     current_model_folder, 
-                     ortho_image_shape,
-                     logger, 
-                     size_crops=args.size_crops, 
-                     num_classes=args.nb_class,
-                     ortho_image=args.ortho_image, 
-                     test_itc=args.test_itc, 
-                     batch_size=args.batch_size, 
-                     workers=args.workers, 
-                     checkpoint_file=args.checkpoint_file, 
-                     arch=args.arch, 
-                     filters=args.filters, 
-                     is_pretrained=args.is_pretrained):
+def evaluate_overlap(overlap:float, 
+                     ref:np.ndarray, 
+                     current_iter_folder:str,
+                     current_model_folder:str, 
+                     ortho_image_shape:tuple,
+                     logger:Logger, 
+                     size_crops:int = args.size_crops, 
+                     num_classes:int = args.nb_class,
+                     ortho_image:str = args.ortho_image, 
+                     test_itc:bool = args.test_itc, 
+                     batch_size:int = args.batch_size, 
+                     workers:int = args.workers, 
+                     checkpoint_file:str = args.checkpoint_file, 
+                     arch:str = args.arch, 
+                     filters:list = args.filters, 
+                     is_pretrained:bool = args.is_pretrained):
+    """This function runs an evaluation on the entire image.\\
+    The image is divided into patches, that will be the inputs of the model.\\
+    The overlap parameter sets overlap rate between each patch cut.
+
+    Parameters
+    ----------
+    overlap : float
+        Overlap rate between each patch
+    ref : np.ndarray
+        Ground truth segmentation
+    current_iter_folder : str
+        The path to the current iteration folder
+    current_model_folder : str
+        The path to the current model folder
+    ortho_image_shape : tuple
+        The shape the ortho image - Image from remote sensing
+    logger : Logger
+        The logger that tracks the model evaluation
+    size_crops : int, optional
+        The size of the patches, by default args.size_crops
+    num_classes : int, optional
+        Num of tree_types, by default args.nb_class
+    ortho_image : str, optional
+        The path to the image from remote sensing, by default args.ortho_image
+    test_itc : bool, optional
+        True for predicting only the test ITCs, by default args.test_itc
+    batch_size : int, optional
+        The batch size of the stochastic trainnig, by default args.batch_size
+    workers : int, optional
+        Num of parallel workers, by default args.workers
+    checkpoint_file : str, optional
+        The filename of the checkpoint, by default args.checkpoint_file
+    arch : str, optional
+        Architecture name to build the model
+        The architecture can be 'resunet' or 'deeplabv3_resnet50', by default args.arch
+    filters : list, optional
+        List of number of filters for each block of the model, if the model is resunet, by default args.filters
+    is_pretrained : bool, optional
+        If True, the model is loaded from pretrained weights available in pytorch hub
+        If False, the model is started with random weights, by default args.is_pretrained
+    """
+    
 
 
     image, coords, stride, overlap_in_pixels = define_test_loader(ortho_image, 
@@ -269,15 +315,15 @@ def evaluate_overlap(overlap,
     pred_depth = np.zeros(shape = (image.shape[1], image.shape[2]), dtype='float16')
 
     prob_map, pred_class, depth_map = predict_network(
-        ortho_image_shape=ortho_image_shape,
-        dataloader=test_loader,
-        model=model,
-        batch_size=batch_size,
-        coords=coords,
-        pred_prob=pred_prob,
-        pred_depth=pred_depth,
-        stride=stride,
-        overlap=overlap_in_pixels,
+        ortho_image_shape = ortho_image_shape,
+        dataloader = test_loader,
+        model = model,
+        batch_size = batch_size,
+        coords = coords,
+        pred_prob = pred_prob,
+        pred_depth = pred_depth,
+        stride = stride,
+        overlap = overlap_in_pixels,
     )
 
     gc.collect()
