@@ -177,54 +177,6 @@ def filter_components_by_geometric_properties(old_components_pred_map:np.ndarray
 
 
 
-def get_selected_labels(delta_components_img:np.ndarray, delta_pred_map:np.ndarray, old_pred_map:np.ndarray)->np.ndarray:
-    """Select the best labels from the new components predicted.
-    Use undersampling to select the best labels and to avoid unbalanced classes
-
-    Parameters
-    ----------
-    delta_components_img : np.array
-        New components predicted that were not in the old components predicted
-    delta_pred_map : np.array
-        New labels predicted that were not in the old labels predicted
-    old_pred_map : np.array
-        Old labels predicted in the last iteration
-
-    Returns
-    -------
-    np.array
-        New labels predicted with the best components and balanced classes
-    """
-    
-    # Select balanced sample
-    stats_delta = get_components_stats(components_img=delta_components_img, label_img=delta_pred_map)
-
-    stats_delta["area_by_convex"] = stats_delta["area"] / stats_delta["convex_area"]
-
-    # stats_und_label_delta = undersample(stats_delta, "tree_type")
-
-    # Undersampling selecting the samples
-    min_category_num =  stats_delta.groupby("tree_type").size().min()
-
-    # create a score for best quality
-    stats_delta["score"] = (stats_delta["area_by_convex"]/stats_delta["area_by_convex"].max()) +\
-                            (stats_delta["area"]/stats_delta["area"].max())
-    
-    stats_delta.sort_values(by="score", ascending=False, inplace=True)
-
-    stats_und_label_delta = stats_delta.groupby("tree_type").head(min_category_num)
-
-    id_selected_components = np.array(stats_und_label_delta.index, dtype=int)
-
-    selected_labels_set = np.where(
-        np.isin(delta_components_img, id_selected_components),
-        delta_pred_map,
-        old_pred_map,
-    )
-
-    return selected_labels_set
-
-
 
 def filter_components_by_mask(data_path:str, components_pred_map:np.ndarray, pred_map:np.ndarray):
     """Remove labels and components out of the mask.tif area
