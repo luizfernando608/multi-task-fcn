@@ -13,11 +13,6 @@ train_segmentation_path: "segmentation/samples_A1_train2tif.tif"
 test_segmentation_path: "segmentation/samples_A1_test2tif.tif"
 checkpoint_file: checkpoint.pth.tar
 
-# pred2raster
-# Path containing the refrence and mask data for training
-ref_path_pred2raster: "/home/luiz/multi-task-fcn/Data/samples_A1_train2tif.tif"
-ref_path_evaluation: None
-
 
 # pred2raster parameters
 # samples per epoch
