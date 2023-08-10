@@ -60,6 +60,8 @@ def pred2raster(current_iter_folder, args):
         array2raster(prob_file, raster_src, np.amax(prediction_test,axis=-1), "Float32")  
         array2raster(depth_file, raster_src, depth_test, "Float32")   
 
+
+
 if __name__ == "__main__":
 
     args = read_yaml("args.yaml")

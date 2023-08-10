@@ -209,7 +209,13 @@ def load_weights(model: nn.Module, checkpoint_file_path:str, logger: Logger)-> n
     return model
 
 
-def train(train_loader:torch.utils.data.DataLoader, model:nn.Module, optimizer:torch.optim.Optimizer, epoch:int, lr_schedule:np.ndarray, figures_path:str, logger: Logger):
+def train(train_loader:torch.utils.data.DataLoader, 
+          model:nn.Module, 
+          optimizer:torch.optim.Optimizer, 
+          epoch:int, 
+          lr_schedule:np.ndarray, 
+          figures_path:str, 
+          logger: Logger):
     """Train model for one epoch
 
     Parameters
@@ -265,8 +271,10 @@ def train(train_loader:torch.utils.data.DataLoader, model:nn.Module, optimizer:t
         ref_copy = torch.zeros(ref.shape).long().cuda(non_blocking=True)
         ref_copy[mask>0] = torch.sub(ref[mask>0], 1)
         
-        # calculate losses
+        # Foward Passs
         out_batch = model(inp_img)
+        
+        # Multiplicate the loss by the mask, to compute the loss just in segmentation area
         loss1 = mask*criterion(log_soft(out_batch['out']), ref_copy)
         loss2 = mask*aux_criterion(sig(out_batch['aux'])[:,0,:,:], depth)
         
@@ -287,7 +295,7 @@ def train(train_loader:torch.utils.data.DataLoader, model:nn.Module, optimizer:t
 
         # Evaluate summaries only once in a while
         if it % 50 == 0:
-            summary_batch=evaluate_metrics(soft(out_batch['out']), ref, -1)
+            summary_batch = evaluate_metrics(soft(out_batch['out']), ref, -1)
             
             logger.info(
                 "Epoch: [{0}][{1}]\t"
