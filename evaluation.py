@@ -91,7 +91,7 @@ def define_test_loader(ortho_image:str, size_crops:int, overlap_rate:float, test
     image, stride, step_row, step_col, overlap, _, _ = add_padding_new(image, size_crops, overlap_rate)
     
     coords = extract_patches_coord(
-        image_gt = image, 
+        img_gt = lab, 
         psize = size_crops,
         stride = stride, 
         step_row = step_row,

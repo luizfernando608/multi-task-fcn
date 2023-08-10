@@ -196,7 +196,8 @@ def extract_patches_coord(img_gt:np.ndarray,
     """
     
     # add padding to gt raster
-    # img_gt, stride, step_row, step_col, overlap,_, _ = add_padding_new(gt, psize, ovrl)
+    img_gt, stride, step_row, step_col, overlap,_, _ = add_padding_new(img_gt, psize, overl)
+    
     overlap = int(round(psize * overl))
     
     row, col = img_gt.shape
