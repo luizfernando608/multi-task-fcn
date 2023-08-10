@@ -569,9 +569,9 @@ def load_norm(path, mask=[0], mask_indx = 0):
     path : str
         Path to load image
     mask : list, optional
-        _description_, by default [0]
+        Deprecated, by default [0]
     mask_indx : int, optional
-        _description_, by default 0
+        Deprecated, by default 0
 
     Returns
     -------
@@ -595,18 +595,55 @@ def load_norm(path, mask=[0], mask_indx = 0):
 
     return image
 
-def filter_outliers(img, bins=10000, bth=0.01, uth=0.99, mask=[0], mask_indx = 0):
-    img[np.isnan(img)]=0 # Filter NaN values.
-    if len(mask)==1:
+def filter_outliers(img, bins=10000, bth=0.01, uth=0.99, mask=[0], mask_indx=0):
+    """
+    Apply outlier filtering to image data using histogram-based thresholds.
+
+    Parameters
+    ----------
+    img : numpy.ndarray
+        The input image data with shape (bands, height, width).
+    bins : int, optional
+        The number of bins for histogram calculation. Default is 10000.
+    bth : float, optional
+        Lower threshold percentage for valid values. Default is 0.01.
+    uth : float, optional
+        Upper threshold percentage for valid values. Default is 0.99.
+    mask : list or numpy.ndarray, optional
+        Binary mask indicating regions of interest. Default is [0].
+    mask_indx : int, optional
+        Index of mask to use for outlier filtering. Default is 0.
+
+    Returns
+    -------
+    numpy.ndarray
+        Image data with outliers filtered within specified thresholds.
+
+    Notes
+    -----
+    - NaN values are replaced with zeros before outlier filtering.
+    - The function applies outlier filtering band-wise.
+    - Use the mask parameter to specify regions for outlier filtering.
+    - Outliers exceeding threshold values are clipped to the respective thresholds.
+    """
+    img[np.isnan(img)] = 0  # Filter NaN values.
+
+    if len(mask) == 1:
         mask = np.zeros((img.shape[1:]), dtype='int64')
+
     for band in range(img.shape[0]):
-        hist = np.histogram(img[:, :mask.shape[0], :mask.shape[1]][band, mask==mask_indx].ravel(),bins=bins) # select not testing pixels
-        cum_hist = np.cumsum(hist[0])/hist[0].sum()
-        max_value = np.ceil(100*hist[1][len(cum_hist[cum_hist<uth])])/100
-        min_value = np.ceil(100*hist[1][len(cum_hist[cum_hist<bth])])/100
-        img[band, :,:,][img[band, :,:,]>max_value] = max_value
-        img[band, :,:,][img[band, :,:,]<min_value] = min_value
+        hist = np.histogram(img[:, :mask.shape[0], :mask.shape[1]][band, mask==mask_indx].ravel(), bins=bins)
+
+        cum_hist = np.cumsum(hist[0]) / hist[0].sum()
+
+        max_value = np.ceil(100 * hist[1][len(cum_hist[cum_hist < uth])]) / 100
+        min_value = np.ceil(100 * hist[1][len(cum_hist[cum_hist < bth])]) / 100
+
+        img[band, :,:,][img[band, :,:,] > max_value] = max_value
+        img[band, :,:,][img[band, :,:,] < min_value] = min_value
+
     return img
+
 
 
 def normalize(img:np.ndarray):
@@ -627,7 +664,9 @@ def normalize(img:np.ndarray):
 
 
 def add_padding(img, psize, val = 0):
-    '''Function to padding image
+    '''
+    DEPRECATED FUNCTION!
+    Function to padding image
         input:
             patches_size: psize
             stride: stride
@@ -636,6 +675,7 @@ def add_padding(img, psize, val = 0):
 
     try:
         bands, row, col = img.shape
+    
     except:
         bands = 0
         row, col = img.shape
@@ -643,6 +683,7 @@ def add_padding(img, psize, val = 0):
     if bands>0:
         npad_img = ((0,0), (psize//2+1, psize//2+1), (psize//2+1, psize//2+1))
         constant_values = val
+
     else:        
         npad_img = ((psize//2+1, psize//2+1), (psize//2+1, psize//2+1))
         constant_values = val
