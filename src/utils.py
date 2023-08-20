@@ -589,7 +589,7 @@ def load_norm(path, mask=[0], mask_indx = 0):
     
     print("Before normalize, Min value: ", image.min(), " Max value: ", image.max())
 
-    normalize(img=image)
+    normalize(img = image)
 
     print("Normalize, Min value: ", image.min(), " Max value: ", image.max())
 
@@ -648,18 +648,21 @@ def filter_outliers(img, bins=10000, bth=0.01, uth=0.99, mask=[0], mask_indx=0):
 
 def normalize(img:np.ndarray):
     """Normalize image inplace.
-    Divide all values by 255 to get values between 0 and 1
+    Apply StandardScaler to image
 
     Parameters
     ----------
     img : np.ndarray
         Image array to normalize
+        Shape: (BANDS, ROW, COL)
     """
-    
-    # iterate through channels and divide by 255
+    # iterate through channels and standardize
     for i in range(img.shape[0]):
+        
+        std = np.std(img[i], ddof=0)
+        mean = np.mean(img[i])
 
-        img[i] = img[i]/255
+        img[i] = (img[i]-mean)/std
     
 
 
