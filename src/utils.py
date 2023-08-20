@@ -324,7 +324,15 @@ def plot_figures(img_mult:np.ndarray, ref:np.ndarray, pred:np.ndarray, depth:np.
     fig.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.8,
                         wspace=0.02, hspace=0.02)
     
+    axes[0,0].set_title("Real Image")
+    axes[1,0].set_title("Ground Truth Segmentation")
+    axes[2,0].set_title("Predicted Segmentation")
+    axes[3,0].set_title("Probability Map")
+    axes[4,0].set_title("Ground Truth Depth")
+    axes[5,0].set_title("Predicted Depth")
+
     plt.axis('off')
+    plt.tight_layout()
     plt.savefig(os.path.join(model_dir, set_name + str(epoch) + '.png'), dpi = 300, format='png', bbox_inches = 'tight')
     plt.clf()
     plt.close()
