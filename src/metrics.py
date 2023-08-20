@@ -20,7 +20,8 @@ def evaluate_metrics(pred:Union[np.ndarray, torch.Tensor], gt:Union[np.ndarray, 
     pred : Union[np.ndarray, torch.Tensor]
         Tensor with shape [row, cols, num_class]
         This tensor has one matrix of confidence for each label class.
-        The function uses the class with highest probability/confidence to evaluate metric
+        The function uses the class with highest probability/confidence to evaluate metric.
+
     gt : Union[np.ndarray, torch.Tensor]
         Tensor with shape [row, cols]
         This tensor has the ground truth segmentation matrix
@@ -47,8 +48,12 @@ def evaluate_metrics(pred:Union[np.ndarray, torch.Tensor], gt:Union[np.ndarray, 
 
     c = pred.shape[1]
 
-    # Get the class with highest probability
-    pred = np.argmax(pred,axis=1)
+    if  len(pred.shape) >= 3 and pred.shape[-1] > 1:
+        # Get the class with highest probability
+        pred = np.argmax(pred, axis=1)
+
+    else:
+        pass
 
     # Create to just the place where the ground_truth_segmentation is non zero
     mask = np.where(gt>0)
@@ -60,7 +65,7 @@ def evaluate_metrics(pred:Union[np.ndarray, torch.Tensor], gt:Union[np.ndarray, 
 
     #### CALCULATE METRICS WITH SKLEARN ####
     accuracy = accuracy_score(gt, pred)*100
-    accu_criteria["Accuracy"] = np.round(accuracy,2)
+    accu_criteria["Accuracy"] = float(np.round(accuracy,2))
     
     f1 = f1_score(gt, pred, average=None, zero_division=True)
 
@@ -69,12 +74,13 @@ def evaluate_metrics(pred:Union[np.ndarray, torch.Tensor], gt:Union[np.ndarray, 
     rec = recall_score(gt, pred, average=None, zero_division=True)
 
 
-    accu_criteria["avgF1"] = np.round(np.sum(f1)*100/c,2)
-    accu_criteria["avgPre"] = np.round(np.sum(pre)*100/c,2)
-    accu_criteria["avgRec"] = np.round(np.sum(rec)*100/c,2)
-    # accu_criteria["F1"] = np.round(np.array(f1)*100,2)
-    # accu_criteria["Pre"] = np.round(np.array(pre)*100,2)
-    # accu_criteria["Rec"] = np.round(np.array(rec)*100,2)
+    accu_criteria["avgF1"] = float(np.round(np.sum(f1)*100/c,2))
+    accu_criteria["avgPre"] = float(np.round(np.sum(pre)*100/c,2))
+    accu_criteria["avgRec"] = float(np.round(np.sum(rec)*100/c,2))
+    
+    # accu_criteria["F1"] = list(np.round(np.array(f1)*100,2))
+    # accu_criteria["Pre"] = list(np.round(np.array(pre)*100,2))
+    # accu_criteria["Rec"] = list(np.round(np.array(rec)*100,2))
 
     return accu_criteria
 

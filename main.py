@@ -23,7 +23,13 @@ from tqdm import tqdm
 
 from generate_distance_map import generate_distance_map
 
+from src.metrics import evaluate_metrics
+
 import matplotlib.pyplot as plt
+
+import yaml
+
+
 plt.set_loglevel(level = 'info')
 
 from src.logger import create_logger
@@ -518,6 +524,29 @@ def train_iteration(current_iter_folder:str, args:dict):
     gc.collect()
 
 
+
+def compile_metrics(current_iter_folder, args):
+    # read test segmentation 
+    # f'join_class_itc{args.test_itc}_{np.sum(args.overlap)}.TIF'
+    GROUND_TRUTH_PATH = os.path.join(args.data_path, args.test_segmentation_path)
+    ground_truth_test = read_tiff(GROUND_TRUTH_PATH)
+
+
+    PRED_PATH = os.path.join(current_iter_folder, "raster_prediction", f"join_class_itc{args.test_itc}_{np.sum(args.overlap)}.TIF")
+    predicted_seg = read_tiff(PRED_PATH)
+
+    metrics = evaluate_metrics(predicted_seg, ground_truth_test)
+
+
+    with open(os.path.join(current_iter_folder,'store_file.yaml'), 'w') as file:
+
+        documents = yaml.dump(metrics, file)
+        
+
+    
+
+
+
 #############
 ### SETUP ###
 #############
@@ -568,6 +597,8 @@ while current_iter < 10:
     evaluate_iteration(current_iter_folder, args)
 
     pred2raster(current_iter_folder, args)
+
+    compile_metrics(current_iter_folder, args)
 
     #####################################################
     ######### GENERATE LABELS FOR NEXT ITERATION #########
