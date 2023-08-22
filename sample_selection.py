@@ -295,20 +295,20 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray, old_pred_map:np.nda
     
     new_pred_map = np.where(depth_map > 0.3, new_pred_map, 0 )
 
-    filter_components_by_mask(data_path, new_components_pred_map, new_pred)
+    no_filter_new_pred = new_pred_map.copy()
 
-    no_filter_new_pred = new_pred.copy()
-
-    # filter components by geometric properties
-    filter_components_by_geometric_properties(
-        old_components_pred_map=old_components_pred_map,
-        old_pred_labels=old_pred_map,
-        components_pred_map = new_components_pred_map, 
-        pred_labels = new_pred
-    )
+    # new components
+    delta_label_map = get_labels_delta(old_components_img = old_components_pred_map, 
+                                       new_components_img = new_components_pred_map,
+                                       new_label_img = new_pred_map)
     
+    select_n_labels_by_class(
+        delta_label_map,
+        samples_by_class = 5
+    )
 
-    selected_labels_set = join_labels_set(new_pred, old_pred_map, 0.10)
+
+    selected_labels_set = join_labels_set(delta_label_map, old_pred_map, 0.10)
 
     selected_labels_set = join_labels_set(ground_truth_map, selected_labels_set, 0.01)
 
