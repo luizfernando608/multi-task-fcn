@@ -17,6 +17,9 @@ from imblearn.under_sampling import RandomUnderSampler
 
 from typing import List, Tuple
 
+from generate_distance_map import apply_gaussian_distance_map
+
+
 def undersample(data: pd.DataFrame, column_category: str):
     X = data.drop(column_category, axis=1).copy()
 
