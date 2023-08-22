@@ -282,13 +282,19 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray, old_pred_map:np.nda
     # set labels at the same scale as ground truth labels
     new_pred_map += 1
     
-    # Select only the components with confidence higher than 0.60
-    new_pred = np.where(new_prob_map > 0.60, new_pred_map, 0)
+    # Select only the components with confidence higher than 0.95
+    new_pred_map = np.where(new_prob_map > 0.90, new_pred_map, 0)
     
+    depth_map = apply_gaussian_distance_map(new_pred_map)
+
     old_components_pred_map = label(old_pred_map)
 
-    new_components_pred_map = label(new_pred)
+    new_components_pred_map = label(new_pred_map)
     
+    filter_components_by_mask(data_path, new_components_pred_map, new_pred_map)
+    
+    new_pred_map = np.where(depth_map > 0.3, new_pred_map, 0 )
+
     filter_components_by_mask(data_path, new_components_pred_map, new_pred)
 
     no_filter_new_pred = new_pred.copy()
