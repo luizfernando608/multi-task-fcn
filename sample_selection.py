@@ -175,6 +175,31 @@ def filter_components_by_geometric_properties(old_components_pred_map:np.ndarray
 
 
 
+def select_n_labels_by_class(pred_labels:np.ndarray, samples_by_class:int = 5):
+
+    components_pred_map = label(pred_labels)
+    
+    delta_stats = get_components_stats(components_pred_map, pred_labels)
+
+    # sample components
+    selected_samples = delta_stats[delta_stats["area"] > 50].groupby("tree_type").head(samples_by_class)
+
+    
+    # component_ids_to_remove = stats_pred_data[filter_area]["label"]
+
+    # remove selected components
+    delta_stats.drop(index=selected_samples.index, inplace=True)
+
+    # remove inplace
+    remove_components_by_index(
+        component_ids_to_remove = delta_stats.index.astype(int),
+        components_img = components_pred_map,
+        label_img = pred_labels
+    )
+    pass
+
+
+
 
 
 def filter_components_by_mask(data_path:str, components_pred_map:np.ndarray, pred_map:np.ndarray):
