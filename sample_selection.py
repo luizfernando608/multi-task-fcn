@@ -104,25 +104,21 @@ def get_labels_delta(
     label_delta = np.zeros_like(new_components_img)
 
     components_to_iter = np.unique(new_components_img)
-    components_to_iter = components_to_iter[components_to_iter != 0]
+    components_to_iter = components_to_iter[np.nonzero(components_to_iter)]
 
     for idx in components_to_iter:
         # if more than 90% of the area is empty it will be added to the new predicted sample
         if np.mean(old_components_img[new_components_img == idx] == 0) > 0.9:
+            
             # count labels
             unique_labels, count_labels = np.unique(
-                new_label_img[new_components_img == idx], return_counts=True
+                new_label_img[(new_components_img == idx) &  (new_label_img != 0)], return_counts=True
             )
 
-            # remove 0 count
-            unique_labels = unique_labels[unique_labels != 0]
-            count_labels = count_labels[unique_labels != 0]
-
-            # get valeu of class with higher count
+            # get value of class with higher count
             class_common_idx = np.argmax(count_labels)
             class_common = unique_labels[class_common_idx]
 
-            # all_label_set[components_pred_map==idx] = class_common
             label_delta[new_components_img == idx] = class_common
 
     return label_delta
