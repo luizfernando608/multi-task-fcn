@@ -319,6 +319,8 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray, old_pred_map:np.nda
     
     new_pred_map = np.where(depth_map > 0.3, new_pred_map, 0 )
 
+    new_components_pred_map = label(new_pred_map)
+    
     no_filter_new_pred = new_pred_map.copy()
 
     # new components
