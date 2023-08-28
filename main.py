@@ -342,10 +342,16 @@ def train_epochs(last_checkpoint:str,
         if rank == 0:
             if is_best: 
                 logger.info("============ Saving best models at epoch %i ... ============" % epoch)
+                
                 best_val = scores_tr[1]
-                save_checkpoint(last_checkpoint, model, optimizer, epoch+1, best_val, count_early)                 
+                
+                save_checkpoint(last_checkpoint, model, optimizer, epoch+1, best_val, count_early)
+                
+                count_early = 0
+
+
             else:
-                count_early+=1
+                count_early += 1
 
             
     print_sucess("Training done !")
@@ -379,7 +385,7 @@ def train_iteration(current_iter_folder:str, args:dict):
     image, coords_train, raster_train, labs_coords_train = define_loader(args.ortho_image, 
                                                                          raster_train, 
                                                                          args.size_crops)
-
+    
     ######## do oversampling in minor classes
     coords_train = oversamp(coords_train, labs_coords_train, under=False)
 
