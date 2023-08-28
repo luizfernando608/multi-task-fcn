@@ -579,9 +579,7 @@ args = read_yaml("args.yaml")
 # Set random seed
 fix_random_seeds(args.seed[0])
 
-current_iter = 0
-
-while current_iter < 10:
+while True:   
     clear_ram_cache()
     # get current iteration folder
     current_iter_folder = get_current_iter_folder(args.data_path, args.test_itc, args.overlap)
