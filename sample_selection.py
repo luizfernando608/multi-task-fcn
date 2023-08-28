@@ -383,7 +383,11 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray, old_pred_map:np.nda
 
     selected_labels_set = join_labels_set(delta_label_map, old_pred_map, 0.10)
 
-    selected_labels_set = join_labels_set(ground_truth_map, selected_labels_set, 0.01)
+    selected_labels_set = join_labels_set(intersection_label_map, old_pred_map, 0.10 )
+
+    selected_labels_set = join_labels_set(delta_label_map, intersection_label_map, 0.10 )
+
+    selected_labels_set = join_labels_set(ground_truth_map, selected_labels_set, 0.01 )
 
     
     all_labels_set = join_labels_set(no_filter_new_pred, old_pred_map, 0.10)
