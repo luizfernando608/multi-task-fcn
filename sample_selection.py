@@ -127,6 +127,48 @@ def get_labels_delta(
     return label_delta
 
 
+def get_label_intersection(
+    old_components_img: np.ndarray, new_components_img: np.ndarray, new_label_img: np.ndarray
+)-> np.ndarray:
+    """Get the labels from the new_label_img that are in the old_components_img
+
+    Parameters
+    ----------
+    old_components_img : np.ndarray
+        Components from the predicted segmentation from the last iteration
+    new_components_img : np.ndarray
+        Components from the new_label_img
+    new_label_img : np.ndarray
+        Segmentation predicted
+
+    Returns
+    ---------
+        The labels from the new segmentation that are in the old_components_img
+    """
+
+    label_intersection = np.zeros_like(new_components_img)
+
+    components_to_iter = np.unique(new_components_img)
+    components_to_iter = components_to_iter[np.nonzero(components_to_iter)]
+
+    for idx in components_to_iter:
+        # if more than 90% of the area is filled it will be added to the intersection sample
+        if np.mean(old_components_img[new_components_img == idx] == 0) < 0.9:
+            
+            # count labels
+            unique_labels, count_labels = np.unique(
+                new_label_img[(new_components_img == idx) &  (new_label_img != 0)], return_counts=True
+            )
+
+            # get value of class with higher count
+            class_common_idx = np.argmax(count_labels)
+            class_common = unique_labels[class_common_idx]
+
+            label_intersection[new_components_img == idx] = class_common
+
+    return label_intersection
+
+
 
 def filter_components_by_geometric_properties(old_components_pred_map:np.ndarray, old_pred_labels:np.ndarray, components_pred_map: np.ndarray, pred_labels: np.ndarray):
     """Filter components by geometric properties
@@ -327,6 +369,11 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray, old_pred_map:np.nda
     delta_label_map = get_labels_delta(old_components_img = old_components_pred_map, 
                                        new_components_img = new_components_pred_map,
                                        new_label_img = new_pred_map)
+    
+
+    intersection_label_map = get_label_intersection(old_components_img = old_components_pred_map, 
+                                                    new_components_img = new_components_pred_map,
+                                                    new_label_img = new_pred_map)
     
     select_n_labels_by_class(
         delta_label_map,
