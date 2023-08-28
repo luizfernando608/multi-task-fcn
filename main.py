@@ -281,7 +281,8 @@ def train_epochs(last_checkpoint:str,
                  optimizer:torch.optim.Optimizer, 
                  lr_schedule:np.ndarray, 
                  rank:int, 
-                 count_early:int, 
+                 count_early:int,
+                 logger,
                  patience:int=5):
     """Train the model with the specified epochs numbers
 
