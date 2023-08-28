@@ -238,8 +238,6 @@ def select_n_labels_by_class(pred_labels:np.ndarray, samples_by_class:int = 5):
         components_img = components_pred_map,
         label_img = pred_labels
     )
-    pass
-
 
 
 
@@ -321,7 +319,11 @@ def join_labels_set(high_priority_labels:np.ndarray, low_priority_labels:np.ndar
 
 
 
-def get_new_segmentation_sample(ground_truth_map:np.ndarray, old_pred_map:np.ndarray, new_pred_map:np.ndarray, new_prob_map:np.ndarray, data_path:str)->Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def get_new_segmentation_sample(ground_truth_map:np.ndarray, 
+                                old_pred_map:np.ndarray, 
+                                new_pred_map:np.ndarray, 
+                                new_prob_map:np.ndarray, 
+                                data_path:str)->Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """ Get the new segmentation sample based on the segmentation from the last iteration and the new segmentation prediction set
     
     Parameters
@@ -348,7 +350,7 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray, old_pred_map:np.nda
     # set labels at the same scale as ground truth labels
     new_pred_map += 1
     
-    # Select only the components with confidence higher than 0.95
+    # Select only the components with confidence higher than 0.90
     new_pred_map = np.where(new_prob_map > 0.90, new_pred_map, 0)
     
     depth_map = apply_gaussian_distance_map(new_pred_map)
@@ -359,6 +361,7 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray, old_pred_map:np.nda
     
     filter_components_by_mask(data_path, new_components_pred_map, new_pred_map)
     
+    # Apply Filter
     new_pred_map = np.where(depth_map > 0.3, new_pred_map, 0 )
 
     new_components_pred_map = label(new_pred_map)
@@ -381,7 +384,6 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray, old_pred_map:np.nda
     )
 
 
-    selected_labels_set = join_labels_set(delta_label_map, old_pred_map, 0.10)
 
     selected_labels_set = join_labels_set(intersection_label_map, old_pred_map, 0.10 )
 
