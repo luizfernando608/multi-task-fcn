@@ -332,7 +332,7 @@ def train_epochs(last_checkpoint:str,
         
         gc.collect()
 
-        training_stats.update(scores_tr)
+        # training_stats.update(scores_tr)
         
         print_sucess("scores_tr: {}".format(scores_tr[1]))
 
