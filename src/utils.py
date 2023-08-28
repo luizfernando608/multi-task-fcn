@@ -6,7 +6,7 @@
 #
 import ast
 import argparse
-from logging import getLogger
+from logging import getLogger, CRITICAL
 import pickle
 import os
 
@@ -28,6 +28,9 @@ import gc
 import matplotlib.pyplot as plt
 
 from typing import Tuple
+
+import warnings
+
 
 plt.set_loglevel(level = 'critical')
 
@@ -290,6 +293,9 @@ def plot_figures(img_mult:np.ndarray, ref:np.ndarray, pred:np.ndarray, depth:np.
     ncols = batch
     imgs = [img_mult, ref, pred_cl, pred_prob, depth, dist]
     
+    getLogger('matplotlib').setLevel(level=CRITICAL)
+    warnings.filterwarnings("ignore")
+
     fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(batch, nrows))
     
     cont = 0
