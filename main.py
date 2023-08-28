@@ -433,10 +433,14 @@ def train_iteration(current_iter_folder:str, args:dict):
     # The weigths from the last one is loaded
     if not os.path.isfile(last_checkpoint):
         if current_iter > 1:
+            
             last_checkpoint = os.path.join(args.data_path, f"iter_{current_iter-1:03d}", args.model_dir, args.checkpoint_file)
+            
             loaded_from_last_checkpoint = True
+
             print_sucess("Loaded_from_last_checkpoint")
         
+
         elif current_iter == 1:
             # The model will start with random weights
             pass
@@ -501,8 +505,17 @@ def train_iteration(current_iter_folder:str, args:dict):
 
     # If the model isnt finished yet, train!
     if not to_restore["is_iter_finished"]:
-        train_epochs(current_checkpoint, to_restore["epoch"], args.epochs, to_restore["best_val"] , train_loader, model, optimizer, lr_schedule, args.rank, to_restore["count_early"])
-
+        train_epochs(current_checkpoint, 
+                     to_restore["epoch"], 
+                     args.epochs, 
+                     to_restore["best_val"], 
+                     train_loader, 
+                     model, 
+                     optimizer, 
+                     lr_schedule, 
+                     args.rank, 
+                     to_restore["count_early"],
+                     logger=logger)
     gc.collect()
 
 
