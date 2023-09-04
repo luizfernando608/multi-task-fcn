@@ -246,9 +246,7 @@ def categorical_focal_loss(input:torch.Tensor, target:torch.Tensor, gamma = 2) -
 
     loss = - ((1-prob)**gamma) * torch.log(prob + epsilon)
     
-    # PARTIAL FOCAL LOSS
-    loss = ((1 - prob) ** gamma) * F.one_hot(target, num_classes = 14).transpose(1,3) * log_prob
-    loss = torch.sum(loss, axis = 1)
+    loss = loss.squeeze(dim = 1)
 
     return loss
 
