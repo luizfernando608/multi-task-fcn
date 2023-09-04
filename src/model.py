@@ -209,6 +209,51 @@ def load_weights(model: nn.Module, checkpoint_file_path:str, logger: Logger)-> n
     return model
 
 
+
+def categorical_focal_loss(input:torch.Tensor, target:torch.Tensor, gamma = 2) -> torch.Tensor:
+    """Partial Categorical Focal Loss Implementation based on the paper 
+    "Multi-task fully convolutional network for tree species
+    mapping in dense forests using small training
+    hyperspectral data"
+
+
+
+    Parameters
+    ----------
+    input : torch.Tensor
+        The output from ResNet Model without the classification layer 
+        shape: (batch, class, image_height, image_width)
+
+    target : torch.Tensor
+        The ground_truth segmentation with index for each class
+        shape: (batch, image_height, image_width)
+    
+    Returns
+    -------
+    torch.Tensor
+        The loss for each pixel in image
+        shape : (batch, image_height, image_width)
+    """
+    soft = nn.Softmax(dim=1).cuda()
+    # log_soft = nn.LogSoftmax(dim=1).cuda()
+    
+    epsilon = 1e-10
+    
+    # Classification Layer
+    prob = soft(input)
+    log_prob = torch.log(prob + epsilon)
+    
+    
+    # PARTIAL FOCAL LOSS
+    loss = ((1 - prob) ** gamma) * F.one_hot(target, num_classes = 14).transpose(1,3) * log_prob
+    loss = torch.sum(loss, axis = 1)
+
+    return loss
+
+
+
+
+
 def train(train_loader:torch.utils.data.DataLoader, 
           model:nn.Module, 
           optimizer:torch.optim.Optimizer, 
