@@ -235,15 +235,16 @@ def categorical_focal_loss(input:torch.Tensor, target:torch.Tensor, gamma = 2) -
         The loss for each pixel in image
         shape : (batch, image_height, image_width)
     """
-    soft = nn.Softmax(dim=1).cuda()
-    # log_soft = nn.LogSoftmax(dim=1).cuda()
-    
     epsilon = 1e-10
+
+    soft = nn.Softmax(dim=1).cuda()
+    log_soft = nn.LogSoftmax(dim=1).cuda()
     
-    # Classification Layer
-    prob = soft(input)
-    log_prob = torch.log(prob + epsilon)
-    
+    prob = F.softmax(input, dim = 1)
+
+    prob = torch.gather(prob, 1, target.unsqueeze(1))
+
+    loss = - ((1-prob)**gamma) * torch.log(prob + epsilon)
     
     # PARTIAL FOCAL LOSS
     loss = ((1 - prob) ** gamma) * F.one_hot(target, num_classes = 14).transpose(1,3) * log_prob
