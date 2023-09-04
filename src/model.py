@@ -287,10 +287,9 @@ def train(train_loader:torch.utils.data.DataLoader,
     loss_avg = AverageMeter()
     
     # define functions
-    soft = nn.Softmax(dim=1).cuda()
-    log_soft = nn.LogSoftmax(dim=1).cuda()    
-    sig = nn.Sigmoid().cuda()
-    
+    soft = nn.Softmax(dim=1).cuda()    
+    sig = nn.Sigmoid().cuda()    
+
     # define losses
     # criterion = nn.NLLLoss(reduction='none').cuda()
     aux_criterion = nn.MSELoss(reduction='none').cuda()
@@ -319,8 +318,10 @@ def train(train_loader:torch.utils.data.DataLoader,
         # Foward Passs
         out_batch = model(inp_img)
         
-        # Multiplicate the loss by the mask, to compute the loss just in segmentation area
-        loss1 = mask*criterion(log_soft(out_batch['out']), ref_copy)
+        # loss1 = mask*categorical_focal_loss_2(out_batch["out"], ref_copy, alpha = 1)
+
+        loss1 = mask*categorical_focal_loss(out_batch["out"], ref_copy)
+
         loss2 = mask*aux_criterion(sig(out_batch['aux'])[:,0,:,:], depth)
         
         loss = (loss1 + loss2)/2 
