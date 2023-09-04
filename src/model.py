@@ -292,8 +292,8 @@ def train(train_loader:torch.utils.data.DataLoader,
     sig = nn.Sigmoid().cuda()
     
     # define losses
-    criterion = nn.NLLLoss(reduction='none').cuda()
-    aux_criterion = nn.L1Loss(reduction='none').cuda()
+    # criterion = nn.NLLLoss(reduction='none').cuda()
+    aux_criterion = nn.MSELoss(reduction='none').cuda()
 
     for it, (inp_img, depth, ref) in enumerate(tqdm(train_loader)):      
 
