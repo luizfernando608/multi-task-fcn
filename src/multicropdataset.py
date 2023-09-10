@@ -14,6 +14,9 @@ import torch.nn as nn
 
 from typing import Tuple
 
+import os
+
+from tqdm import tqdm
 
 logger = getLogger()
 
@@ -186,3 +189,61 @@ class DatasetFromCoord(Dataset):
 
         # If evaluation is True, return just the image crop
         return image
+
+
+if __name__ == "__main__":
+
+    import sys
+    sys.path.append("/home/luiz/multi-task-fcn")
+
+    from model import define_loader
+    from utils import oversamp, read_yaml, read_tiff
+
+    args = read_yaml("args.yaml")
+
+    current_iter_folder = "/home/luiz/multi-task-fcn/1th_version_data/iter_001"
+    current_iter = int(current_iter_folder.split("_")[-1])
+    DATA_PATH = "/home/luiz/multi-task-fcn/1th_version_data"  
+
+    ######### Define Loader ############
+    LABEL_PATH = os.path.join(DATA_PATH, "segmentation","samples_A1_train2tif.tif" )
+    raster_train = read_tiff(LABEL_PATH)
+
+    DEPTH_PATH = os.path.join(DATA_PATH, "iter_000", "distance_map", "train_distance_map.tif")
+    depth_img = read_tiff(DEPTH_PATH)
+
+    image, coords_train, raster_train, labs_coords_train = define_loader(args.ortho_image, 
+                                                                         raster_train, 
+                                                                         args.size_crops)
+    
+    ######## do oversampling in minor classes
+    coords_train = oversamp(coords_train, labs_coords_train, under=False)
+
+    if args.samples > coords_train.shape[0]:
+        args.samples = None
+
+    # build data for training
+    train_dataset = DatasetFromCoord(
+        image,
+        raster_train,
+        depth_img,
+        coords_train,
+        args.size_crops,
+        args.samples,
+        augment = True
+    )
+
+    train_loader = torch.utils.data.DataLoader(
+        train_dataset,
+        batch_size=args.batch_size,
+        num_workers=args.workers,
+        pin_memory=True,
+        drop_last=True,
+        shuffle=True,
+    )
+
+    np.random.shuffle(train_loader.dataset.coord)
+
+    for batch in train_loader:
+        batch
+        pass
