@@ -28,7 +28,7 @@ test_itc: False
 # num samples per epoch
 samples: 2500
 # True for data augmentation during training
-augment: False
+augment: True
 
 # convnet architecture --> 'resunet','deeplabv3_resnet50'
 arch: deeplabv3_resnet50
