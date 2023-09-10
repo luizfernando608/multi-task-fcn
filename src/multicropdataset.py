@@ -127,24 +127,54 @@ class DatasetFromCoord(Dataset):
         if torch.is_tensor(idx):
             idx = idx.tolist()
         
-        # Crop image around the coords with a box with side psize
-        image = self.image[:, 
-                           self.coord[idx, 0] - self.psize//2 : self.coord[idx,0] + self.psize//2,
-                           self.coord[idx,1] - self.psize//2 : self.coord[idx,1] + self.psize//2]
-        
 
-        image = torch.from_numpy(image.astype(np.float32))
+        if self.evaluation:
+            # Crop image around the coords with a box with side psize
+            image = self.image[:, 
+                            self.coord[idx, 0] - self.psize//2 : self.coord[idx,0] + self.psize//2,
+                            self.coord[idx,1] - self.psize//2 : self.coord[idx,1] + self.psize//2]
+        
+            image = torch.from_numpy(image.astype(np.float32))
+
         
         # If is training, return image, depth map, and label ref croppped
         if not self.evaluation:
+
+            # If augmentation is enabled, random crop the label around the position of the coord
+            if self.augment:
+                # random distance between the label coord and the left side bound box
+                random_x_prop = np.random.uniform(low = 0.1, high = 0.9)
+                # the distance between the label center and the left bound box
+                dist_x_left_border = int(self.psize * random_x_prop)
+
+                # random distance between the label coord and the top side bound box
+                random_y_prop = np.random.uniform(low = 0.1, high = 0.9)
+                # the distance between the label center and the right bound box
+                dist_y_top_border = int(self.psize * random_y_prop)
+
+
+            else:
+                dist_x_left_border = self.psize//2
+
+                dist_y_top_border = self.psize//2
+            
+
+            dist_x_right_border = self.psize - dist_x_left_border
+            dist_y_bottom_border = self.psize - dist_y_top_border
+
+            # Crop image around the coords with a box with side psize
+            image = self.image[:, 
+                            self.coord[idx, 0] - dist_x_left_border: self.coord[idx,0] + dist_x_right_border,
+                            self.coord[idx, 1] - dist_y_bottom_border : self.coord[idx,1] + dist_y_top_border]
+            
             # crop the label ref with the same box
-            ref = self.labels[self.coord[idx,0] - self.psize//2 : self.coord[idx,0] + self.psize//2,
-                              self.coord[idx,1] - self.psize//2 : self.coord[idx,1] + self.psize//2]
+            ref = self.labels[self.coord[idx, 0] - dist_x_left_border: self.coord[idx,0] + dist_x_right_border,
+                              self.coord[idx,1] - dist_y_bottom_border : self.coord[idx,1] + dist_y_top_border]
             
             
             # crop the depth map with the same box
-            depth = self.depth_img[self.coord[idx,0] - self.psize//2 : self.coord[idx,0] + self.psize//2,
-                                   self.coord[idx,1] - self.psize//2 : self.coord[idx,1] + self.psize//2]
+            depth = self.depth_img[self.coord[idx, 0] - dist_x_left_border: self.coord[idx,0] + dist_x_right_border,
+                                   self.coord[idx,1] - dist_y_bottom_border : self.coord[idx,1] + dist_y_top_border]
 
 
             ref = torch.tensor(ref.astype(np.float32))       
