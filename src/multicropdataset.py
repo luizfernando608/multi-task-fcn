@@ -136,7 +136,6 @@ class DatasetFromCoord(Dataset):
                             self.coord[idx, 0] - self.psize//2 : self.coord[idx,0] + self.psize//2,
                             self.coord[idx,1] - self.psize//2 : self.coord[idx,1] + self.psize//2]
         
-            image = torch.from_numpy(image.astype(np.float32))
 
         
         # If is training, return image, depth map, and label ref croppped
