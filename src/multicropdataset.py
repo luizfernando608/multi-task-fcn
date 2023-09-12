@@ -176,14 +176,29 @@ class DatasetFromCoord(Dataset):
             depth = self.depth_img[self.coord[idx, 0] - dist_x_left_border: self.coord[idx,0] + dist_x_right_border,
                                    self.coord[idx,1] - dist_y_bottom_border : self.coord[idx,1] + dist_y_top_border]
 
+            
+
+            image = torch.from_numpy(image.astype(np.float32))
 
             ref = torch.tensor(ref.astype(np.float32))       
             
             depth = torch.tensor(depth.astype(np.float32)) 
 
+
             # # If true, applies data augmentation
-            # if self.augment:
-            #     image, depth, ref = self.trans(image, depth, ref)
+            if self.augment:
+                # Run Horizontal Flip
+                if np.random.random() > 0.5:
+                    image = transforms.functional.hflip(image)
+                    ref = transforms.functional.hflip(ref)
+                    depth = transforms.functional.hflip(depth)
+
+                # Run Vertical Flip
+                if np.random.random() > 0.5:
+                    image = transforms.functional.vflip(image)
+                    ref = transforms.functional.vflip(ref)
+                    depth = transforms.functional.vflip(depth)
+                
 
             return image, depth, ref.long()
 
