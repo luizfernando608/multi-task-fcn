@@ -201,6 +201,11 @@ class DatasetFromCoord(Dataset):
                     ref = transforms.functional.vflip(ref)
                     depth = transforms.functional.vflip(depth)
                 
+                angle = np.random.randint(0, 360)
+                image = transforms.functional.rotate(image.unsqueeze(0), angle).squeeze(0)
+                ref = transforms.functional.rotate(ref.unsqueeze(0), angle).squeeze(0)
+                depth = transforms.functional.rotate(depth.unsqueeze(0), angle).squeeze(0)
+
 
             return image, depth, ref.long()
 
