@@ -75,24 +75,6 @@ class DatasetFromCoord(Dataset):
         
         self.augment = augment
         
-        # if self.augment:
-        #     # Define augmentation methods
-        #     self.trans = K.AugmentationSequential(
-        #         # K.RandomResizedCrop(size=(self.psize,self.psize),scale=(0.5, 1.), p=0.0), #Randomly Crop image and resize to the current shape,
-        #         # K.RandomRotation(degrees=(-45.0,45.0), p=0.2),
-        #         # K.RandomElasticTransform(kernel_size=(3, 3), sigma=(5.0, 5.0), alpha=(1.0, 1.0),p=0.2),
-        #         # K.RandomPosterize(3., p=0.2), # Randomly reduce the number of bit of each color channe
-        #         # K.RandomEqualize(p=0.2), # Randomly change color histogram
-        #         # K.RandomMotionBlur(3, 10., 0.5), # Randomly apply blur to the image,
-        #         # K.RandomSharpness(sharpness=0.5),
-        #         # K.RandomGaussianBlur((3, 3), (0.1, 2.0),p=0.5), # Randomly apply blur to the image,
-        #         # K.RandomPerspective(0.1, p=0.5),
-        #         # K.RandomThinPlateSpline(p=0.5),   
-        #         data_keys=['input','input','mask'], # define keyargs to the function
-        #         keepdim = True, # keep the same image dim
-        #         same_on_batch=False
-        #         )
-
 
     def __len__(self):
         """Get the Dataset length
@@ -135,7 +117,7 @@ class DatasetFromCoord(Dataset):
             image = self.image[:, 
                             self.coord[idx, 0] - self.psize//2 : self.coord[idx,0] + self.psize//2,
                             self.coord[idx,1] - self.psize//2 : self.coord[idx,1] + self.psize//2]
-        
+ 
 
         
         # If is training, return image, depth map, and label ref croppped
