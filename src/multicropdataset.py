@@ -16,6 +16,8 @@ from typing import Tuple
 
 import os
 
+import torchvision.transforms as transforms 
+
 from tqdm import tqdm
 
 logger = getLogger()
