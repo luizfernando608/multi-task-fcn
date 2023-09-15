@@ -526,7 +526,7 @@ def train_iteration(current_iter_folder:str, args:dict):
 
     to_restore = {"epoch": 0, "count_early": 0, "is_iter_finished":False, "best_val":(100.)}
     restart_from_checkpoint(
-        last_checkpoint,
+        current_checkpoint,
         run_variables=to_restore,
         state_dict=model,
         optimizer=optimizer,
