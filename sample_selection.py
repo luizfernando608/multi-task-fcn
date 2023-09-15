@@ -373,17 +373,15 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
                                        new_components_img = new_components_pred_map,
                                        new_label_img = new_pred_map)
     
-
-    intersection_label_map = get_label_intersection(old_components_img = old_components_pred_map, 
-                                                    new_components_img = new_components_pred_map,
-                                                    new_label_img = new_pred_map)
-    
     select_n_labels_by_class(
         delta_label_map,
         samples_by_class = 5
     )
 
-
+    intersection_label_map = get_label_intersection(old_components_img = old_components_pred_map, 
+                                                    new_components_img = new_components_pred_map,
+                                                    new_label_img = new_pred_map)
+    
 
     selected_labels_set = join_labels_set(intersection_label_map, old_pred_map, 0.10 )
 
@@ -403,27 +401,24 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
 
 if __name__ == "__main__":
     args = read_yaml("args.yaml")
+    gt_map = read_tiff("/home/luiz/multi-task-fcn/5.0_version_data/raw_image/fixed_ortoA1_25tiff.tif")
+
+    old_pred_map = read_tiff("/home/luiz/multi-task-fcn/5.0_version_data/iter_003/raster_prediction/join_class_itcFalse_1.1.TIF")
+
+    old_prob_map = read_tiff("/home/luiz/multi-task-fcn/5.0_version_data/iter_003/raster_prediction/join_prob_itcFalse_1.1.TIF")
+
+    new_pred_map = read_tiff("/home/luiz/multi-task-fcn/5.0_version_data/iter_004/raster_prediction/join_class_itcFalse_1.1.TIF")
+
+    new_prob_map = read_tiff("/home/luiz/multi-task-fcn/5.0_version_data/iter_004/raster_prediction/join_prob_itcFalse_1.1.TIF")
+
+    all_labels_set, selected_labels_set =  get_new_segmentation_sample(old_pred_map = old_pred_map,
+                                                                       new_pred_map = new_pred_map,
+                                                                       new_prob_map = new_pred_map,
+                                                                       ground_truth_map = gt_map,
+                                                                       data_path =  args.data_path
+                                                                       )
     
-    from pytictoc import TicToc
-
-    # create instance of class
-    t = TicToc()
-
-
-    # # save the parameters
-    # np.save("debug_arrays/component_ids_to_remove.npy", component_ids_to_remove)
-    # np.save("debug_arrays/components_img.npy", components_img)
-    # np.save("debug_arrays/label_img.npy", label_img)
-
-    component_ids_to_remove = np.load("debug_arrays/component_ids_to_remove.npy")
-    components_img = np.load("debug_arrays/components_img.npy")
-    label_img = np.load("debug_arrays/label_img.npy")
-
-    t.tic()
-    remove_components_by_index(component_ids_to_remove, components_img, label_img)
-    t.toc()
-
-    print("Foi")
+    print("Ok")
     # old_pred_map = np.load("debug_arrays/old_pred_map.npy")
     # new_pred = np.load("debug_arrays/new_pred.npy")
     # ground_truth_map = np.load("debug_arrays/ground_truth_map.npy")
@@ -487,4 +482,5 @@ if __name__ == "__main__":
 
     # # # save figure
     # plt.savefig("debug_images/sample_selection_test.png", dpi=600)
+
 
