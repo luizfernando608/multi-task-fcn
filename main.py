@@ -428,7 +428,7 @@ def train_iteration(current_iter_folder:str, args:dict):
     ########## LOAD MODEL WEIGHTS FROM THE LAST CHECKPOINT ##########
     last_checkpoint = os.path.join(current_model_folder, args.checkpoint_file)
     
-    loaded_from_last_checkpoint = False
+    loaded_from_last_iteration = False
     
     # If the weights from the current iteration, doenst exist. 
     # The weigths from the last one is loaded
@@ -437,7 +437,7 @@ def train_iteration(current_iter_folder:str, args:dict):
             
             last_checkpoint = os.path.join(args.data_path, f"iter_{current_iter-1:03d}", args.model_dir, args.checkpoint_file)
             
-            loaded_from_last_checkpoint = True
+            loaded_from_last_iteration = True
 
             print_sucess("Loaded_from_last_checkpoint")
         
@@ -490,7 +490,7 @@ def train_iteration(current_iter_folder:str, args:dict):
 
     # If the metrics are from the model from the last iteration, 
     # the model reset the metrics
-    if loaded_from_last_checkpoint:
+    if loaded_from_last_iteration:
         to_restore["epoch"] = 0
         to_restore["best_val"] = 100.
         to_restore["count_early"] = 0
@@ -534,7 +534,13 @@ def train_iteration(current_iter_folder:str, args:dict):
     )
     
     
-    save_checkpoint(current_checkpoint, model, optimizer, to_restore["epoch"], to_restore["best_val"], to_restore["count_early"], is_iter_finished=True)
+    save_checkpoint(current_checkpoint, 
+                    model, 
+                    optimizer, 
+                    to_restore["epoch"], 
+                    to_restore["best_val"], 
+                    to_restore["count_early"], 
+                    is_iter_finished=True)
     
 
     # FREE UP MEMORY
