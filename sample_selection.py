@@ -357,8 +357,7 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
     new_components_pred_map = label(new_pred_map)
 
     # new components
-    delta_label_map = get_labels_delta(old_components_img = old_components_pred_map, 
-                                       new_components_img = new_components_pred_map,
+    delta_label_map = get_labels_delta(old_label_img = old_pred_map, 
                                        new_label_img = new_pred_map)
     
     # rever essa alteração
