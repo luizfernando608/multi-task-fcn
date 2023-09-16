@@ -655,6 +655,7 @@ while True:
         old_pred_map = old_pred_map, 
         new_pred_map = new_pred_map, 
         new_prob_map = new_prob_map, 
+        new_depth_map = new_depth_map,
         data_path = args.data_path,
     )
 
