@@ -369,17 +369,21 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
         samples_by_class = 5
     )
 
+
     intersection_label_map = get_label_intersection(old_label_img = old_pred_map, 
                                                     new_label_img = new_pred_map)
-    
+        
 
     selected_labels_set = join_labels_set(intersection_label_map, old_pred_map, 0.10 )
 
-    selected_labels_set = join_labels_set(delta_label_map, intersection_label_map, 0.10 )
+    selected_labels_set = join_labels_set(delta_label_map, selected_labels_set, 0.10 )
 
     selected_labels_set = join_labels_set(ground_truth_map, selected_labels_set, 0.01 )
 
-    # rever essa lógica
+
+
+    all_labels_set = join_labels_set(intersection_label_map, old_pred_map, 0.10 )
+
     all_labels_set = join_labels_set(unbalanced_delta, old_pred_map, 0.10)
 
     all_labels_set = join_labels_set(ground_truth_map, all_labels_set, 0.01)
