@@ -389,7 +389,7 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
 if __name__ == "__main__":
     args = read_yaml("args.yaml")
 
-    gt_map = read_tiff("/home/luiz/multi-task-fcn/Data/orthoimages/fixed_ortoA1_25tiff.tif")
+    gt_map = read_tiff("/home/luiz/multi-task-fcn/6.0_version_data/segmentation/samples_A1_train2tif.tif")
 
     old_pred_map = read_tiff("/home/luiz/multi-task-fcn/6.0_version_data/segmentation/samples_A1_train2tif.tif")
 
