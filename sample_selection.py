@@ -240,7 +240,11 @@ def filter_components_by_mask(data_path:str, pred_map:np.ndarray):
     mask = read_tiff(os.path.join(data_path, "mask.tif"))
     mask = np.where(mask==99, 0, 1)
 
-    for component in np.unique(components_pred_map):
+    components_pred_map = label(pred_map)
+    
+    print("Filtering components out of the area of the experiment")
+
+    for component in tqdm(np.unique(components_pred_map)):
         component_filter = components_pred_map==component
         area_out_mask = np.mean( mask[component_filter])
         
