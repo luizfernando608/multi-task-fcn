@@ -343,6 +343,11 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
     
     new_pred_map = np.where(new_depth_map > 0.3, new_pred_map, 0 )
 
+    # remove inplace the components which is lower than 100
+    filter_components_by_geometric_property(new_pred_map, 
+                                            low_limit = 200, 
+                                            high_limit = np.inf, 
+                                            property = "area")
 
 
     new_components_pred_map = label(new_pred_map)
