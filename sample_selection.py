@@ -91,20 +91,22 @@ def remove_components_by_index(
 
 
 def get_labels_delta(
-    old_components_img: np.ndarray, new_components_img: np.ndarray, new_label_img: np.ndarray
+    old_label_img: np.ndarray, new_label_img: np.ndarray
 ) -> np.ndarray:
     """Get the components labels that are in the new image but not in the old image
 
     Parameters
     ----------
-    old_components_img : np.array
-        Old image map with the components
-    new_components_img : np.array
-        New image map with more components than the old image
+    old_label_img : np.array
+        New image map with the label classes (tree type)
+
     new_label_img : np.array
         New image map with the label classes (tree type)
 
     """
+    new_components_img = label(new_components_img)
+
+    old_components_img = label(old_label_img)
 
     label_delta = np.zeros_like(new_components_img)
 
