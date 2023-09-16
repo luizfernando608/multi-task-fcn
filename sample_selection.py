@@ -336,10 +336,6 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
     
     # Select only the components with confidence higher than 0.90
     new_pred_map = np.where(new_prob_map > 0.90, new_pred_map, 0)
-
-    old_components_pred_map = label(old_pred_map)
-
-    new_components_pred_map = label(new_pred_map)
     
     filter_components_by_mask(data_path, new_pred_map)
     
@@ -351,8 +347,6 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
                                             high_limit = np.inf, 
                                             property = "area")
 
-
-    new_components_pred_map = label(new_pred_map)
 
     # new components
     delta_label_map = get_labels_delta(old_label_img = old_pred_map, 
