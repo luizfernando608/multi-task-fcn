@@ -322,14 +322,10 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
     Returns
     -------
     all_labes_set : np.array
-        New segmentation map with tree type labels with all components with confidence higher than 0.99
+        New segmentation map with tree type labels with all components with confidence higher than 0.90
 
     selected_labels_set : np.array
         The same set as all_labels_set but with some filters applied to minimize unbalanced classes problem
-    
-    delta_labels_set : np.array
-        The difference between the new segmentation map and the segmentation map from the last iteration
-
     """
     # set labels at the same scale as ground truth labels
     new_pred_map += 1
