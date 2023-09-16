@@ -113,6 +113,7 @@ def get_labels_delta(
     components_to_iter = np.unique(new_components_img)
     components_to_iter = components_to_iter[np.nonzero(components_to_iter)]
 
+    print("Selecting the new components that are not in old segmentation")
     for idx in tqdm(components_to_iter):
         # if more than 90% of the area is empty it will be added to the new predicted sample
         if np.mean(old_components_img[new_components_img == idx] == 0) > 0.9:
