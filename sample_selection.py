@@ -104,7 +104,7 @@ def get_labels_delta(
         New image map with the label classes (tree type)
 
     """
-    new_components_img = label(new_components_img)
+    new_components_img = label(new_label_img)
 
     old_components_img = label(old_label_img)
 
