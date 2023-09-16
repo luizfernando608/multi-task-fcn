@@ -19,6 +19,8 @@ from typing import List, Tuple
 
 from generate_distance_map import apply_gaussian_distance_map
 
+from tqdm import tqdm
+
 
 def undersample(data: pd.DataFrame, column_category: str):
     X = data.drop(column_category, axis=1).copy()
@@ -109,7 +111,7 @@ def get_labels_delta(
     components_to_iter = np.unique(new_components_img)
     components_to_iter = components_to_iter[np.nonzero(components_to_iter)]
 
-    for idx in components_to_iter:
+    for idx in tqdm(components_to_iter):
         # if more than 90% of the area is empty it will be added to the new predicted sample
         if np.mean(old_components_img[new_components_img == idx] == 0) > 0.9:
             
@@ -151,7 +153,7 @@ def get_label_intersection(
     components_to_iter = np.unique(new_components_img)
     components_to_iter = components_to_iter[np.nonzero(components_to_iter)]
 
-    for idx in components_to_iter:
+    for idx in tqdm(components_to_iter):
         # if more than 90% of the area is filled it will be added to the intersection sample
         if np.mean(old_components_img[new_components_img == idx] == 0) < 0.9:
             
@@ -170,49 +172,28 @@ def get_label_intersection(
 
 
 
-def filter_components_by_geometric_properties(old_components_pred_map:np.ndarray, old_pred_labels:np.ndarray, components_pred_map: np.ndarray, pred_labels: np.ndarray):
+def filter_components_by_geometric_property(label_img:np.ndarray, low_limit:float, high_limit:float, property = "area"):
     """Filter components by geometric properties
-    Selected components with similar area to the previous iteration, considering the area of each tree type
+    Using some property about the compoment, this function select the components between the
+    low_limit and the high_limit.
 
     Parameters
     ----------
-    old_components_pred_map : np.ndarray
-        Components map from the previous iteration
-    old_pred_labels : np.ndarray
-        Labels map from the previous iteration
-    components_pred_map : np.ndarray
-        Components map from the current iteration
-    pred_labels : np.ndarray
-        Labels map from the current iteration
+
     """
 
-    stats_pred_data = get_components_stats(components_pred_map, pred_labels)
-    stats_pred_data.reset_index(inplace=True)
+    components_img = label(label_img)
 
-    old_stats_pred_data = get_components_stats(old_components_pred_map, old_pred_labels)
-    old_stats_pred_data.reset_index(inplace=True)
+    stats_label_data = get_components_stats(components_img, label_img).reset_index()
 
-    # get min area by tree_type
-    min_area = old_stats_pred_data.groupby(["tree_type"])["area"].min()
-    min_limit = min_area-min_area*0.15
-    min_limit.name = "min_limit"
+    filter_property = (stats_label_data[property] < low_limit) | (stats_label_data[property] > high_limit)
 
-    # get max area by tree_type
-    max_area = old_stats_pred_data.groupby(["tree_type"])["area"].max()
-    max_limit = max_area+max_area*0.15
-    max_limit.name = "max_limit"
-
-    stats_pred_data = stats_pred_data.merge(min_limit, on="tree_type", how="left").merge(max_limit, on="tree_type", how="left").copy()
-
-    filter_area = ~stats_pred_data["area"].between(stats_pred_data["min_limit"], stats_pred_data["max_limit"], inclusive="both")
-
-    component_ids_to_remove = stats_pred_data[filter_area]["label"]
-    component_ids_to_remove = np.array(component_ids_to_remove, dtype=int)
+    component_ids_to_remove = stats_label_data[filter_property]['label'].astype(int).values
 
     remove_components_by_index(
         component_ids_to_remove = component_ids_to_remove,
-        components_img = components_pred_map,
-        label_img = pred_labels
+        components_img = components_img,
+        label_img = label_img
     )
 
 
@@ -224,9 +205,8 @@ def select_n_labels_by_class(pred_labels:np.ndarray, samples_by_class:int = 5):
     delta_stats = get_components_stats(components_pred_map, pred_labels)
 
     # sample components
-    selected_samples = delta_stats[delta_stats["area"] > 50].groupby("tree_type").head(samples_by_class)
+    selected_samples = delta_stats.groupby("tree_type").head(samples_by_class)
 
-    
     # component_ids_to_remove = stats_pred_data[filter_area]["label"]
 
     # remove selected components
@@ -323,18 +303,20 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
                                 old_pred_map:np.ndarray, 
                                 new_pred_map:np.ndarray, 
                                 new_prob_map:np.ndarray, 
+                                new_depth_map:np.ndarray,
                                 data_path:str)->Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """ Get the new segmentation sample based on the segmentation from the last iteration and the new segmentation prediction set
     
     Parameters
     ----------
-    old_pred_map : np.array
+    old_pred_map : np.ndarray
         Segmentation map from the last iteration with tree two labels
-    new_pred_map : np.array
+    new_pred_map : np.ndarray
         New segmentation map with tree type labels
-    new_prob_map : np.array
+    new_prob_map : np.ndarray
         New segmentation map with confidence/probability at each pixel
-    
+    new_depth_map : np.ndarray
+        New depth map predicted by the auxiliar task of the model
     Returns
     -------
     all_labes_set : np.array
@@ -352,8 +334,6 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
     
     # Select only the components with confidence higher than 0.90
     new_pred_map = np.where(new_prob_map > 0.90, new_pred_map, 0)
-    
-    depth_map = apply_gaussian_distance_map(new_pred_map)
 
     old_components_pred_map = label(old_pred_map)
 
@@ -361,18 +341,21 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
     
     filter_components_by_mask(data_path, new_components_pred_map, new_pred_map)
     
-    # Apply Filter
-    new_pred_map = np.where(depth_map > 0.3, new_pred_map, 0 )
+    new_pred_map = np.where(new_depth_map > 0.3, new_pred_map, 0 )
+
+
 
     new_components_pred_map = label(new_pred_map)
-    
-    no_filter_new_pred = new_pred_map.copy()
 
     # new components
     delta_label_map = get_labels_delta(old_components_img = old_components_pred_map, 
                                        new_components_img = new_components_pred_map,
                                        new_label_img = new_pred_map)
     
+    # rever essa alteração
+    unbalanced_delta = delta_label_map.copy()
+
+
     select_n_labels_by_class(
         delta_label_map,
         samples_by_class = 5
@@ -389,8 +372,8 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
 
     selected_labels_set = join_labels_set(ground_truth_map, selected_labels_set, 0.01 )
 
-    
-    all_labels_set = join_labels_set(no_filter_new_pred, old_pred_map, 0.10)
+    # rever essa lógica
+    all_labels_set = join_labels_set(unbalanced_delta, old_pred_map, 0.10)
 
     all_labels_set = join_labels_set(ground_truth_map, all_labels_set, 0.01)
 
@@ -401,19 +384,21 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
 
 if __name__ == "__main__":
     args = read_yaml("args.yaml")
-    gt_map = read_tiff("/home/luiz/multi-task-fcn/5.0_version_data/raw_image/fixed_ortoA1_25tiff.tif")
 
-    old_pred_map = read_tiff("/home/luiz/multi-task-fcn/5.0_version_data/iter_003/raster_prediction/join_class_itcFalse_1.1.TIF")
+    gt_map = read_tiff("/home/luiz/multi-task-fcn/Data/orthoimages/fixed_ortoA1_25tiff.tif")
 
-    old_prob_map = read_tiff("/home/luiz/multi-task-fcn/5.0_version_data/iter_003/raster_prediction/join_prob_itcFalse_1.1.TIF")
+    old_pred_map = read_tiff("/home/luiz/multi-task-fcn/6.0_version_data/segmentation/samples_A1_train2tif.tif")
 
-    new_pred_map = read_tiff("/home/luiz/multi-task-fcn/5.0_version_data/iter_004/raster_prediction/join_class_itcFalse_1.1.TIF")
+    new_pred_map = read_tiff("/home/luiz/multi-task-fcn/6.0_version_data/iter_001/raster_prediction/join_class_itcFalse_1.1.TIF")
 
-    new_prob_map = read_tiff("/home/luiz/multi-task-fcn/5.0_version_data/iter_004/raster_prediction/join_prob_itcFalse_1.1.TIF")
+    new_prob_map = read_tiff("/home/luiz/multi-task-fcn/6.0_version_data/iter_001/raster_prediction/join_prob_itcFalse_1.1.TIF")
 
+    depth_predicted = read_tiff("/home/luiz/multi-task-fcn/6.0_version_data/iter_001/raster_prediction/depth_itcFalse_1.1.TIF")
+    
     all_labels_set, selected_labels_set =  get_new_segmentation_sample(old_pred_map = old_pred_map,
                                                                        new_pred_map = new_pred_map,
-                                                                       new_prob_map = new_pred_map,
+                                                                       new_prob_map = new_prob_map,
+                                                                       new_depth_map = depth_predicted,
                                                                        ground_truth_map = gt_map,
                                                                        data_path =  args.data_path
                                                                        )
