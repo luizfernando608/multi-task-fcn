@@ -353,7 +353,7 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
     delta_label_map = get_labels_delta(old_label_img = old_pred_map, 
                                        new_label_img = new_pred_map)
     
-    # rever essa alteração
+
     unbalanced_delta = delta_label_map.copy()
 
 
