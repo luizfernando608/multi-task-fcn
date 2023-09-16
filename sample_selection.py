@@ -132,16 +132,15 @@ def get_labels_delta(
 
 
 def get_label_intersection(
-    old_components_img: np.ndarray, new_components_img: np.ndarray, new_label_img: np.ndarray
+    old_label_img: np.ndarray, new_label_img: np.ndarray
 )-> np.ndarray:
     """Get the labels from the new_label_img that are in the old_components_img
 
     Parameters
     ----------
-    old_components_img : np.ndarray
-        Components from the predicted segmentation from the last iteration
-    new_components_img : np.ndarray
-        Components from the new_label_img
+    old_label_img : np.ndarray
+        Segmentation predicted by the previous iteration
+
     new_label_img : np.ndarray
         Segmentation predicted
 
@@ -149,6 +148,9 @@ def get_label_intersection(
     ---------
         The labels from the new segmentation that are in the old_components_img
     """
+    
+    old_components_img = label(old_label_img)
+    new_components_img = label(new_label_img)
 
     label_intersection = np.zeros_like(new_components_img)
 
@@ -368,8 +370,7 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
         samples_by_class = 5
     )
 
-    intersection_label_map = get_label_intersection(old_components_img = old_components_pred_map, 
-                                                    new_components_img = new_components_pred_map,
+    intersection_label_map = get_label_intersection(old_label_img = old_pred_map, 
                                                     new_label_img = new_pred_map)
     
 
