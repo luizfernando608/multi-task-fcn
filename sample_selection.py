@@ -323,6 +323,7 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
                                 old_pred_map:np.ndarray, 
                                 new_pred_map:np.ndarray, 
                                 new_prob_map:np.ndarray, 
+                                new_depth_map:np.ndarray,
                                 data_path:str)->Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """ Get the new segmentation sample based on the segmentation from the last iteration and the new segmentation prediction set
     
@@ -334,7 +335,8 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
         New segmentation map with tree type labels
     new_prob_map : np.array
         New segmentation map with confidence/probability at each pixel
-    
+    new_depth_map : np.ndarray
+        New depth map predicted by the auxiliar task of the model
     Returns
     -------
     all_labes_set : np.array
@@ -353,7 +355,7 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
     # Select only the components with confidence higher than 0.90
     new_pred_map = np.where(new_prob_map > 0.90, new_pred_map, 0)
     
-    depth_map = apply_gaussian_distance_map(new_pred_map)
+    # depth_map = apply_gaussian_distance_map(new_pred_map)
 
     old_components_pred_map = label(old_pred_map)
 
@@ -361,8 +363,8 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
     
     filter_components_by_mask(data_path, new_components_pred_map, new_pred_map)
     
-    # Apply Filter
-    new_pred_map = np.where(depth_map > 0.3, new_pred_map, 0 )
+    new_pred_map = np.where(new_depth_map > 0.3, new_pred_map, 0 )
+
 
     new_components_pred_map = label(new_pred_map)
     
