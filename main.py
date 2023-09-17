@@ -66,6 +66,19 @@ def clear_ram_cache():
     p = subprocess.Popen(clear_command_alias, shell=True).wait()
 
 
+def delete_useless_files(current_iter_folder:str):
+    
+    folder_to_remove = os.path.join(current_iter_folder,"prediction")
+
+    if os.path.exists(folder_to_remove):
+        os.remove(folder_to_remove)
+    
+    else:
+        raise FileExistsError("The path doesnt exist")
+
+
+
+
 def is_iter_0_done(data_path:str):
     """Verify if the distance map from the ground truth segmentation is done
 
@@ -685,6 +698,11 @@ while True:
     check_folder(os.path.dirname(SELECTED_LABELS_DISTANCE_MAP_PATH))
     generate_distance_map(SELECTED_LABELS_PATH, SELECTED_LABELS_DISTANCE_MAP_PATH)
     
+
+    #############################################
+
+    delete_useless_files(current_iter_folder = current_iter_folder)
+
     print_sucess("Distance map generated")
  
 
