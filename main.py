@@ -385,7 +385,7 @@ def train_iteration(current_iter_folder:str, args:dict):
         The parameters are defined in the args.yaml file
     """
 
-    
+    current_model_folder = os.path.join(current_iter_folder, args.model_dir)
 
     current_iter = int(current_iter_folder.split("_")[-1])
 
