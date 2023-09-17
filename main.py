@@ -9,6 +9,8 @@ import subprocess
 
 from osgeo import gdal
 
+import shutil
+
 import pandas as pd
 
 import numpy as np
