@@ -71,7 +71,7 @@ def delete_useless_files(current_iter_folder:str):
     folder_to_remove = os.path.join(current_iter_folder,"prediction")
 
     if os.path.exists(folder_to_remove):
-        os.remove(folder_to_remove)
+        shutil.rmtree(folder_to_remove)
     
     else:
         raise FileExistsError("The path doesnt exist")
