@@ -85,3 +85,26 @@ def evaluate_metrics(pred:Union[np.ndarray, torch.Tensor], gt:Union[np.ndarray, 
     return accu_criteria
 
 
+if __name__ == "__main___":
+    import os
+    from utils import read_yaml, read_tiff
+    import yaml
+
+    args = read_yaml("../args.yaml")
+
+    current_iter_folder = "/home/luiz/multi-task-fcn/4.3_version_data"
+
+    GROUND_TRUTH_PATH = os.path.join(args.data_path, args.test_segmentation_path)
+    ground_truth_test = read_tiff(GROUND_TRUTH_PATH)
+
+    PRED_PATH = os.path.join(current_iter_folder, "raster_prediction", f"join_class_itc{args.test_itc}_{np.sum(args.overlap)}.TIF")
+    predicted_seg = read_tiff(PRED_PATH)
+
+    
+    metrics = evaluate_metrics(predicted_seg, ground_truth_test)
+
+
+    with open(os.path.join(current_iter_folder,'store_file.yaml'), 'w') as file:
+
+        documents = yaml.dump(metrics, file)
+        
