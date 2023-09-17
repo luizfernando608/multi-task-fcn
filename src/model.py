@@ -120,8 +120,8 @@ def build_model(image_shape:list, num_classes:int, arch:str, filters:list, pretr
             check_folder(model_path)
             model = torch.hub.load('pytorch/vision:v0.10.0', 
                 arch, 
-                pretrained=pretrained,
-                aux_loss =True)
+                pretrained = pretrained,
+                aux_loss = True)
             
             torch.save(model, os.path.join(model_path,'model'))
         
