@@ -335,8 +335,8 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
     # set labels at the same scale as ground truth labels
     new_pred_map += 1
     
-    # Select only the components with confidence higher than 0.90
-    new_pred_map = np.where(new_prob_map > 0.90, new_pred_map, 0)
+    # Select only the components with confidence higher than 0.99
+    new_pred_map = np.where(new_prob_map > 0.99, new_pred_map, 0)
     
     filter_components_by_mask(data_path, new_pred_map)
     
