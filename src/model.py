@@ -237,9 +237,6 @@ def categorical_focal_loss(input:torch.Tensor, target:torch.Tensor, gamma = 2) -
     """
     epsilon = 1e-10
 
-    soft = nn.Softmax(dim=1).cuda()
-    log_soft = nn.LogSoftmax(dim=1).cuda()
-    
     prob = F.softmax(input, dim = 1)
 
     prob = torch.gather(prob, 1, target.unsqueeze(1))
