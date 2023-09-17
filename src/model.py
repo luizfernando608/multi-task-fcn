@@ -307,9 +307,8 @@ def train(train_loader:torch.utils.data.DataLoader,
         depth = depth.cuda(non_blocking=True)
         ref = ref.cuda(non_blocking=True)
         
-        # creat mask for the unknown pixels
-        mask = torch.ones(ref.shape)
-        mask[ref==0] = 0
+        # create mask for the unknown pixels
+        mask = torch.where(ref == 0, torch.tensor(0.0), torch.tensor(1.0))
         mask = mask.cuda(non_blocking=True)
 
         ref_copy = torch.zeros(ref.shape).long().cuda(non_blocking=True)
