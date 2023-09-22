@@ -235,18 +235,15 @@ def categorical_focal_loss(input:torch.Tensor, target:torch.Tensor, gamma = 2) -
         The loss for each pixel in image
         shape : (batch, image_height, image_width)
     """
-    epsilon = 1e-10
 
     prob = F.softmax(input, dim = 1)
+    log_prob = F.log_softmax(input, dim = 1)
 
-    prob = torch.gather(prob, 1, target.unsqueeze(1))
-
-    loss = - ((1-prob)**gamma) * torch.log(prob + epsilon)
-    
-    loss = loss.squeeze(dim = 1)
-
-    return loss
-
+    return F.nll_loss(
+        ((1 - prob) ** gamma) * log_prob, 
+        target=target,
+        reduction = "none"
+    )
 
 
 
