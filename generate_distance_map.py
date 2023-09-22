@@ -13,7 +13,7 @@ from src.utils import check_folder, array2raster, read_tiff, read_yaml, print_su
 
 
 
-def apply_gaussian_distance_map(input_img:np.ndarray)->np.ndarray:
+def apply_gaussian_distance_map(input_img:np.ndarray, sigma=5)->np.ndarray:
     """Apply euclidean distance transform and gaussian filter to the input image
 
     Parameters
@@ -36,7 +36,7 @@ def apply_gaussian_distance_map(input_img:np.ndarray)->np.ndarray:
     # apply distance transform and gaussian filter
     new_lab = label_ref.copy()
     new_lab = distance_transform_edt(new_lab)
-    new_lab = gaussian_filter(new_lab, sigma=5)
+    new_lab = gaussian_filter(new_lab, sigma)
     
 
     # create the new image with the distance map
