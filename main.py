@@ -38,7 +38,6 @@ from src.logger import create_logger
 from src.model import define_loader, build_model, load_weights, train, save_checkpoint
 from src.multicropdataset import DatasetFromCoord
 from src.utils import (
-    initialize_exp,
     restart_from_checkpoint,
     fix_random_seeds,
     read_tiff,
