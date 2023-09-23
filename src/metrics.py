@@ -7,10 +7,18 @@ Created on Sun Aug  8 13:01:29 2021
 import numpy as np
 from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score
 import torch
+from os.path import dirname, join
+
+from .utils import read_yaml
 
 from typing import Union
 
-def evaluate_metrics(pred:Union[np.ndarray, torch.Tensor], gt:Union[np.ndarray, torch.Tensor], val = 0) -> dict:
+ROOT_PATH = dirname(dirname(__file__))
+
+args = read_yaml(join(ROOT_PATH, "args.yaml"))
+
+
+def evaluate_metrics(pred:Union[np.ndarray, torch.Tensor], gt:Union[np.ndarray, torch.Tensor], num_class:int = args.nb_class) -> dict:
     """Calculte the metrics:
     Accuracy, F1 Score, Precision, and Recall.
     Calculate based on the pred with highest probability and the gt - ground truth segmentation.
