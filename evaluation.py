@@ -40,7 +40,8 @@ from src.model import build_model, load_weights
 from typing import Tuple, Union, Iterable
 from logging import Logger
 
-args = read_yaml("args.yaml")
+ROOT_PATH = os.path.dirname(__file__)
+args = read_yaml(os.path.join(ROOT_PATH, "args.yaml"))
 
 
         
