@@ -18,8 +18,7 @@ from imblearn.under_sampling import RandomUnderSampler
 from typing import List, Tuple
 
 from generate_distance_map import apply_gaussian_distance_map
-
-from tqdm import tqdm
+from scipy.ndimage import gaussian_filter
 
 
 def undersample(data: pd.DataFrame, column_category: str):
@@ -42,6 +41,24 @@ def undersample(data: pd.DataFrame, column_category: str):
 
     return undersampled_data
 
+
+def set_same_class_at_component(label_img:np.ndarray):
+
+    components_img = label(np.where(label_img>0, 1, 0))
+    
+    # remove component 0
+    component_ids = np.unique(components_img)
+    component_ids = component_ids[np.nonzero(component_ids)]
+
+    for component_id in tqdm(component_ids):
+        filter_component = components_img == component_id
+
+        ids, counts = np.unique(label_img[filter_component], return_counts=True)
+
+        most_commom_id = ids[np.argmax(counts)]
+
+        label_img[filter_component] = most_commom_id
+    
 
 
 def get_components_stats(components_img: np.ndarray, label_img: np.ndarray):
@@ -158,6 +175,7 @@ def get_label_intersection(
     components_to_iter = np.unique(new_components_img)
     components_to_iter = components_to_iter[np.nonzero(components_to_iter)]
 
+    print("Getting the intersection between the old an new segmentation")
     for idx in tqdm(components_to_iter):
         # if more than 90% of the area is filled it will be added to the intersection sample
         if np.mean(old_components_img[new_components_img == idx] == 0) < 0.9:
@@ -336,13 +354,30 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
     new_pred_map += 1
     
     # Select only the components with confidence higher than 0.99
-    new_pred_map = np.where(new_prob_map > 0.99, new_pred_map, 0)
+    # new_pred_map = np.where(new_prob_map > 0.99, new_pred_map, 0)
     
-    filter_components_by_mask(data_path, new_pred_map)
-    
-    new_pred_map = np.where(new_depth_map > 0.3, new_pred_map, 0 )
+    # depth map
+    new_depth_map = gaussian_filter(new_depth_map, sigma = 9)
 
-    # remove inplace the components which is lower than 100
+    # new_depth_map = np.where(new_depth_map > 0.4, 1, 0)
+
+    # prob map
+    new_prob_map = gaussian_filter(new_prob_map, sigma = 9)
+
+    # new_prob_map = np.where(new_prob_map > 0.95, 1, 0)
+
+    mask_selection = (new_depth_map + new_prob_map) > 1.2 
+
+    new_pred_map[~mask_selection] = 0
+    
+    # set_same_class_at_component(new_pred_map)
+
+    filter_components_by_mask(data_path, new_pred_map)
+
+    # new_pred_map = np.where(new_depth_map > 0.3, new_pred_map, 0 )
+
+    # # remove inplace the components lower than 200 
+    # # Applied before the smothing mask to improve efficiency
     filter_components_by_geometric_property(new_pred_map, 
                                             low_limit = 200, 
                                             high_limit = np.inf, 
@@ -389,15 +424,15 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
 if __name__ == "__main__":
     args = read_yaml("args.yaml")
 
-    gt_map = read_tiff("/home/luiz/multi-task-fcn/6.0_version_data/segmentation/samples_A1_train2tif.tif")
+    gt_map = read_tiff("/home/luiz/multi-task-fcn/7.0_version_data/segmentation/samples_A1_train2tif.tif")
 
-    old_pred_map = read_tiff("/home/luiz/multi-task-fcn/6.0_version_data/segmentation/samples_A1_train2tif.tif")
+    old_pred_map = read_tiff("/home/luiz/multi-task-fcn/7.0_version_data/segmentation/samples_A1_train2tif.tif")
 
-    new_pred_map = read_tiff("/home/luiz/multi-task-fcn/6.0_version_data/iter_001/raster_prediction/join_class_itcFalse_1.1.TIF")
+    new_pred_map = read_tiff("/home/luiz/multi-task-fcn/7.0_version_data/iter_001/raster_prediction/join_class_itcFalse_1.1.TIF")
 
-    new_prob_map = read_tiff("/home/luiz/multi-task-fcn/6.0_version_data/iter_001/raster_prediction/join_prob_itcFalse_1.1.TIF")
+    new_prob_map = read_tiff("/home/luiz/multi-task-fcn/7.0_version_data/iter_001/raster_prediction/join_prob_itcFalse_1.1.TIF")
 
-    depth_predicted = read_tiff("/home/luiz/multi-task-fcn/6.0_version_data/iter_001/raster_prediction/depth_itcFalse_1.1.TIF")
+    depth_predicted = read_tiff("/home/luiz/multi-task-fcn/7.0_version_data/iter_001/raster_prediction/depth_itcFalse_1.1.TIF")
     
     all_labels_set, selected_labels_set =  get_new_segmentation_sample(old_pred_map = old_pred_map,
                                                                        new_pred_map = new_pred_map,
