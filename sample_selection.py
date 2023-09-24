@@ -354,21 +354,21 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
     new_pred_map += 1
     
     # Select only the components with confidence higher than 0.99
-    # new_pred_map = np.where(new_prob_map > 0.99, new_pred_map, 0)
+    new_pred_map = np.where(new_prob_map > 0.95, new_pred_map, 0)
     
     # depth map
-    new_depth_map = gaussian_filter(new_depth_map, sigma = 9)
+    # new_depth_map = gaussian_filter(new_depth_map, sigma = 9)
 
     # new_depth_map = np.where(new_depth_map > 0.4, 1, 0)
 
     # prob map
-    new_prob_map = gaussian_filter(new_prob_map, sigma = 9)
+    # new_prob_map = gaussian_filter(new_prob_map, sigma = 9)
 
     # new_prob_map = np.where(new_prob_map > 0.95, 1, 0)
 
-    mask_selection = (new_depth_map + new_prob_map) > 1.2 
+    # mask_selection = (new_depth_map + new_prob_map) > 1.2 
 
-    new_pred_map[~mask_selection] = 0
+    # new_pred_map[~mask_selection] = 0
     
     # set_same_class_at_component(new_pred_map)
 
