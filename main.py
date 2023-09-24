@@ -568,19 +568,29 @@ def train_iteration(current_iter_folder:str, args:dict):
 def compile_metrics(current_iter_folder, args):
     # read test segmentation 
     # f'join_class_itc{args.test_itc}_{np.sum(args.overlap)}.TIF'
-    GROUND_TRUTH_PATH = os.path.join(args.data_path, args.test_segmentation_path)
-    ground_truth_test = read_tiff(GROUND_TRUTH_PATH)
+    DATA_PATH = os.path.dirname(current_iter_folder)
 
+    GROUND_TRUTH_TEST_PATH = os.path.join(DATA_PATH, args.test_segmentation_path)
+    ground_truth_test = read_tiff(GROUND_TRUTH_TEST_PATH)
+
+    GROUND_TRUTH_TRAIN_PATH = os.path.join(DATA_PATH, args.train_segmentation_path)
+    ground_truth_train = read_tiff(GROUND_TRUTH_TRAIN_PATH)
 
     PRED_PATH = os.path.join(current_iter_folder, "raster_prediction", f"join_class_itc{args.test_itc}_{np.sum(args.overlap)}.TIF")
     predicted_seg = read_tiff(PRED_PATH)
 
-    metrics = evaluate_metrics(predicted_seg, ground_truth_test)
+    metrics_test = evaluate_metrics(predicted_seg, ground_truth_test)
 
+    with open(os.path.join(current_iter_folder,'test_metrics.yaml'), 'w') as file:
 
-    with open(os.path.join(current_iter_folder,'store_file.yaml'), 'w') as file:
+        documents = yaml.dump(metrics_test, file)
+    
 
-        documents = yaml.dump(metrics, file)
+    metrics_train = evaluate_metrics(predicted_seg, ground_truth_train, args.nb_class)
+
+    with open(os.path.join(current_iter_folder,'train_metrics.yaml'), 'w') as file:
+
+        documents = yaml.dump(metrics_train, file)
         
 
     
