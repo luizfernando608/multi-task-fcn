@@ -33,7 +33,7 @@ augment: True
 # convnet architecture --> 'resunet','deeplabv3_resnet50'
 arch: deeplabv3_resnet50
 # True for load pretrained weights from Imagenet
-is_pretrained: False
+is_pretrained: True
 
 # True for frozen the resnet backbone
 frozen: False
