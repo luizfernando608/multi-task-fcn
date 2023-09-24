@@ -54,7 +54,6 @@ def evaluate_metrics(pred:Union[np.ndarray, torch.Tensor], gt:Union[np.ndarray, 
     if type(gt).__module__ != np.__name__:
         gt = gt.data.cpu().numpy()
 
-    c = pred.shape[1]
 
     if  len(pred.shape) >= 3 and pred.shape[-1] > 1:
         # Get the class with highest probability
@@ -82,9 +81,9 @@ def evaluate_metrics(pred:Union[np.ndarray, torch.Tensor], gt:Union[np.ndarray, 
     rec = recall_score(gt, pred, average=None, zero_division=True)
 
 
-    accu_criteria["avgF1"] = float(np.round(np.sum(f1)*100/c,2))
-    accu_criteria["avgPre"] = float(np.round(np.sum(pre)*100/c,2))
-    accu_criteria["avgRec"] = float(np.round(np.sum(rec)*100/c,2))
+    accu_criteria["avgF1"] = float(np.round(np.sum(f1)*100/num_class, 2))
+    accu_criteria["avgPre"] = float(np.round(np.sum(pre)*100/num_class, 2))
+    accu_criteria["avgRec"] = float(np.round(np.sum(rec)*100/num_class, 2))
     
     # accu_criteria["F1"] = list(np.round(np.array(f1)*100,2))
     # accu_criteria["Pre"] = list(np.round(np.array(pre)*100,2))

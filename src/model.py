@@ -334,7 +334,7 @@ def train(train_loader:torch.utils.data.DataLoader,
 
         # Evaluate summaries only once in a while
         if it % 50 == 0:
-            summary_batch = evaluate_metrics(soft(out_batch['out']), ref, -1)
+            summary_batch = evaluate_metrics(soft(out_batch['out']), ref)
             
             logger.info(
                 "Epoch: [{0}][{1}]\t"
