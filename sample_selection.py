@@ -228,7 +228,7 @@ def select_n_labels_by_class(pred_labels:np.ndarray, samples_by_class:int = 5):
     delta_stats = get_components_stats(components_pred_map, pred_labels)
 
     # sample components
-    selected_samples = delta_stats.groupby("tree_type").head(samples_by_class)
+    selected_samples = delta_stats.groupby("tree_type").sample(samples_by_class, random_state = 0)
 
     # component_ids_to_remove = stats_pred_data[filter_area]["label"]
 
