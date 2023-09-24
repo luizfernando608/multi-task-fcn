@@ -591,8 +591,8 @@ def compile_metrics(current_iter_folder, args):
 ### SETUP ###
 #############
 
-
-args = read_yaml("args.yaml")
+ROOT_PATH = os.path.dirname(__file__)
+args = read_yaml(os.path.join(ROOT_PATH, "args.yaml"))
 
 
 ##### LOOP #####
