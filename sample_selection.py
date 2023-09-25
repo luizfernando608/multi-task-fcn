@@ -360,22 +360,20 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
     new_pred_map = np.where(new_prob_map > 0.95, new_pred_map, 0)
     
     # depth map
-    # new_depth_map = gaussian_filter(new_depth_map, sigma = 9)
+    new_depth_map = gaussian_filter(new_depth_map, sigma = 9)
 
-    # new_depth_map = np.where(new_depth_map > 0.4, 1, 0)
+    # new_depth_map = np.where(new_depth_map > 0.4, new_depth_map, 0)
 
     # prob map
-    # new_prob_map = gaussian_filter(new_prob_map, sigma = 9)
+    new_prob_map = gaussian_filter(new_prob_map, sigma = 9)
 
-    # new_prob_map = np.where(new_prob_map > 0.95, 1, 0)
+    # new_prob_map = np.where(new_prob_map > 0.95, new_prob_map, 0)
 
-    # mask_selection = (new_depth_map + new_prob_map) > 1.2 
+    mask_selection = (new_depth_map + new_prob_map) > 1.3
 
-    # new_pred_map[~mask_selection] = 0
+    new_pred_map[~mask_selection] = 0
     
     # set_same_class_at_component(new_pred_map)
-
-    filter_components_by_mask(data_path, new_pred_map)
 
     # new_pred_map = np.where(new_depth_map > 0.3, new_pred_map, 0 )
 
@@ -446,16 +444,17 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
 
 if __name__ == "__main__":
     args = read_yaml("args.yaml")
+    version_folder = "/home/luiz/multi-task-fcn/8.1_version_data"
+    
+    gt_map = read_tiff(f"{version_folder}/segmentation/samples_A1_train2tif.tif")
 
-    gt_map = read_tiff("/home/luiz/multi-task-fcn/7.0_version_data/segmentation/samples_A1_train2tif.tif")
+    old_pred_map = read_tiff(f"{version_folder}/segmentation/samples_A1_train2tif.tif")
 
-    old_pred_map = read_tiff("/home/luiz/multi-task-fcn/7.0_version_data/segmentation/samples_A1_train2tif.tif")
+    new_pred_map = read_tiff(f"{version_folder}/iter_001/raster_prediction/join_class_itcFalse_1.1.TIF")
 
-    new_pred_map = read_tiff("/home/luiz/multi-task-fcn/7.0_version_data/iter_001/raster_prediction/join_class_itcFalse_1.1.TIF")
+    new_prob_map = read_tiff(f"{version_folder}/iter_001/raster_prediction/join_prob_itcFalse_1.1.TIF")
 
-    new_prob_map = read_tiff("/home/luiz/multi-task-fcn/7.0_version_data/iter_001/raster_prediction/join_prob_itcFalse_1.1.TIF")
-
-    depth_predicted = read_tiff("/home/luiz/multi-task-fcn/7.0_version_data/iter_001/raster_prediction/depth_itcFalse_1.1.TIF")
+    depth_predicted = read_tiff(f"{version_folder}/iter_001/raster_prediction/depth_itcFalse_1.1.TIF")
     
     all_labels_set, selected_labels_set =  get_new_segmentation_sample(old_pred_map = old_pred_map,
                                                                        new_pred_map = new_pred_map,
