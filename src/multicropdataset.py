@@ -183,7 +183,7 @@ class DatasetFromCoord(Dataset):
                     depth = transforms.functional.vflip(depth)
                 
                 # Run random rotation
-                angle = np.random.choice([0, 90, 180, 270])
+                angle = int(np.random.choice([0, 90, 180, 270]))
                 
                 image = transforms.functional.rotate(image.unsqueeze(0), angle).squeeze(0)
                 ref = transforms.functional.rotate(ref.unsqueeze(0), angle).squeeze(0)
