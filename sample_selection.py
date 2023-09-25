@@ -381,11 +381,31 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
 
     # # remove inplace the components lower than 200 
     # # Applied before the smothing mask to improve efficiency
+    comp_old_pred = label(old_pred_map)
+    comp_old_stats = get_components_stats(comp_old_pred, old_pred_map)
+    
+    min_area = comp_old_stats["area"].min() - comp_old_stats["area"].min()*0.1
+    max_area = comp_old_stats["area"].max()*(1.1)
+    
+    # filter components too small or too large
     filter_components_by_geometric_property(new_pred_map, 
-                                            low_limit = 200, 
-                                            high_limit = np.inf, 
+                                            low_limit = min_area, 
+                                            high_limit = max_area, # high limit area
                                             property = "area")
-
+    
+    # remove shape with non smoth borders
+    filter_components_by_geometric_property(new_pred_map, 
+                                            low_limit = 0.6,  # conservative limit
+                                            high_limit = np.inf,
+                                            property = "solidity")
+    
+    # remove extense segmentation labels
+    filter_components_by_geometric_property(new_pred_map, 
+                                            low_limit = 0.4,  # conservative limit
+                                            high_limit = np.inf,
+                                            property = "extent")
+    
+    filter_components_by_mask(data_path, new_pred_map)
 
     # new components
     delta_label_map = get_labels_delta(old_label_img = old_pred_map, 
