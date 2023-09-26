@@ -26,10 +26,12 @@ from tqdm import tqdm
 from generate_distance_map import generate_distance_map
 
 from src.metrics import evaluate_metrics
+from src.utils import get_device
 
 import matplotlib.pyplot as plt
 
 import yaml
+
 
 
 plt.set_loglevel(level = 'info')
@@ -325,7 +327,8 @@ def train_epochs(last_checkpoint:str,
     patience : int, optional
         The limit of the count early variable, by default 5
     """
-
+    
+    device = get_device()
     # Create figures folder to save training figures every epoch
     figures_path = os.path.join(os.path.dirname(last_checkpoint), 'figures')
     check_folder(figures_path)
@@ -385,6 +388,7 @@ def train_iteration(current_iter_folder:str, args:dict):
         The dict with the parameters for the model.
         The parameters are defined in the args.yaml file
     """
+    DEVICE = get_device()
 
     current_model_folder = os.path.join(current_iter_folder, args.model_dir)
 
@@ -465,7 +469,7 @@ def train_iteration(current_iter_folder:str, args:dict):
     ###################################################################
     
     # Load model to GPU
-    model = model.cuda()
+    model = model.to(DEVICE)
 
 
     logger.info("Building model done.")
@@ -638,7 +642,10 @@ while True:
 
         generate_distance_map(TRAIN_SEGMENTATION_PATH, train_distance_map)
         continue
-
+    
+    with torch.no_grad():
+        torch.cuda.empty_cache()
+    
     # Get current model folder
     current_model_folder = os.path.join(current_iter_folder, args.model_dir)
     check_folder(current_model_folder)
