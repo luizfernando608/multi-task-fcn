@@ -315,7 +315,7 @@ def train(train_loader:torch.utils.data.DataLoader,
         
         # loss1 = mask*categorical_focal_loss_2(out_batch["out"], ref_copy, alpha = 1)
 
-        loss1 = mask*categorical_focal_loss(out_batch["out"], ref_copy)
+        loss1 = mask*categorical_focal_loss(out_batch["out"], ref_copy, 1.5)
 
         loss2 = mask*aux_criterion(sig(out_batch['aux'])[:,0,:,:], depth)
         
