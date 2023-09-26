@@ -455,7 +455,8 @@ def restart_from_checkpoint(ckp_paths:str, logger, run_variables:dict=None, **kw
         Hypertparameters to load from the checkpoint file, by default None
 
     """
-    
+    DEVICE = get_device()
+
     # look for a checkpoint in exp repository
     if isinstance(ckp_paths, list):
         
@@ -477,7 +478,7 @@ def restart_from_checkpoint(ckp_paths:str, logger, run_variables:dict=None, **kw
     logger.info("Found checkpoint at {}".format(ckp_path))
 
     # open checkpoint file and load to GPU
-    checkpoint = torch.load(ckp_path, map_location="cuda:0")
+    checkpoint = torch.load(ckp_path, map_location=DEVICE)
 
 
     # key is what to look for in the checkpoint file

@@ -7,7 +7,7 @@ import torch.nn.functional as F
 
 from .resnet import ResUnet
 from .metrics import evaluate_metrics
-from .utils import check_folder, load_norm, AverageMeter, plot_figures
+from .utils import check_folder, load_norm, AverageMeter, plot_figures, get_device
 
 from typing import Tuple
 
@@ -16,7 +16,6 @@ import gc
 from logging import Logger
 
 from tqdm import tqdm
-
 
 def define_loader(orto_img:str, gt_lab:np.ndarray, size_crops:int, test=False) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Define how the image will be loaded to the model
@@ -175,11 +174,12 @@ def load_weights(model: nn.Module, checkpoint_file_path:str, logger: Logger)-> n
     nn.Module
         Pytorch model with loaded weights
     """
-    
+    DEVICE = get_device()
+
     # load weights
     if os.path.isfile(checkpoint_file_path):
 
-        state_dict = torch.load(checkpoint_file_path, map_location="cuda:0")
+        state_dict = torch.load(checkpoint_file_path, map_location=DEVICE)
 
         if "state_dict" in state_dict:
             state_dict = state_dict["state_dict"]
@@ -277,16 +277,18 @@ def train(train_loader:torch.utils.data.DataLoader,
     tuple[int, float]
         Tuple with epoch and average loss
     """
+    DEVICE = get_device()
+
     model.train()
     loss_avg = AverageMeter()
     
     # define functions
-    soft = nn.Softmax(dim=1).cuda()    
-    sig = nn.Sigmoid().cuda()    
+    soft = nn.Softmax(dim=1).to(DEVICE)
+    sig = nn.Sigmoid().to(DEVICE)   
 
     # define losses
     # criterion = nn.NLLLoss(reduction='none').cuda()
-    aux_criterion = nn.MSELoss(reduction='none').cuda()
+    aux_criterion = nn.MSELoss(reduction='none').to(DEVICE)
 
     for it, (inp_img, depth, ref) in enumerate(tqdm(train_loader)):      
 
@@ -297,15 +299,15 @@ def train(train_loader:torch.utils.data.DataLoader,
 
         # ============ forward pass and loss ... ============
         # compute model loss and output
-        inp_img = inp_img.cuda(non_blocking=True)
-        depth = depth.cuda(non_blocking=True)
-        ref = ref.cuda(non_blocking=True)
+        inp_img = inp_img.to(DEVICE, non_blocking=True)
+        depth = depth.to(DEVICE, non_blocking=True)
+        ref = ref.to(DEVICE, non_blocking=True)
         
         # create mask for the unknown pixels
         mask = torch.where(ref == 0, torch.tensor(0.0), torch.tensor(1.0))
-        mask = mask.cuda(non_blocking=True)
+        mask = mask.to(DEVICE, non_blocking=True)
 
-        ref_copy = torch.zeros(ref.shape).long().cuda(non_blocking=True)
+        ref_copy = torch.zeros(ref.shape).long().to(DEVICE, non_blocking=True)
         ref_copy[mask>0] = torch.sub(ref[mask>0], 1)
         
         # Foward Passs
