@@ -38,7 +38,8 @@ FALSY_STRINGS = {"off", "false", "0"}
 TRUTHY_STRINGS = {"on", "true", "1"}
 
 
-
+def get_device():
+    return torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 def array2raster(newRasterfn:str, dataset:gdal.Dataset, array:np.ndarray, dtype:str):
     """Save GTiff file from numpy.array
