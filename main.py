@@ -614,7 +614,10 @@ args = read_yaml(os.path.join(ROOT_PATH, "args.yaml"))
 # Set random seed
 fix_random_seeds(args.seed[0])
 
-while True:   
+while True:  
+    print_sucess("Working ON:")
+    print_sucess(get_device()) 
+    
     clear_ram_cache()
     # get current iteration folder
     current_iter_folder = get_current_iter_folder(args.data_path, args.test_itc, args.overlap)
