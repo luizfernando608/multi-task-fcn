@@ -383,7 +383,7 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
     comp_old_stats = get_components_stats(comp_old_pred, old_pred_map)
     
     min_area = comp_old_stats["area"].min() - comp_old_stats["area"].min()*0.1
-    max_area = comp_old_stats["area"].max()*(1.1)
+    max_area = comp_old_stats["area"].max()*(1.2)
     
     # filter components too small or too large
     filter_components_by_geometric_property(new_pred_map, 
@@ -393,13 +393,13 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
     
     # remove shape with non smoth borders
     filter_components_by_geometric_property(new_pred_map, 
-                                            low_limit = 0.6,  # conservative limit
+                                            low_limit = 0.7,  # conservative limit
                                             high_limit = np.inf,
                                             property = "solidity")
     
     # remove extense segmentation labels
     filter_components_by_geometric_property(new_pred_map, 
-                                            low_limit = 0.4,  # conservative limit
+                                            low_limit = 0.5,  # conservative limit
                                             high_limit = np.inf,
                                             property = "extent")
     
