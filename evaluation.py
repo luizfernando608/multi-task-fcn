@@ -297,7 +297,7 @@ def evaluate_overlap(overlap:float,
     )
 
     logger.info("Building data done with {} patches loaded.".format(coords.shape[0]))
-    model = build_model(image.shape, num_classes, arch, filters, is_pretrained)
+    model = build_model(image.shape, num_classes, arch, filters, is_pretrained, dropout_prob=0)
 
     last_checkpoint = os.path.join(current_model_folder, checkpoint_file)
     model = load_weights(model, last_checkpoint, logger)
