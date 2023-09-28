@@ -399,7 +399,7 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
     
     # remove extense segmentation labels
     filter_components_by_geometric_property(new_pred_map, 
-                                            low_limit = 0.4,  # conservative limit
+                                            low_limit = 0.5,  # conservative limit
                                             high_limit = np.inf,
                                             property = "extent")
     
