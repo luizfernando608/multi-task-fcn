@@ -357,7 +357,7 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
     new_pred_map += 1
     
     # Select only the components with confidence higher than 0.99
-    new_pred_map = np.where(new_prob_map > 0.95, new_pred_map, 0)
+    # new_pred_map = np.where(new_prob_map > 0.95, new_pred_map, 0)
     
     # depth map
     new_depth_map = gaussian_filter(new_depth_map, sigma = 9)
