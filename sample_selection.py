@@ -383,7 +383,7 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
     comp_old_stats = get_components_stats(comp_old_pred, old_pred_map)
     
     min_area = comp_old_stats["area"].min() - comp_old_stats["area"].min()*0.1
-    max_area = comp_old_stats["area"].max()*(1.1)
+    max_area = comp_old_stats["area"].max()*(1.3)
     
     # filter components too small or too large
     filter_components_by_geometric_property(new_pred_map, 
@@ -444,7 +444,7 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
 
 if __name__ == "__main__":
     args = read_yaml("args.yaml")
-    version_folder = "/home/luiz/multi-task-fcn/8.1_version_data"
+    version_folder = "/home/luiz/multi-task-fcn/13.0_version_data"
     
     gt_map = read_tiff(f"{version_folder}/segmentation/samples_A1_train2tif.tif")
 
