@@ -444,7 +444,7 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
 
 if __name__ == "__main__":
     args = read_yaml("args.yaml")
-    version_folder = "/home/luiz/multi-task-fcn/13.0_version_data"
+    version_folder = "/home/luiz/multi-task-fcn/13.1_version_data"
     
     gt_map = read_tiff(f"{version_folder}/segmentation/samples_A1_train2tif.tif")
 
