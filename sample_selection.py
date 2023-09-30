@@ -260,20 +260,28 @@ def filter_components_by_mask(data_path:str, pred_map:np.ndarray):
     """
     
     mask = read_tiff(os.path.join(data_path, "mask.tif"))
-    mask = np.where(mask==99, 0, 1)
+    mask = np.where(mask == 99, False, True)
 
     components_pred_map = label(pred_map)
     
+    # Components with some peace out the mask
+    components_to_check = np.unique(components_pred_map[mask])
+    components_to_check = components_to_check[np.nonzero(components_to_check)]
+    
     print("Filtering components out of the area of the experiment")
+    for component in tqdm(np.unique(components_to_check)):
 
-    for component in tqdm(np.unique(components_pred_map)):
         component_filter = components_pred_map==component
+        
         area_out_mask = np.mean( mask[component_filter])
         
+        # if more than 20% of the component is out, remove it
         if area_out_mask >= 0.20:
             pred_map[component_filter] = 0
             components_pred_map[component_filter] = 0
 
+    # cut out anything out of the area
+    pred_map[mask] = 0
 
 
 def join_labels_set(high_priority_labels:np.ndarray, low_priority_labels:np.ndarray, overlap_limit:int=0.05) -> np.ndarray:
