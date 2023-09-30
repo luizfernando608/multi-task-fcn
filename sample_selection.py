@@ -326,6 +326,79 @@ def join_labels_set(high_priority_labels:np.ndarray, low_priority_labels:np.ndar
     return labels_union
 
 
+def select_good_samples(old_pred_map:np.ndarray,
+                        new_pred_map:np.ndarray, 
+                        new_prob_map:np.ndarray, 
+                        new_depth_map:np.ndarray,
+                                data_path:str)->Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """ Get the new segmentation sample based on the segmentation from the last iteration and the new segmentation prediction set
+    
+    Parameters
+    ----------
+    old_pred_map : np.ndarray
+        Segmentation map from the last iteration with tree two labels
+    new_pred_map : np.ndarray
+        New segmentation map with tree type labels
+    new_prob_map : np.ndarray
+        New segmentation map with confidence/probability at each pixel
+    new_depth_map : np.ndarray
+        New depth map predicted by the auxiliar task of the model
+    Returns
+    -------
+    np.ndarray
+        new_pred_map with the selected samples
+    """
+
+    new_pred_map = new_pred_map.copy()
+    
+    # Select only the components with confidence higher than 0.99
+    new_pred_map = np.where(new_prob_map > 0.95, new_pred_map, 0)
+    
+    # depth map
+    new_depth_map = gaussian_filter(new_depth_map, sigma = 9)
+
+    # new_depth_map = np.where(new_depth_map > 0.4, new_depth_map, 0)
+
+    # prob map
+    new_prob_map = gaussian_filter(new_prob_map, sigma = 9)
+
+    # new_prob_map = np.where(new_prob_map > 0.95, new_prob_map, 0)
+
+    mask_selection = (new_depth_map + new_prob_map) > 1.3
+
+    new_pred_map[~mask_selection] = 0
+
+    comp_old_pred = label(old_pred_map)
+    
+    comp_old_stats = get_components_stats(comp_old_pred, old_pred_map)
+    
+    min_area = comp_old_stats["area"].min() - comp_old_stats["area"].min()*0.1
+    max_area = comp_old_stats["area"].max()*(1.1)
+    
+    # filter components too small or too large
+    filter_components_by_geometric_property(new_pred_map, 
+                                            low_limit = min_area, 
+                                            high_limit = max_area, # high limit area
+                                            property = "area")
+    
+    # remove shape with non smoth borders
+    filter_components_by_geometric_property(new_pred_map, 
+                                            low_limit = 0.6,  # conservative limit
+                                            high_limit = np.inf,
+                                            property = "solidity")
+    
+    # remove extense segmentation labels
+    filter_components_by_geometric_property(new_pred_map, 
+                                            low_limit = 0.4,  # conservative limit
+                                            high_limit = np.inf,
+                                            property = "extent")
+    
+    filter_components_by_mask(data_path, new_pred_map)
+    
+
+    return new_pred_map
+
+
 
 def get_new_segmentation_sample(ground_truth_map:np.ndarray, 
                                 old_pred_map:np.ndarray, 
@@ -353,57 +426,18 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
     selected_labels_set : np.array
         The same set as all_labels_set but with some filters applied to minimize unbalanced classes problem
     """
+    
     # set labels at the same scale as ground truth labels
     new_pred_map += 1
-    
-    # Select only the components with confidence higher than 0.99
-    new_pred_map = np.where(new_prob_map > 0.95, new_pred_map, 0)
-    
-    # depth map
-    new_depth_map = gaussian_filter(new_depth_map, sigma = 9)
 
-    # new_depth_map = np.where(new_depth_map > 0.4, new_depth_map, 0)
+    new_pred_map = select_good_samples(
+        old_pred_map,
+        new_pred_map,
+        new_prob_map,
+        new_depth_map,
+        data_path
+    )
 
-    # prob map
-    new_prob_map = gaussian_filter(new_prob_map, sigma = 9)
-
-    # new_prob_map = np.where(new_prob_map > 0.95, new_prob_map, 0)
-
-    mask_selection = (new_depth_map + new_prob_map) > 1.3
-
-    new_pred_map[~mask_selection] = 0
-    
-    # set_same_class_at_component(new_pred_map)
-
-    # new_pred_map = np.where(new_depth_map > 0.3, new_pred_map, 0 )
-
-    # # remove inplace the components lower than 200 
-    # # Applied before the smothing mask to improve efficiency
-    comp_old_pred = label(old_pred_map)
-    comp_old_stats = get_components_stats(comp_old_pred, old_pred_map)
-    
-    min_area = comp_old_stats["area"].min() - comp_old_stats["area"].min()*0.1
-    max_area = comp_old_stats["area"].max()*(1.1)
-    
-    # filter components too small or too large
-    filter_components_by_geometric_property(new_pred_map, 
-                                            low_limit = min_area, 
-                                            high_limit = max_area, # high limit area
-                                            property = "area")
-    
-    # remove shape with non smoth borders
-    filter_components_by_geometric_property(new_pred_map, 
-                                            low_limit = 0.6,  # conservative limit
-                                            high_limit = np.inf,
-                                            property = "solidity")
-    
-    # remove extense segmentation labels
-    filter_components_by_geometric_property(new_pred_map, 
-                                            low_limit = 0.4,  # conservative limit
-                                            high_limit = np.inf,
-                                            property = "extent")
-    
-    filter_components_by_mask(data_path, new_pred_map)
 
     # new components
     delta_label_map = get_labels_delta(old_label_img = old_pred_map, 
