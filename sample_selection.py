@@ -330,9 +330,10 @@ def select_good_samples(old_pred_map:np.ndarray,
                         new_pred_map:np.ndarray, 
                         new_prob_map:np.ndarray, 
                         new_depth_map:np.ndarray,
-                                data_path:str)->Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """ Get the new segmentation sample based on the segmentation from the last iteration and the new segmentation prediction set
-    
+                        data_path) -> np.ndarray:
+    """
+    This function defines the rules to select good samples based on model outputs.
+
     Parameters
     ----------
     old_pred_map : np.ndarray
