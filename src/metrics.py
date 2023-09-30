@@ -127,28 +127,27 @@ def evaluate_component_metrics(ground_truth_labels:np.ndarray, predicted_labels:
 
     metrics = dict()
 
-    metrics["Accuracy"] = accuracy_score(gt_labels, pred_labels)
+    metrics["Accuracy"] = accuracy_score(gt_labels, pred_labels)*100
 
     metrics['avgF1'] = f1_score(gt_labels, 
                                 pred_labels, 
                                 average = average, 
                                 zero_division = True, 
-                                labels = labels)
+                                labels = labels)*100
     
     metrics["avgPrec"] = precision_score(gt_labels, 
                                         pred_labels, 
                                         average = average, 
                                         zero_division = True, 
-                                        labels = labels)
+                                        labels = labels)*100
     
     metrics["avgRec"] = recall_score(gt_labels, 
                                         pred_labels, 
                                         average = average, 
                                         zero_division = True, 
-                                        labels = labels)
+                                        labels = labels)*100
 
     return metrics
-    
 
 
 if __name__ == "__main___":
