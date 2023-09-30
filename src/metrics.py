@@ -113,19 +113,22 @@ def evaluate_component_metrics(ground_truth_labels:np.ndarray, predicted_labels:
         Accuracy, F1-Score, Precision, and Recall Score
     """
     # compute metrics ignoring 0 class
-    if num_class != None:
-        labels = list(range(1, num_class+1))
+    # if num_class != None:
+    #     labels = list(range(1, num_class+1))
 
-    else:
-        labels = np.unique(ground_truth_labels[np.nonzero(ground_truth_labels)])
+    # else:
+    labels = np.unique(ground_truth_labels)
 
-    # mask for non zero ground_truth_labels
-    mask = ground_truth_labels > 0     
+    gt_labels = ground_truth_labels.flatten().copy()
 
-    gt_labels = ground_truth_labels[mask]
+    pred_labels = predicted_labels.flatten().copy()
 
-    pred_labels = predicted_labels[mask]
 
+    pred_comp = label(pred_labels)
+    comp_in_gt = np.unique(pred_comp[gt_labels > 0])
+
+    pred_labels[~np.isin(pred_comp, comp_in_gt)] = 0
+    
     # Compute metrics
     metrics = dict()
 
