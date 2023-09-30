@@ -155,26 +155,26 @@ def evaluate_component_metrics(ground_truth_labels:np.ndarray, predicted_labels:
     return metrics
 
 
-if __name__ == "__main___":
+if __name__ == "__main__":
     import os
     from utils import read_yaml, read_tiff
     import yaml
 
-    args = read_yaml("../args.yaml")
-
-    current_iter_folder = "/home/luiz/multi-task-fcn/4.3_version_data"
+    current_iter_folder = "/home/luiz/multi-task-fcn/11.0_version_data/iter_001"
 
     GROUND_TRUTH_PATH = os.path.join(args.data_path, args.test_segmentation_path)
     ground_truth_test = read_tiff(GROUND_TRUTH_PATH)
 
-    PRED_PATH = os.path.join(current_iter_folder, "raster_prediction", f"join_class_itc{args.test_itc}_{np.sum(args.overlap)}.TIF")
-    predicted_seg = read_tiff(PRED_PATH)
+    # PRED_PATH = os.path.join(current_iter_folder, "raster_prediction", f"join_class_itc{args.test_itc}_{np.sum(args.overlap)}.TIF")
+    # predicted_seg = read_tiff(PRED_PATH)
 
-    
-    metrics = evaluate_metrics(predicted_seg, ground_truth_test)
+    all_labels = read_tiff(os.path.join(current_iter_folder, "new_labels", "all_labels_set.tif"))
+
+    evaluate_component_metrics(ground_truth_test, all_labels )
+    # metrics = evaluate_metrics(predicted_seg, ground_truth_test)
 
 
-    with open(os.path.join(current_iter_folder,'store_file.yaml'), 'w') as file:
+    # with open(os.path.join(current_iter_folder,'store_file.yaml'), 'w') as file:
 
-        documents = yaml.dump(metrics, file)
+    #     documents = yaml.dump(metrics, file)
         
