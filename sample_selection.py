@@ -487,10 +487,12 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
 
 if __name__ == "__main__":
     args = read_yaml("args.yaml")
-    version_folder = "/home/luiz/multi-task-fcn/8.1_version_data"
+    version_folder = "/home/luiz/multi-task-fcn/11.0_version_data"
     
     gt_map = read_tiff(f"{version_folder}/segmentation/samples_A1_train2tif.tif")
 
+    test_gt_map = read_tiff(f"{version_folder}/segmentation/samples_A1_train2tif.tif")
+    
     old_pred_map = read_tiff(f"{version_folder}/segmentation/samples_A1_train2tif.tif")
 
     new_pred_map = read_tiff(f"{version_folder}/iter_001/raster_prediction/join_class_itcFalse_1.1.TIF")
