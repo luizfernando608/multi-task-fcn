@@ -20,6 +20,7 @@ from typing import List, Tuple
 from generate_distance_map import apply_gaussian_distance_map
 from scipy.ndimage import gaussian_filter
 
+from src.metrics import evaluate_component_metrics
 
 def undersample(data: pd.DataFrame, column_category: str):
     X = data.drop(column_category, axis=1).copy()
