@@ -492,7 +492,7 @@ if __name__ == "__main__":
     
     gt_map = read_tiff(f"{version_folder}/segmentation/samples_A1_train2tif.tif")
 
-    test_gt_map = read_tiff(f"{version_folder}/segmentation/samples_A1_train2tif.tif")
+    test_gt_map = read_tiff(f"{version_folder}/segmentation/samples_A1_test2tif.tif")
     
     old_pred_map = read_tiff(f"{version_folder}/segmentation/samples_A1_train2tif.tif")
 
