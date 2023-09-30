@@ -92,6 +92,65 @@ def evaluate_metrics(pred:Union[np.ndarray, torch.Tensor], gt:Union[np.ndarray, 
     return accu_criteria
 
 
+
+def evaluate_component_metrics(ground_truth_labels:np.ndarray, predicted_labels:np.ndarray, num_class:int = None, average:str = "macro")->dict:
+    """Evaluate the metrics of the non zero labels in ground_truth labels
+
+    Parameters
+    ----------
+    ground_truth_labels : np.ndarray
+        The true label class
+    predicted_labels : np.ndarray
+        The predicted label class
+    num_class : int, optional
+        The number of non zero classes, by default None
+    average : str, optional
+        The method to compute the metrics, by default "macro"
+
+    Returns
+    -------
+    dict
+        Accuracy, F1-Score, Precision, and Recall Score
+    """
+    # compute metrics ignoring metrics
+    if num_class != None:
+        labels = list(range(1, num_class+1))
+
+    else:
+        labels = np.unique(ground_truth_labels[np.nonzero(ground_truth_labels)])
+
+    mask = ground_truth_labels > 0     
+
+    gt_labels = ground_truth_labels[mask]
+
+    pred_labels = predicted_labels[mask]
+
+    metrics = dict()
+
+    metrics["Accuracy"] = accuracy_score(gt_labels, pred_labels)
+
+    metrics['avgF1'] = f1_score(gt_labels, 
+                                pred_labels, 
+                                average = average, 
+                                zero_division = True, 
+                                labels = labels)
+    
+    metrics["avgPrec"] = precision_score(gt_labels, 
+                                        pred_labels, 
+                                        average = average, 
+                                        zero_division = True, 
+                                        labels = labels)
+    
+    metrics["avgRec"] = recall_score(gt_labels, 
+                                        pred_labels, 
+                                        average = average, 
+                                        zero_division = True, 
+                                        labels = labels)
+
+    return metrics
+    
+
+
 if __name__ == "__main___":
     import os
     from utils import read_yaml, read_tiff
