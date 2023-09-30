@@ -149,15 +149,6 @@ def evaluate_component_metrics(ground_truth_labels:np.ndarray, predicted_labels:
                                         zero_division = True, 
                                         labels = labels)*100
 
-    # convert numpy types to primitive python types
-    for metric in metrics:
-
-        if np.ndarray ==  type(metrics[metric]):
-            metrics[metric] = list(metrics[metric])
-        
-        else:
-            metrics[metric] = int(metrics[metric])
-
     return metrics
 
 
