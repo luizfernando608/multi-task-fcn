@@ -112,19 +112,21 @@ def evaluate_component_metrics(ground_truth_labels:np.ndarray, predicted_labels:
     dict
         Accuracy, F1-Score, Precision, and Recall Score
     """
-    # compute metrics ignoring metrics
+    # compute metrics ignoring 0 class
     if num_class != None:
         labels = list(range(1, num_class+1))
 
     else:
         labels = np.unique(ground_truth_labels[np.nonzero(ground_truth_labels)])
 
+    # mask for non zero ground_truth_labels
     mask = ground_truth_labels > 0     
 
     gt_labels = ground_truth_labels[mask]
 
     pred_labels = predicted_labels[mask]
 
+    # Compute metrics
     metrics = dict()
 
     metrics["Accuracy"] = accuracy_score(gt_labels, pred_labels)*100
@@ -147,6 +149,7 @@ def evaluate_component_metrics(ground_truth_labels:np.ndarray, predicted_labels:
                                         zero_division = True, 
                                         labels = labels)*100
 
+    # convert numpy types to primitive python types
     for metric in metrics:
 
         if np.ndarray ==  type(metrics[metric]):
