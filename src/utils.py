@@ -31,6 +31,7 @@ from typing import Tuple
 
 import warnings
 
+from collections.abc import Iterable
 
 plt.set_loglevel(level = 'critical')
 
@@ -820,6 +821,25 @@ def read_yaml(yaml_path:str)->dict:
             pass
 
     return yaml_attrdict
+
+
+def save_yaml(data_dict:dict, yaml_path:str):
+    
+    data_to_save = data_dict.copy()
+
+    # convert numpy metrics to python primites
+    for metric in data_to_save:
+
+        if isinstance(data_to_save[metric], Iterable):
+            data_to_save[metric] = list(data_to_save[metric])
+        
+        else:
+            data_to_save[metric] = float(data_to_save[metric])
+
+
+    with open(yaml_path, 'w') as file:
+
+            yaml.dump(data_to_save, file)
 
 
 
