@@ -13,6 +13,8 @@ from .utils import read_yaml
 
 from typing import Union
 
+from skimage.measure import label
+
 ROOT_PATH = dirname(dirname(__file__))
 
 args = read_yaml(join(ROOT_PATH, "args.yaml"))
