@@ -211,7 +211,7 @@ def load_weights(model: nn.Module, checkpoint_file_path:str, logger: Logger)-> n
 
 
 
-def categorical_focal_loss(input:torch.Tensor, target:torch.Tensor, gamma = 2) -> torch.Tensor:
+def categorical_focal_loss(input:torch.Tensor, target:torch.Tensor, gamma = 1.5) -> torch.Tensor:
     """Partial Categorical Focal Loss Implementation based on the paper 
     "Multi-task fully convolutional network for tree species
     mapping in dense forests using small training
