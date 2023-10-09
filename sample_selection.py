@@ -383,7 +383,7 @@ def select_good_samples(old_pred_map:np.ndarray,
     comp_old_stats = get_components_stats(comp_old_pred, old_pred_map)
     
     min_area = comp_old_stats["area"].min() - comp_old_stats["area"].min()*0.1
-    max_area = comp_old_stats["area"].max()*(1.1)
+    max_area = comp_old_stats["area"].max()*(1.2)
     
     # filter components too small or too large
     filter_components_by_geometric_property(new_pred_map, 
