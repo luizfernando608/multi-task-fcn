@@ -597,6 +597,15 @@ def compile_metrics(current_iter_folder, args):
         documents = yaml.dump(metrics_train, file)
         
 
+    labels_test_metrics = os.path.join(current_iter_folder,'all_labels_test_metrics.yaml')
+        
+    # selected_labels = read_tiff(os.path.join(iter_folder, "new_labels", "selected_labels_set.tif"))
+    all_labels = read_tiff(os.path.join(current_iter_folder, "new_labels", "all_labels_set.tif"))
+
+    all_labels_metrics = evaluate_component_metrics(ground_truth_test, all_labels, 14)
+
+    save_yaml(all_labels_metrics, labels_test_metrics)
+
     
 
 
@@ -661,7 +670,7 @@ while True:
 
     pred2raster(current_iter_folder, args)
 
-    compile_metrics(current_iter_folder, args)
+    
 
     #####################################################
     ######### GENERATE LABELS FOR NEXT ITERATION #########
@@ -723,6 +732,8 @@ while True:
     #############################################
 
     delete_useless_files(current_iter_folder = current_iter_folder)
+    
+    compile_metrics(current_iter_folder, args)
 
     print_sucess("Distance map generated")
  
