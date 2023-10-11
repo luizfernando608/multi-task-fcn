@@ -25,8 +25,8 @@ from tqdm import tqdm
 
 from generate_distance_map import generate_distance_map
 
-from src.metrics import evaluate_metrics
-from src.utils import get_device
+from src.metrics import evaluate_metrics, evaluate_component_metrics
+from src.utils import get_device, save_yaml
 
 import matplotlib.pyplot as plt
 
