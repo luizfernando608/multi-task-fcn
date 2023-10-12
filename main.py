@@ -440,7 +440,8 @@ def train_iteration(current_iter_folder:str, args:dict):
         args.nb_class,  
         args.arch, 
         args.filters, 
-        args.is_pretrained)
+        args.is_pretrained,
+        dropout_prob = 0.65)
 
 
     ########## LOAD MODEL WEIGHTS FROM THE LAST CHECKPOINT ##########
