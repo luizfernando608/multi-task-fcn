@@ -99,9 +99,14 @@ def array2raster(path_to_save:str, array:np.ndarray, image_metadata:dict, dtype:
         transform = image_metadata['transform']
     ) as writer:
         
-        for band in range(1, BAND_NUM + 1):
-
-            writer.write(array[band - 1, :, :], band)
+        if BAND_NUM > 1:
+            # Write each band
+            for band in range(1, BAND_NUM + 1):
+                writer.write(array[band - 1, :, :], band)
+        
+        elif BAND_NUM == 1:
+            # write just on band
+            writer.write(array, 1)
         
     
 
