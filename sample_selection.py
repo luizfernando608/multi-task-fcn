@@ -361,8 +361,8 @@ def select_good_samples(old_pred_map:np.ndarray,
 
     new_pred_map = new_pred_map.copy()
     
-    # Select only the components with confidence higher than 0.99
-    new_pred_map = np.where(new_prob_map > 0.95, new_pred_map, 0)
+    # Select only the components with confidence higher than 0.90
+    new_pred_map = np.where(new_prob_map > 0.90, new_pred_map, 0)
     
     # depth map
     new_depth_map = gaussian_filter(new_depth_map, sigma = 9)
@@ -374,7 +374,7 @@ def select_good_samples(old_pred_map:np.ndarray,
 
     # new_prob_map = np.where(new_prob_map > 0.95, new_prob_map, 0)
 
-    mask_selection = (new_depth_map + new_prob_map) > 1.3
+    mask_selection = (new_depth_map + new_prob_map) > 1.2
 
     new_pred_map[~mask_selection] = 0
 
