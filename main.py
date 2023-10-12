@@ -594,13 +594,13 @@ def compile_metrics(current_iter_folder, args):
     
 
     ### Save test component metrics ###
-    labels_test_metrics = join(current_iter_folder,'all_labels_test_metrics.yaml')
+    HIGH_PROB_COMPONENTS_PATH = join(current_iter_folder,'all_labels_test_metrics.yaml')
     
     all_labels = read_tiff(join(current_iter_folder, "new_labels", "all_labels_set.tif"))
 
     all_labels_metrics = evaluate_component_metrics(ground_truth_test, all_labels, 14)
 
-    save_yaml(all_labels_metrics, labels_test_metrics)
+    save_yaml(all_labels_metrics, HIGH_PROB_COMPONENTS_PATH)
 
     
 
