@@ -3,7 +3,7 @@ import argparse
 import math
 import os
 
-from os.path import dirname, join
+from os.path import dirname, join, exists, isfile
 
 import subprocess
 
@@ -69,9 +69,9 @@ def clear_ram_cache():
 
 def delete_useless_files(current_iter_folder:str):
     
-    folder_to_remove = os.path.join(current_iter_folder,"prediction")
+    folder_to_remove = join(current_iter_folder,"prediction")
 
-    if os.path.exists(folder_to_remove):
+    if exists(folder_to_remove):
         shutil.rmtree(folder_to_remove)
     
     else:
@@ -92,9 +92,9 @@ def is_iter_0_done(data_path:str):
     -------
     bool
     """
-    path_distance_map = os.path.join(data_path, "iter_000", "distance_map")
-    is_test_map_done = os.path.exists(os.path.join(path_distance_map, "test_distance_map.tif"))
-    is_train_map_done = os.path.exists(os.path.join(path_distance_map, "train_distance_map.tif"))
+    path_distance_map = join(data_path, "iter_000", "distance_map")
+    is_test_map_done = exists(join(path_distance_map, "test_distance_map.tif"))
+    is_train_map_done = exists(join(path_distance_map, "train_distance_map.tif"))
     
     if is_test_map_done and is_train_map_done:
         return True
@@ -135,32 +135,32 @@ def get_current_iter_folder(data_path, test_itc, overlap):
 
     for idx, iter_folder_name in enumerate(iter_folders):
         
-        iter_path = os.path.join(data_path, iter_folder_name)
+        iter_path = join(data_path, iter_folder_name)
 
-        prediction_path = os.path.join(iter_path, "raster_prediction")
+        prediction_path = join(iter_path, "raster_prediction")
         
-        is_folder_generated = os.path.exists(prediction_path)
-        is_depth_done = os.path.isfile(os.path.join(prediction_path, f"depth_itc{test_itc}_{np.sum(overlap)}.TIF"))
-        is_pred_done = os.path.isfile(os.path.join(prediction_path, f"join_class_itc{test_itc}_{np.sum(overlap)}.TIF"))
-        is_prob_done = os.path.isfile(os.path.join(prediction_path, f"join_prob_itc{test_itc}_{np.sum(overlap)}.TIF"))
+        is_folder_generated = exists(prediction_path)
+        is_depth_done = isfile(join(prediction_path, f"depth_itc{test_itc}_{np.sum(overlap)}.TIF"))
+        is_pred_done = isfile(join(prediction_path, f"join_class_itc{test_itc}_{np.sum(overlap)}.TIF"))
+        is_prob_done = isfile(join(prediction_path, f"join_prob_itc{test_itc}_{np.sum(overlap)}.TIF"))
         
-        distance_map_path = os.path.join(iter_path, "distance_map")
-        is_distance_map_done = os.path.isfile(os.path.join(distance_map_path, "selected_distance_map.tif"))
+        distance_map_path = join(iter_path, "distance_map")
+        is_distance_map_done = isfile(join(distance_map_path, "selected_distance_map.tif"))
 
         if is_folder_generated and is_depth_done and is_pred_done and is_prob_done and is_distance_map_done:
             
             next_iter = int(iter_folder_name.split("_")[-1]) + 1
-            next_iter_path = os.path.join(data_path, f"iter_{next_iter:03d}")
+            next_iter_path = join(data_path, f"iter_{next_iter:03d}")
             
             check_folder(next_iter_path)
 
             return next_iter_path
     
     if is_iter_0_done(args.data_path):
-        return os.path.join(data_path, f"iter_{1:03d}")
+        return join(data_path, f"iter_{1:03d}")
     
 
-    iter_0_path = os.path.join(data_path, "iter_000")
+    iter_0_path = join(data_path, "iter_000")
     # create iter_0 folder if not exists
     check_folder(iter_0_path)
 
@@ -191,11 +191,11 @@ def read_last_segmentation(current_iter_folder:str, train_segmentation_path:str)
     data_path = dirname(current_iter_folder)
 
     if current_iter==1:
-        image_path = os.path.join(data_path, train_segmentation_path)
+        image_path = join(data_path, train_segmentation_path)
         
 
     else:
-        image_path = os.path.join(data_path, f"iter_{current_iter-1:03d}", "new_labels", "selected_labels_set.tif")
+        image_path = join(data_path, f"iter_{current_iter-1:03d}", "new_labels", "selected_labels_set.tif")
 
 
     image = read_tiff(image_path)
@@ -227,7 +227,7 @@ def read_last_distance_map(current_iter_folder:str)->np.ndarray:
     else:
         distance_map_filename = "selected_distance_map.tif"
 
-    image_path = os.path.join(data_path, f"iter_{current_iter-1:03d}", "distance_map", distance_map_filename)
+    image_path = join(data_path, f"iter_{current_iter-1:03d}", "distance_map", distance_map_filename)
         
     image = read_tiff(image_path)
     return image
@@ -328,7 +328,7 @@ def train_epochs(last_checkpoint:str,
     
     device = get_device()
     # Create figures folder to save training figures every epoch
-    figures_path = os.path.join(os.path.dirname(last_checkpoint), 'figures')
+    figures_path = join(dirname(last_checkpoint), 'figures')
     check_folder(figures_path)
 
     for epoch in tqdm(range(start_epoch, num_epochs)):
@@ -388,11 +388,11 @@ def train_iteration(current_iter_folder:str, args:dict):
     """
     DEVICE = get_device()
 
-    current_model_folder = os.path.join(current_iter_folder, args.model_dir)
+    current_model_folder = join(current_iter_folder, args.model_dir)
 
     current_iter = int(current_iter_folder.split("_")[-1])
 
-    logger = create_logger(os.path.join(current_iter_folder, "train.log"), rank=0)
+    logger = create_logger(join(current_iter_folder, "train.log"), rank=0)
     logger.info("============ Initialized Training ============")
     
     ######### Define Loader ############
@@ -442,16 +442,16 @@ def train_iteration(current_iter_folder:str, args:dict):
 
 
     ########## LOAD MODEL WEIGHTS FROM THE LAST CHECKPOINT ##########
-    last_checkpoint = os.path.join(current_model_folder, args.checkpoint_file)
+    last_checkpoint = join(current_model_folder, args.checkpoint_file)
     
     loaded_from_last_iteration = False
     
     # If the weights from the current iteration, doenst exist. 
     # The weigths from the last one is loaded
-    if not os.path.isfile(last_checkpoint):
+    if not isfile(last_checkpoint):
         if current_iter > 1:
             
-            last_checkpoint = os.path.join(args.data_path, f"iter_{current_iter-1:03d}", args.model_dir, args.checkpoint_file)
+            last_checkpoint = join(args.data_path, f"iter_{current_iter-1:03d}", args.model_dir, args.checkpoint_file)
             
             loaded_from_last_iteration = True
 
@@ -514,7 +514,7 @@ def train_iteration(current_iter_folder:str, args:dict):
     
 
     ######## TRAIN MODEL #########
-    current_checkpoint = os.path.join(current_model_folder, args.checkpoint_file)
+    current_checkpoint = join(current_model_folder, args.checkpoint_file)
     
     cudnn.benchmark = True
     
@@ -570,35 +570,35 @@ def train_iteration(current_iter_folder:str, args:dict):
 def compile_metrics(current_iter_folder, args):
     # read test segmentation 
     # f'join_class_itc{args.test_itc}_{np.sum(args.overlap)}.TIF'
-    DATA_PATH = os.path.dirname(current_iter_folder)
+    DATA_PATH = dirname(current_iter_folder)
 
-    GROUND_TRUTH_TEST_PATH = os.path.join(DATA_PATH, args.test_segmentation_path)
+    GROUND_TRUTH_TEST_PATH = join(DATA_PATH, args.test_segmentation_path)
     ground_truth_test = read_tiff(GROUND_TRUTH_TEST_PATH)
 
-    GROUND_TRUTH_TRAIN_PATH = os.path.join(DATA_PATH, args.train_segmentation_path)
+    GROUND_TRUTH_TRAIN_PATH = join(DATA_PATH, args.train_segmentation_path)
     ground_truth_train = read_tiff(GROUND_TRUTH_TRAIN_PATH)
 
-    PRED_PATH = os.path.join(current_iter_folder, "raster_prediction", f"join_class_itc{args.test_itc}_{np.sum(args.overlap)}.TIF")
+    PRED_PATH = join(current_iter_folder, "raster_prediction", f"join_class_itc{args.test_itc}_{np.sum(args.overlap)}.TIF")
     predicted_seg = read_tiff(PRED_PATH)
 
     metrics_test = evaluate_metrics(predicted_seg, ground_truth_test)
 
-    with open(os.path.join(current_iter_folder,'test_metrics.yaml'), 'w') as file:
+    with open(join(current_iter_folder,'test_metrics.yaml'), 'w') as file:
 
         documents = yaml.dump(metrics_test, file)
     
 
     metrics_train = evaluate_metrics(predicted_seg, ground_truth_train, args.nb_class)
 
-    with open(os.path.join(current_iter_folder,'train_metrics.yaml'), 'w') as file:
+    with open(join(current_iter_folder,'train_metrics.yaml'), 'w') as file:
 
         documents = yaml.dump(metrics_train, file)
         
 
-    labels_test_metrics = os.path.join(current_iter_folder,'all_labels_test_metrics.yaml')
+    labels_test_metrics = join(current_iter_folder,'all_labels_test_metrics.yaml')
         
-    # selected_labels = read_tiff(os.path.join(iter_folder, "new_labels", "selected_labels_set.tif"))
-    all_labels = read_tiff(os.path.join(current_iter_folder, "new_labels", "all_labels_set.tif"))
+    # selected_labels = read_tiff(join(iter_folder, "new_labels", "selected_labels_set.tif"))
+    all_labels = read_tiff(join(current_iter_folder, "new_labels", "all_labels_set.tif"))
 
     all_labels_metrics = evaluate_component_metrics(ground_truth_test, all_labels, 14)
 
@@ -612,8 +612,8 @@ def compile_metrics(current_iter_folder, args):
 ### SETUP ###
 #############
 
-ROOT_PATH = os.path.dirname(__file__)
-args = read_yaml(os.path.join(ROOT_PATH, "args.yaml"))
+ROOT_PATH = dirname(__file__)
+args = read_yaml(join(ROOT_PATH, "args.yaml"))
 
 
 ##### LOOP #####
@@ -638,15 +638,15 @@ while True:
     # if the iteration 0 applies distance map to ground truth segmentation
     if current_iter == 0:
         
-        TEST_SEGMENTATION_PATH = os.path.join(args.data_path, args.test_segmentation_path)
-        test_distance_map_output = os.path.join(current_iter_folder, "distance_map", "test_distance_map.tif")
+        TEST_SEGMENTATION_PATH = join(args.data_path, args.test_segmentation_path)
+        test_distance_map_output = join(current_iter_folder, "distance_map", "test_distance_map.tif")
         
         check_folder(dirname(test_distance_map_output))
 
         generate_distance_map(TEST_SEGMENTATION_PATH, test_distance_map_output)
 
-        TRAIN_SEGMENTATION_PATH  = os.path.join(args.data_path, args.train_segmentation_path)
-        train_distance_map = os.path.join(current_iter_folder, "distance_map", "train_distance_map.tif")
+        TRAIN_SEGMENTATION_PATH  = join(args.data_path, args.train_segmentation_path)
+        train_distance_map = join(current_iter_folder, "distance_map", "train_distance_map.tif")
 
         check_folder(dirname(train_distance_map))
 
@@ -657,7 +657,7 @@ while True:
         torch.cuda.empty_cache()
     
     # Get current model folder
-    current_model_folder = os.path.join(current_iter_folder, args.model_dir)
+    current_model_folder = join(current_iter_folder, args.model_dir)
     check_folder(current_model_folder)
 
     # logger, training_stats = initialize_exp(current_iter_folder, args, "epoch", "loss")
@@ -672,24 +672,24 @@ while True:
 
     #####################################################
     ######### GENERATE LABELS FOR NEXT ITERATION #########
-    NEW_PRED_FILE = os.path.join(current_iter_folder, "raster_prediction", f'join_class_itc{args.test_itc}_{np.sum(args.overlap)}.TIF')
+    NEW_PRED_FILE = join(current_iter_folder, "raster_prediction", f'join_class_itc{args.test_itc}_{np.sum(args.overlap)}.TIF')
     new_pred_map = read_tiff(NEW_PRED_FILE)
 
-    NEW_PROB_FILE = os.path.join(current_iter_folder, "raster_prediction", f'join_prob_itc{args.test_itc}_{np.sum(args.overlap)}.TIF')
+    NEW_PROB_FILE = join(current_iter_folder, "raster_prediction", f'join_prob_itc{args.test_itc}_{np.sum(args.overlap)}.TIF')
     new_prob_map = read_tiff(NEW_PROB_FILE)
 
-    NEW_DEPTH_FILE = os.path.join(current_iter_folder, "raster_prediction", f'depth_itc{args.test_itc}_{np.sum(args.overlap)}.TIF')
+    NEW_DEPTH_FILE = join(current_iter_folder, "raster_prediction", f'depth_itc{args.test_itc}_{np.sum(args.overlap)}.TIF')
     new_depth_map = read_tiff(NEW_DEPTH_FILE)
 
     if current_iter == 1:
-        OLD_PRED_FILE = os.path.join(args.data_path, args.train_segmentation_path)
+        OLD_PRED_FILE = join(args.data_path, args.train_segmentation_path)
 
     else:
-        OLD_PRED_FILE = os.path.join(args.data_path, f"iter_{current_iter-1:03d}", "new_labels", f'selected_labels_set.tif')
+        OLD_PRED_FILE = join(args.data_path, f"iter_{current_iter-1:03d}", "new_labels", f'selected_labels_set.tif')
 
     old_pred_map = read_tiff(OLD_PRED_FILE)
 
-    ground_truth_segmentation = read_tiff(os.path.join(args.data_path, args.train_segmentation_path))
+    ground_truth_segmentation = read_tiff(join(args.data_path, args.train_segmentation_path))
 
     all_labels_set, selected_labels_set = get_new_segmentation_sample(
         ground_truth_map = ground_truth_segmentation,
@@ -703,27 +703,27 @@ while True:
     # image metadata to save array2raster
     image_metadata = get_image_metadata(OLD_PRED_FILE)
 
-    ALL_LABELS_PATH = os.path.join(current_iter_folder, "new_labels", f'all_labels_set.tif')
+    ALL_LABELS_PATH = join(current_iter_folder, "new_labels", f'all_labels_set.tif')
     
-    check_folder(os.path.dirname(ALL_LABELS_PATH))
+    check_folder(dirname(ALL_LABELS_PATH))
     array2raster(ALL_LABELS_PATH, all_labels_set, image_metadata, "Byte")
 
 
-    SELECTED_LABELS_PATH = os.path.join(current_iter_folder, "new_labels", f'selected_labels_set.tif')
+    SELECTED_LABELS_PATH = join(current_iter_folder, "new_labels", f'selected_labels_set.tif')
 
-    check_folder(os.path.dirname(SELECTED_LABELS_PATH))
+    check_folder(dirname(SELECTED_LABELS_PATH))
     array2raster(SELECTED_LABELS_PATH, selected_labels_set, image_metadata, "Byte")
     
     
     #######################################
     ######## GENERATE DISTANCE MAP ########
-    ALL_LABELS_DISTANCE_MAP_PATH = os.path.join(current_iter_folder, "distance_map", f'all_labels_distance_map.tif')
-    check_folder(os.path.dirname(ALL_LABELS_DISTANCE_MAP_PATH))
+    ALL_LABELS_DISTANCE_MAP_PATH = join(current_iter_folder, "distance_map", f'all_labels_distance_map.tif')
+    check_folder(dirname(ALL_LABELS_DISTANCE_MAP_PATH))
     generate_distance_map(ALL_LABELS_PATH, ALL_LABELS_DISTANCE_MAP_PATH)
     
 
-    SELECTED_LABELS_DISTANCE_MAP_PATH  = os.path.join(current_iter_folder, "distance_map", f'selected_distance_map.tif')
-    check_folder(os.path.dirname(SELECTED_LABELS_DISTANCE_MAP_PATH))
+    SELECTED_LABELS_DISTANCE_MAP_PATH  = join(current_iter_folder, "distance_map", f'selected_distance_map.tif')
+    check_folder(dirname(SELECTED_LABELS_DISTANCE_MAP_PATH))
     generate_distance_map(SELECTED_LABELS_PATH, SELECTED_LABELS_DISTANCE_MAP_PATH)
     
 
