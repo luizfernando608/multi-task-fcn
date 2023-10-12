@@ -2,13 +2,11 @@
 import os
 import numpy as np
 
-from osgeo import gdal
-
 from scipy.ndimage import distance_transform_edt
 from scipy.ndimage import gaussian_filter
 from skimage.measure import label
 
-from src.utils import check_folder, array2raster, read_tiff, read_yaml, print_sucess
+from src.utils import check_folder, array2raster, read_tiff, read_yaml, print_sucess, get_image_metadata
 
 
 
@@ -70,14 +68,14 @@ def generate_distance_map(input_image_path:str, output_image_path:str):
     if not os.path.exists(os.path.dirname(output_image_path)):
         raise FileNotFoundError("Output folder not found")
 
-    img_lazy_load = gdal.Open(input_image_path)
+    img_metadata = get_image_metadata(input_image_path)
 
     input_img = read_tiff(input_image_path).astype('uint16')
     
     output_img = apply_gaussian_distance_map(input_img)
 
     
-    array2raster(output_image_path, img_lazy_load, output_img, "Float32")
+    array2raster(output_image_path, output_img, img_metadata, "float32")
 
 
 if __name__ == "__main__":

@@ -3,11 +3,9 @@ import argparse
 import math
 import os
 
-from os.path import dirname
+from os.path import dirname, join
 
 import subprocess
-
-from osgeo import gdal
 
 import shutil
 
@@ -26,7 +24,7 @@ from tqdm import tqdm
 from generate_distance_map import generate_distance_map
 
 from src.metrics import evaluate_metrics, evaluate_component_metrics
-from src.utils import get_device, save_yaml
+from src.utils import get_device, get_image_metadata, save_yaml
 
 import matplotlib.pyplot as plt
 
@@ -632,7 +630,7 @@ while True:
     current_iter_folder = get_current_iter_folder(args.data_path, args.test_itc, args.overlap)
     current_iter = int(current_iter_folder.split("_")[-1])
 
-    if current_iter > 5:
+    if current_iter > 20:
         break
     
     print("Current iteration folder: ", current_iter_folder)
@@ -702,19 +700,19 @@ while True:
         data_path = args.data_path,
     )
 
-
-    raster_src = gdal.Open(OLD_PRED_FILE)
+    # image metadata to save array2raster
+    image_metadata = get_image_metadata(OLD_PRED_FILE)
 
     ALL_LABELS_PATH = os.path.join(current_iter_folder, "new_labels", f'all_labels_set.tif')
     
     check_folder(os.path.dirname(ALL_LABELS_PATH))
-    array2raster(ALL_LABELS_PATH, raster_src, all_labels_set, "Byte")
+    array2raster(ALL_LABELS_PATH, all_labels_set, image_metadata, "Byte")
 
 
     SELECTED_LABELS_PATH = os.path.join(current_iter_folder, "new_labels", f'selected_labels_set.tif')
 
     check_folder(os.path.dirname(SELECTED_LABELS_PATH))
-    array2raster(SELECTED_LABELS_PATH, raster_src, selected_labels_set, "Byte")
+    array2raster(SELECTED_LABELS_PATH, selected_labels_set, image_metadata, "Byte")
     
     
     #######################################

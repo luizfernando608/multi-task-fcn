@@ -17,7 +17,6 @@ import torch
 
 import torch.distributed as dist
 
-from osgeo import gdal, osr
 import errno
 import random
 import matplotlib.pyplot as plt
@@ -63,7 +62,7 @@ def array2raster(path_to_save:str, array:np.ndarray, image_metadata:dict, dtype:
         - 'byte': Use the same data type as in the input NumPy array.
         - Any other dtype compatible with the rasterio library.
     """
-
+    
     # set data type to save.
     if dtype == None:
         RASTER_DTYPE = meta.dtype
@@ -901,17 +900,23 @@ def print_sucess(message:str):
 
 if __name__ == "__main__":
     from os.path import join
-    # segmentation = read_tiff("/home/luiz/multi-task-fcn/Data/samples_A1_train2tif.tif")
-    FILE_PATH = "/home/luiz/multi-task-fcn/Data/orthoimages/fixed_ortoA1_25tiff.tif"
+
+    FILE_PATH = "/home/luiz/multi-task-fcn/Data/samples_A1_train2tif.tif"
+    
     PATH_TO_SAVE = "/home/luiz/multi-task-fcn/test_repo"
+
     image = read_tiff(FILE_PATH)
     
     meta = get_image_metadata(FILE_PATH)
     
     array2raster(join(PATH_TO_SAVE, "image_byte.tif"), 
-                 image[:, 0:1000, 0:1000],
+                 image[0:1000, 0:1000],
                  image_metadata = meta,
                  dtype = "Byte")
+    
+    image2 = read_tiff(join(PATH_TO_SAVE, "image_byte.tif"))
+    
+    print(image2.shape)
 
     # array2raster("/home/luiz/multi-task-fcn/test_repo/image_float.tif", 
     #              image[:, 0:1000, 0:1000],

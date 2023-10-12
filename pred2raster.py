@@ -1,23 +1,16 @@
 """Save predictions to raster"""
 #%%
 import os
-from osgeo import gdal
+from os.path import isfile
+
 import numpy as np
-from src.utils import read_tiff
-import matplotlib.pyplot as plt
-import seaborn as sns
-from src.utils import array2raster, read_yaml, check_folder
+
+from src.utils import array2raster, read_yaml, check_folder, get_image_metadata
 
 def pred2raster(current_iter_folder, args):
 
     output_folder = os.path.join(current_iter_folder, 'raster_prediction')
     check_folder(output_folder)
-
-    plt.rcParams.update({'font.size': 10})
-    sns.set_style("darkgrid")
-    
-    raster_path = os.path.join(args.data_path, args.train_segmentation_path)
-    raster_src = gdal.Open(raster_path)
 
     prediction_file = os.path.join(
         output_folder,
@@ -34,7 +27,7 @@ def pred2raster(current_iter_folder, args):
         f'depth_itc{args.test_itc}_{np.sum(args.overlap)}.TIF')
                
     
-    if not os.path.isfile(prediction_file):
+    if not (isfile(prediction_file) and isfile(prob_file) and isfile(depth_file)):
     
         for ov in args.overlap:
             try:
@@ -55,10 +48,14 @@ def pred2raster(current_iter_folder, args):
         prediction_test/=3
         depth_test/=3
 
+        # Get the metadata from segmentation file to save with the output with the same conf
+        RASTER_PATH = os.path.join(args.data_path, args.train_segmentation_path)
+        image_metadata = get_image_metadata(RASTER_PATH)
         
-        array2raster(prediction_file, raster_src, np.argmax(prediction_test,axis=-1), "Byte")    
-        array2raster(prob_file, raster_src, np.amax(prediction_test,axis=-1), "Float32")  
-        array2raster(depth_file, raster_src, depth_test, "Float32")   
+        # Save the file
+        array2raster(prediction_file, np.argmax(prediction_test, axis = -1), image_metadata, "byte")    
+        array2raster(prob_file, np.amax(prediction_test, axis = -1), image_metadata, "float32")  
+        array2raster(depth_file, depth_test, image_metadata, "float32")   
 
 
 

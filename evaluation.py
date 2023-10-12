@@ -14,7 +14,7 @@ import torch.backends.cudnn as cudnn
 import torch.optim
 
 import glob
-from osgeo import gdal
+
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import StratifiedKFold
 from skimage.morphology import dilation, disk
@@ -31,7 +31,8 @@ from src.utils import (
     normalize,
     check_folder,
     read_yaml,
-    get_device
+    get_device,
+    get_image_metadata
 )
 
 from src.multicropdataset import DatasetFromCoord
@@ -194,9 +195,7 @@ def predict_network(ortho_image_shape:Tuple,
 
             j += out_batch.shape[0] 
             
-            
-        # raster_src = gdal.Open(ortho_image)
-        # row, col = raster_src.RasterYSize, raster_src.RasterXSize
+        
         row = ortho_image_shape[0]
         col = ortho_image_shape[1]
         
@@ -206,9 +205,7 @@ def predict_network(ortho_image_shape:Tuple,
         pred_depth = pred_depth[overlap//2:,overlap//2:]
         pred_depth = pred_depth[:row,:col]
         
-        # np.save(os.path.join(args.model_dir,'prediction','prob_map_itc{}_{}'.format(args.test_itc,args.overlap)), pred_prob)
-        # np.save(os.path.join(args.model_dir,'prediction','pred_class_itc{}_{}'.format(args.test_itc,args.overlap)), np.argmax(pred_prob,axis=-1))    
-        # np.save(os.path.join(args.model_dir,'prediction','depth_map_itc{}_{}'.format(args.test_itc,args.overlap)), pred_depth)
+
         return pred_prob, np.argmax(pred_prob,axis=-1), pred_depth
 
 
@@ -376,10 +373,10 @@ def evaluate_iteration(current_iter_folder:str, args:dict):
 
     current_model_folder = os.path.join(current_iter_folder, args.model_dir)
 
-    temp_image = gdal.Open(args.ortho_image)
-    ortho_image_shape = (temp_image.RasterYSize, temp_image.RasterXSize)
-    del temp_image
-
+    ortho_image_metadata = get_image_metadata(args.ortho_image)
+    
+    ortho_image_shape = (ortho_image_metadata["height"], ortho_image_metadata["width"])
+    
     if test_itc:
         ref = read_tiff(segmentation_img_path)
     else:
@@ -403,7 +400,7 @@ def evaluate_iteration(current_iter_folder:str, args:dict):
         evaluate_overlap(overlap, 
                          ref, 
                          current_iter_folder, 
-                         current_model_folder, 
+                         current_model_folder,
                          ortho_image_shape, 
                          logger)
         
