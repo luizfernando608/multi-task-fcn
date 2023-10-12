@@ -886,3 +886,29 @@ def print_sucess(message:str):
         Message to print
     """
     print("\033[92m {}\033[00m" .format(message))
+
+
+
+if __name__ == "__main__":
+    from os.path import join
+    # segmentation = read_tiff("/home/luiz/multi-task-fcn/Data/samples_A1_train2tif.tif")
+    FILE_PATH = "/home/luiz/multi-task-fcn/Data/orthoimages/fixed_ortoA1_25tiff.tif"
+    PATH_TO_SAVE = "/home/luiz/multi-task-fcn/test_repo"
+    image = read_tiff(FILE_PATH)
+    
+    meta = get_image_metadata(FILE_PATH)
+    
+    array2raster(join(PATH_TO_SAVE, "image_byte.tif"), 
+                 image[:, 0:1000, 0:1000],
+                 image_metadata = meta,
+                 dtype = "Byte")
+
+    # array2raster("/home/luiz/multi-task-fcn/test_repo/image_float.tif", 
+    #              image[:, 0:1000, 0:1000],
+    #              image_metadata = meta,
+    #              dtype = "Float32")
+    
+    # array2raster("/home/luiz/multi-task-fcn/test_repo/image_none.tif", 
+    #              image[:, 0:1000, 0:1000],
+    #              image_metadata = meta,
+    #              dtype = "Float32")
