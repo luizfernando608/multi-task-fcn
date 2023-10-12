@@ -581,8 +581,13 @@ def read_tiff(tiff_file:str) -> np.ndarray:
     with rasterio.open(tiff_file) as src:
         image_tensor = src.read()
 
-
-    return image_tensor
+    # if the band num is 1, reshape to (height, width)
+    if image_tensor.shape[0] == 1:
+        return image_tensor.squeeze()
+    
+    # else return in the reshape to (band, height, width)
+    else:
+        return image_tensor
 
 
 def get_image_metadata(tiff_file:str) -> dict:
