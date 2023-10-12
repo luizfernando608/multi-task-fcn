@@ -581,23 +581,21 @@ def compile_metrics(current_iter_folder, args):
     PRED_PATH = join(current_iter_folder, "raster_prediction", f"join_class_itc{args.test_itc}_{np.sum(args.overlap)}.TIF")
     predicted_seg = read_tiff(PRED_PATH)
 
+    ### Save test metrics ###
     metrics_test = evaluate_metrics(predicted_seg, ground_truth_test)
 
-    with open(join(current_iter_folder,'test_metrics.yaml'), 'w') as file:
+    save_yaml(metrics_test, join(current_iter_folder,'test_metrics.yaml'))    
 
-        documents = yaml.dump(metrics_test, file)
+    
+    ### Save train metrics ###
+    metrics_train = evaluate_metrics(predicted_seg, ground_truth_train, args.nb_class)
+            
+    save_yaml(metrics_train, join(current_iter_folder,'train_metrics.yaml'))
     
 
-    metrics_train = evaluate_metrics(predicted_seg, ground_truth_train, args.nb_class)
-
-    with open(join(current_iter_folder,'train_metrics.yaml'), 'w') as file:
-
-        documents = yaml.dump(metrics_train, file)
-        
-
+    ### Save test component metrics ###
     labels_test_metrics = join(current_iter_folder,'all_labels_test_metrics.yaml')
-        
-    # selected_labels = read_tiff(join(iter_folder, "new_labels", "selected_labels_set.tif"))
+    
     all_labels = read_tiff(join(current_iter_folder, "new_labels", "all_labels_set.tif"))
 
     all_labels_metrics = evaluate_component_metrics(ground_truth_test, all_labels, 14)
