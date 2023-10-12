@@ -579,6 +579,32 @@ def read_tiff(tiff_file:str) -> np.ndarray:
     return image_tensor
 
 
+def get_image_metadata(tiff_file:str) -> dict:
+    """Read a tiff file and get the meta relationed to this file
+
+    Parameters
+    ----------
+    tiff_file : str
+        Path to the tiff file
+
+    Returns
+    -------
+    dict
+        Dict with the following data:
+            - driver
+            - transform 
+            - crs
+            - dtype
+            - width
+            - height
+            - count (bands)
+    """
+    with rasterio.open("/home/luiz/multi-task-fcn/Data/orthoimages/fixed_ortoA1_25tiff.tif") as src:
+        pass
+
+    return src.meta
+
+
 
 def load_norm(path, mask=[0], mask_indx = 0):
     """Read image from `path` divide all values by 255
