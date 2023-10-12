@@ -33,6 +33,8 @@ import warnings
 
 from collections.abc import Iterable
 
+import rasterio
+
 plt.set_loglevel(level = 'critical')
 
 FALSY_STRINGS = {"off", "false", "0"}
@@ -570,11 +572,11 @@ def read_tiff(tiff_file:str) -> np.ndarray:
     if not os.path.isfile(tiff_file):
         raise FileNotFoundError("File not found: {}".format(tiff_file))
     
-    print(tiff_file)
+    with rasterio.open(tiff_file) as src:
+        image_tensor = src.read()
 
-    data = gdal.Open(tiff_file).ReadAsArray()
 
-    return data
+    return image_tensor
 
 
 
