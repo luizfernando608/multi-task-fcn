@@ -873,7 +873,7 @@ def save_yaml(data_dict:dict, yaml_path:str):
     # convert numpy metrics to python primites
     for metric in data_to_save:
 
-        if isinstance(data_to_save[metric], Iterable):
+        if isinstance(data_to_save[metric], Iterable) and not isinstance(data_to_save[metric], str):
             data_to_save[metric] = list(data_to_save[metric])
         
         else:
