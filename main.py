@@ -660,7 +660,7 @@ while True:
 
     # logger, training_stats = initialize_exp(current_iter_folder, args, "epoch", "loss")
 
-    # train_iteration(current_iter_folder, args)
+    train_iteration(current_iter_folder, args)
 
     evaluate_iteration(current_iter_folder, args)
 
