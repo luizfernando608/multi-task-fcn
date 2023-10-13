@@ -190,8 +190,8 @@ def read_last_segmentation(current_iter_folder:str, train_segmentation_path:str)
 
     data_path = dirname(current_iter_folder)
 
-    if current_iter==1:
-        image_path = join(data_path, train_segmentation_path)
+    if current_iter == 1:
+        image_path = train_segmentation_path
         
 
     else:
@@ -572,10 +572,10 @@ def compile_metrics(current_iter_folder, args):
     # f'join_class_itc{args.test_itc}_{np.sum(args.overlap)}.TIF'
     DATA_PATH = dirname(current_iter_folder)
 
-    GROUND_TRUTH_TEST_PATH = join(DATA_PATH, args.test_segmentation_path)
+    GROUND_TRUTH_TEST_PATH = args.test_segmentation_path
     ground_truth_test = read_tiff(GROUND_TRUTH_TEST_PATH)
 
-    GROUND_TRUTH_TRAIN_PATH = join(DATA_PATH, args.train_segmentation_path)
+    GROUND_TRUTH_TRAIN_PATH = args.train_segmentation_path
     ground_truth_train = read_tiff(GROUND_TRUTH_TRAIN_PATH)
 
     PRED_PATH = join(current_iter_folder, "raster_prediction", f"join_class_itc{args.test_itc}_{np.sum(args.overlap)}.TIF")
@@ -636,14 +636,14 @@ while True:
     # if the iteration 0 applies distance map to ground truth segmentation
     if current_iter == 0:
         
-        TEST_SEGMENTATION_PATH = join(args.data_path, args.test_segmentation_path)
+        TEST_SEGMENTATION_PATH = args.test_segmentation_path
         test_distance_map_output = join(current_iter_folder, "distance_map", "test_distance_map.tif")
         
         check_folder(dirname(test_distance_map_output))
 
         generate_distance_map(TEST_SEGMENTATION_PATH, test_distance_map_output)
 
-        TRAIN_SEGMENTATION_PATH  = join(args.data_path, args.train_segmentation_path)
+        TRAIN_SEGMENTATION_PATH  = args.train_segmentation_path
         train_distance_map = join(current_iter_folder, "distance_map", "train_distance_map.tif")
 
         check_folder(dirname(train_distance_map))
@@ -660,7 +660,7 @@ while True:
 
     # logger, training_stats = initialize_exp(current_iter_folder, args, "epoch", "loss")
 
-    train_iteration(current_iter_folder, args)
+    # train_iteration(current_iter_folder, args)
 
     evaluate_iteration(current_iter_folder, args)
 
@@ -680,14 +680,14 @@ while True:
     new_depth_map = read_tiff(NEW_DEPTH_FILE)
 
     if current_iter == 1:
-        OLD_PRED_FILE = join(args.data_path, args.train_segmentation_path)
+        OLD_PRED_FILE = args.train_segmentation_path
 
     else:
         OLD_PRED_FILE = join(args.data_path, f"iter_{current_iter-1:03d}", "new_labels", f'selected_labels_set.tif')
 
     old_pred_map = read_tiff(OLD_PRED_FILE)
 
-    ground_truth_segmentation = read_tiff(join(args.data_path, args.train_segmentation_path))
+    ground_truth_segmentation = read_tiff(args.train_segmentation_path)
 
     all_labels_set, selected_labels_set = get_new_segmentation_sample(
         ground_truth_map = ground_truth_segmentation,

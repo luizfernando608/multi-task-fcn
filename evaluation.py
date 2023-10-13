@@ -369,7 +369,6 @@ def evaluate_iteration(current_iter_folder:str, args:dict):
     overlaps = args.overlap
     test_itc = args.test_itc
 
-    segmentation_img_path = os.path.join(args.data_path, args.train_segmentation_path)
 
     current_model_folder = os.path.join(current_iter_folder, args.model_dir)
 
@@ -378,7 +377,7 @@ def evaluate_iteration(current_iter_folder:str, args:dict):
     ortho_image_shape = (ortho_image_metadata["height"], ortho_image_metadata["width"])
     
     if test_itc:
-        ref = read_tiff(segmentation_img_path)
+        ref = read_tiff(args.train_segmentation_path)
     else:
         ref = None
 

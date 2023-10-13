@@ -49,7 +49,7 @@ def pred2raster(current_iter_folder, args):
         depth_test/=3
 
         # Get the metadata from segmentation file to save with the output with the same conf
-        RASTER_PATH = os.path.join(args.data_path, args.train_segmentation_path)
+        RASTER_PATH = args.train_segmentation_path
         image_metadata = get_image_metadata(RASTER_PATH)
         
         # Save the file

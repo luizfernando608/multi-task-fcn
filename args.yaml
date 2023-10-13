@@ -9,8 +9,8 @@ data_path: /home/luiz/multi-task-fcn/11.0_version_data
 ortho_image: /home/luiz/multi-task-fcn/Data/orthoimages/fixed_ortoA1_25tiff.tif
 
 # Path to the ground truth segmentation relative to the data_path
-train_segmentation_path: "segmentation/samples_A1_train2tif.tif"
-test_segmentation_path: "segmentation/samples_A1_test2tif.tif"
+train_segmentation_path: "/home/luiz/multi-task-fcn/input_data/segmentation/samples_A1_train2tif.tif"
+test_segmentation_path: "/home/luiz/multi-task-fcn/input_data/segmentation/samples_A1_test2tif.tif"
 checkpoint_file: checkpoint.pth.tar
 
 
