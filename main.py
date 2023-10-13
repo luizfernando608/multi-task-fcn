@@ -613,6 +613,8 @@ def compile_metrics(current_iter_folder, args):
 ROOT_PATH = dirname(__file__)
 args = read_yaml(join(ROOT_PATH, "args.yaml"))
 
+# create output path
+check_folder(args.data_path)
 
 ##### LOOP #####
 
@@ -694,8 +696,7 @@ while True:
         old_pred_map = old_pred_map, 
         new_pred_map = new_pred_map, 
         new_prob_map = new_prob_map, 
-        new_depth_map = new_depth_map,
-        data_path = args.data_path,
+        new_depth_map = new_depth_map
     )
 
     # image metadata to save array2raster

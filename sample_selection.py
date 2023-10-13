@@ -1,4 +1,5 @@
 import os
+from os.path import dirname, join
 import numpy as np
 
 from skimage.measure import label, regionprops_table
@@ -19,6 +20,8 @@ from generate_distance_map import apply_gaussian_distance_map
 from scipy.ndimage import gaussian_filter
 
 from src.metrics import evaluate_component_metrics
+
+args = read_yaml(join(dirname(__file__), "args.yaml"))
 
 def undersample(data: pd.DataFrame, column_category: str):
     X = data.drop(column_category, axis=1).copy()
@@ -247,7 +250,7 @@ def select_n_labels_by_class(pred_labels:np.ndarray, samples_by_class:int = 5):
 
 
 
-def filter_components_by_mask(data_path:str, pred_map:np.ndarray):
+def filter_components_by_mask(pred_map:np.ndarray):
     """Remove labels and components out of the mask.tif area
 
     Parameters
@@ -258,7 +261,7 @@ def filter_components_by_mask(data_path:str, pred_map:np.ndarray):
         The labels map from the current iteration.
     """
     
-    mask = read_tiff(os.path.join(data_path, "mask.tif"))
+    mask = read_tiff(args["mask_path"])
     mask = np.where(mask == 99, False, True)
 
     components_pred_map = label(pred_map)
@@ -337,7 +340,7 @@ def select_good_samples(old_pred_map:np.ndarray,
                         new_pred_map:np.ndarray, 
                         new_prob_map:np.ndarray, 
                         new_depth_map:np.ndarray,
-                        data_path) -> np.ndarray:
+                        ) -> np.ndarray:
     """
     This function defines the rules to select good samples based on model outputs.
 
@@ -401,7 +404,7 @@ def select_good_samples(old_pred_map:np.ndarray,
                                             high_limit = np.inf,
                                             property = "extent")
     
-    filter_components_by_mask(data_path, new_pred_map)
+    filter_components_by_mask(new_pred_map)
     
 
     return new_pred_map
@@ -412,8 +415,7 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
                                 old_pred_map:np.ndarray, 
                                 new_pred_map:np.ndarray, 
                                 new_prob_map:np.ndarray, 
-                                new_depth_map:np.ndarray,
-                                data_path:str)->Tuple[np.ndarray, np.ndarray, np.ndarray]:
+                                new_depth_map:np.ndarray)->Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """ Get the new segmentation sample based on the segmentation from the last iteration and the new segmentation prediction set
     
     Parameters
@@ -442,8 +444,7 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
         old_pred_map,
         new_pred_map,
         new_prob_map,
-        new_depth_map,
-        data_path
+        new_depth_map
     )
 
 

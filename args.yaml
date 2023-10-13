@@ -11,6 +11,8 @@ ortho_image: /home/luiz/multi-task-fcn/input_data/orthoimage/fixed_ortoA1_25tiff
 # Path to the ground truth segmentation relative to the data_path
 train_segmentation_path: "/home/luiz/multi-task-fcn/input_data/segmentation/samples_A1_train2tif.tif"
 test_segmentation_path: "/home/luiz/multi-task-fcn/input_data/segmentation/samples_A1_test2tif.tif"
+
+mask_path: "/home/luiz/multi-task-fcn/input_data/mask.tif"
 checkpoint_file: checkpoint.pth.tar
 
 
