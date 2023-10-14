@@ -708,18 +708,19 @@ while True:
     if current_iter == 0:
         
         TEST_SEGMENTATION_PATH = args.test_segmentation_path
-        test_distance_map_output = join(current_iter_folder, "distance_map", "test_distance_map.tif")
+        TEST_DISTANCE_MAP_OUTPUT = join(current_iter_folder, "distance_map", "test_distance_map.tif")
         
-        check_folder(dirname(test_distance_map_output))
+        check_folder(dirname(TEST_DISTANCE_MAP_OUTPUT))
 
-        generate_distance_map(TEST_SEGMENTATION_PATH, test_distance_map_output)
+        generate_distance_map(TEST_SEGMENTATION_PATH, TEST_DISTANCE_MAP_OUTPUT)
+
 
         TRAIN_SEGMENTATION_PATH  = args.train_segmentation_path
-        train_distance_map = join(current_iter_folder, "distance_map", "train_distance_map.tif")
+        TRAIN_DISTANCE_MAP_OUTPUT = join(current_iter_folder, "distance_map", "train_distance_map.tif")
 
-        check_folder(dirname(train_distance_map))
+        check_folder(dirname(TRAIN_DISTANCE_MAP_OUTPUT))
 
-        generate_distance_map(TRAIN_SEGMENTATION_PATH, train_distance_map)
+        generate_distance_map(TRAIN_SEGMENTATION_PATH, TRAIN_DISTANCE_MAP_OUTPUT)
         continue
     
     with torch.no_grad():
