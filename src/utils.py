@@ -614,7 +614,7 @@ def get_image_metadata(tiff_file:str) -> dict:
             - height
             - count (bands)
     """
-    with rasterio.open("/home/luiz/multi-task-fcn/Data/orthoimages/fixed_ortoA1_25tiff.tif") as src:
+    with rasterio.open(tiff_file) as src:
         pass
 
     return src.meta
