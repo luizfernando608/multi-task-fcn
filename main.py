@@ -75,7 +75,7 @@ def delete_useless_files(current_iter_folder:str):
         shutil.rmtree(folder_to_remove)
     
     else:
-        raise FileExistsError("The path doesnt exist")
+        pass
 
 
 
