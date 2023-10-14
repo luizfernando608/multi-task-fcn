@@ -870,13 +870,16 @@ def save_yaml(data_dict:dict, yaml_path:str):
     
     data_to_save = data_dict.copy()
 
-    # convert numpy metrics to python primites
+    # convert numpy metrics to python primitives
     for metric in data_to_save:
+        
+        if isinstance(data_to_save[metric], str):
+            data_to_save[metric] = str(data_to_save[metric])
 
-        if isinstance(data_to_save[metric], Iterable) and not isinstance(data_to_save[metric], str):
+        elif isinstance(data_to_save[metric], Iterable):
             data_to_save[metric] = list(data_to_save[metric])
         
-        else:
+        elif isinstance(data_to_save[metric], float):
             data_to_save[metric] = float(data_to_save[metric])
 
 
