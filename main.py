@@ -768,7 +768,7 @@ while True:
 
     pred2raster(current_iter_folder, args)
 
-    generate_labels_for_next_iteration(current_iter_folder, args)
+    generate_distance_map_for_next_iteration(current_iter_folder, args)
 
     #############################################
 
