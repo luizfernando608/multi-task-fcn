@@ -412,7 +412,8 @@ def select_good_samples(old_pred_map:np.ndarray,
 
 
 def get_new_segmentation_sample(ground_truth_map:np.ndarray, 
-                                old_pred_map:np.ndarray, 
+                                old_selected_labels:np.ndarray,
+                                old_all_labels:np.ndarray,
                                 new_pred_map:np.ndarray, 
                                 new_prob_map:np.ndarray, 
                                 new_depth_map:np.ndarray)->Tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -441,16 +442,18 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
     new_pred_map += 1
 
     new_pred_map = select_good_samples(
-        old_pred_map,
+        old_all_labels,
         new_pred_map,
         new_prob_map,
         new_depth_map
     )
 
+    # Join all labels set with new prediction
+    new_labels_set = join_labels_set(new_pred_map, old_all_labels)
 
-    # new components
-    delta_label_map = get_labels_delta(old_label_img = old_pred_map, 
-                                       new_label_img = new_pred_map)
+    # Select components that are in new but not in old
+    delta_label_map = get_labels_delta(old_label_img = old_selected_labels, 
+                                       new_label_img = new_labels_set)
     
 
     unbalanced_delta = delta_label_map.copy()
@@ -462,11 +465,11 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
     )
 
 
-    intersection_label_map = get_label_intersection(old_label_img = old_pred_map, 
-                                                    new_label_img = new_pred_map)
+    intersection_label_map = get_label_intersection(old_label_img = old_selected_labels, 
+                                                    new_label_img = new_labels_set)
         
 
-    selected_labels_set = join_labels_set(intersection_label_map, old_pred_map, 0.10 )
+    selected_labels_set = join_labels_set(intersection_label_map, old_selected_labels, 0.10 )
 
     selected_labels_set = join_labels_set(delta_label_map, selected_labels_set, 0.10 )
 
@@ -474,9 +477,9 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
 
 
 
-    all_labels_set = join_labels_set(intersection_label_map, old_pred_map, 0.10 )
+    all_labels_set = join_labels_set(intersection_label_map, old_selected_labels, 0.10 )
 
-    all_labels_set = join_labels_set(unbalanced_delta, old_pred_map, 0.10)
+    all_labels_set = join_labels_set(unbalanced_delta, old_selected_labels, 0.10)
 
     all_labels_set = join_labels_set(ground_truth_map, all_labels_set, 0.01)
 
@@ -487,7 +490,9 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
 
 if __name__ == "__main__":
     args = read_yaml("args.yaml")
-    version_folder = "/home/luiz/multi-task-fcn/11.0_version_data"
+    ROOT_PATH = dirname(__file__)
+    
+    version_folder = join(ROOT_PATH, "11.0_version_data")
     
     gt_map = read_tiff(f"{version_folder}/segmentation/samples_A1_train2tif.tif")
 
@@ -501,12 +506,14 @@ if __name__ == "__main__":
 
     depth_predicted = read_tiff(f"{version_folder}/iter_001/raster_prediction/depth_itcFalse_1.1.TIF")
     
-    all_labels_set, selected_labels_set =  get_new_segmentation_sample(old_pred_map = old_pred_map,
+    all_labels_set, selected_labels_set =  get_new_segmentation_sample(old_selected_labels = old_pred_map,
+                                                                       old_all_labels = old_pred_map,
+
                                                                        new_pred_map = new_pred_map,
                                                                        new_prob_map = new_prob_map,
                                                                        new_depth_map = depth_predicted,
-                                                                       ground_truth_map = gt_map,
-                                                                       data_path =  args.data_path
+                                                                       
+                                                                       ground_truth_map = gt_map
                                                                        )
     
     print("Ok")

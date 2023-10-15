@@ -584,26 +584,31 @@ def generate_labels_for_next_iteration(current_iter_folder:str, args:dict):
 
 
     if current_iter == 1:
-        OLD_PRED_FILE = args.train_segmentation_path
+        OLD_SELECTED_LABELS_FILE = args.train_segmentation_path
+        OLD_ALL_LABELS_FILE = args.train_segmentation_path
 
     else:
-        OLD_PRED_FILE = join(args.data_path, f"iter_{current_iter-1:03d}", "new_labels", f'selected_labels_set.tif')
+        OLD_SELECTED_LABELS_FILE = join(args.data_path, f"iter_{current_iter-1:03d}", "new_labels", f'selected_labels_set.tif')
+        OLD_ALL_LABELS_FILE = join(args.data_path, f"iter_{current_iter-1:03d}", "new_labels", f'all_labels_set.tif')
 
 
-    old_pred_map = read_tiff(OLD_PRED_FILE)
+    old_selected_labels = read_tiff(OLD_SELECTED_LABELS_FILE)
+    old_all_labels = read_tiff(OLD_ALL_LABELS_FILE)
+
 
     ground_truth_segmentation = read_tiff(args.train_segmentation_path)
 
     all_labels_set, selected_labels_set = get_new_segmentation_sample(
         ground_truth_map = ground_truth_segmentation,
-        old_pred_map = old_pred_map, 
+        old_all_labels = old_all_labels,
+        old_selected_labels = old_selected_labels,
         new_pred_map = new_pred_map, 
         new_prob_map = new_prob_map, 
         new_depth_map = new_depth_map
     )
 
     ##### SAVE NEW LABELS ####
-    image_metadata = get_image_metadata(OLD_PRED_FILE)
+    image_metadata = get_image_metadata(OLD_SELECTED_LABELS_FILE)
 
     ALL_LABELS_PATH = join(current_iter_folder, "new_labels", f'all_labels_set.tif')
     
