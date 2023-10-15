@@ -622,23 +622,48 @@ def generate_labels_for_next_iteration(current_iter_folder:str, args:dict):
     check_folder(dirname(SELECTED_LABELS_PATH))
 
     array2raster(SELECTED_LABELS_PATH, selected_labels_set, image_metadata, "Byte")
+
+   
+
+def generate_distance_map_for_next_iteration(current_iter_folder, args):
     
+    ##### READ #######
+    ALL_LABELS_PATH = join(current_iter_folder, "new_labels", 'all_labels_set.tif')
+    all_labels_set = read_tiff(ALL_LABELS_PATH)
+
+    SELECTED_LABELS_PATH = join(current_iter_folder, "new_labels", 'selected_labels_set.tif')
+    selected_labels_set = read_tiff(SELECTED_LABELS_PATH)
+
+    NEW_DEPTH_FILE = join(current_iter_folder, "raster_prediction", f'depth_itc{args.test_itc}_{np.sum(args.overlap)}.TIF')
+    new_depth_map = read_tiff(NEW_DEPTH_FILE)
+
+    ##### GENERATE #####
     
-    #######################################
-    ######## GENERATE DISTANCE MAP ########
-    ALL_LABELS_DISTANCE_MAP_PATH = join(current_iter_folder, "distance_map", f'all_labels_distance_map.tif')
+    all_labels_distance_map = np.where(all_labels_set > 0, new_depth_map, 0)
+
+    selected_labels_distance_map = np.where(selected_labels_set > 0, new_depth_map, 0)
+
+    ##### WRITE #######
+
+    # Get image metadata to save new images
+    image_metadata = get_image_metadata(NEW_DEPTH_FILE)
+    
+    # SAVE ALL LABELS DISTANCE MAP
+    ALL_LABELS_DISTANCE_MAP_PATH = join(current_iter_folder, "distance_map", 'all_labels_distance_map.tif')
 
     check_folder(dirname(ALL_LABELS_DISTANCE_MAP_PATH))
 
-    generate_distance_map(ALL_LABELS_PATH, ALL_LABELS_DISTANCE_MAP_PATH)
-    
+    array2raster(ALL_LABELS_DISTANCE_MAP_PATH, all_labels_distance_map, image_metadata, "float32")
 
-    SELECTED_LABELS_DISTANCE_MAP_PATH  = join(current_iter_folder, "distance_map", f'selected_distance_map.tif')
+    # SAVE SELECTED LABELS DISTANCE MAP
+    SELECTED_LABELS_DISTANCE_MAP_PATH  = join(current_iter_folder, "distance_map", 'selected_distance_map.tif')
     
     check_folder(dirname(SELECTED_LABELS_DISTANCE_MAP_PATH))
 
-    generate_distance_map(SELECTED_LABELS_PATH, SELECTED_LABELS_DISTANCE_MAP_PATH)
-    
+    array2raster(SELECTED_LABELS_DISTANCE_MAP_PATH, selected_labels_distance_map, image_metadata, "float32")
+
+
+
 
 
 def compile_metrics(current_iter_folder, args):
