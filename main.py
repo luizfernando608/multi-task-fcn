@@ -30,6 +30,7 @@ import matplotlib.pyplot as plt
 
 import yaml
 
+from scipy.ndimage import gaussian_filter
 
 
 plt.set_loglevel(level = 'info')
