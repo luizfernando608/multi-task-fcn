@@ -640,9 +640,10 @@ def generate_distance_map_for_next_iteration(current_iter_folder, args):
     ##### GENERATE #####
     
     all_labels_distance_map = np.where(all_labels_set > 0, new_depth_map, 0)
+    all_labels_distance_map = gaussian_filter(all_labels_distance_map, 1)
 
     selected_labels_distance_map = np.where(selected_labels_set > 0, new_depth_map, 0)
-
+    selected_labels_distance_map = gaussian_filter(selected_labels_distance_map, 1)
     ##### WRITE #######
 
     # Get image metadata to save new images
