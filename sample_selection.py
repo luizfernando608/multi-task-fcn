@@ -364,8 +364,8 @@ def select_good_samples(old_pred_map:np.ndarray,
     
     # new_pred_map = np.where(new_prob_map > 0.95, new_pred_map, 0)
 
-    prob_gauss = gaussian_filter(new_depth_map, 3)
-    depth_gauss = gaussian_filter(new_prob_map, 3)
+    prob_gauss = gaussian_filter(new_prob_map, 3)
+    depth_gauss = gaussian_filter(new_depth_map, 3)
 
     # new_prob_map = np.where(new_prob_map > 0.95, new_prob_map, 0)
 
