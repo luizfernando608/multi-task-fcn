@@ -9,3 +9,5 @@ exploration_notebooks
 notes
 *_version_data/
 Data Repo Model
+.env/
+*_data/
