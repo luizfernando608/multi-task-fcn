@@ -362,20 +362,14 @@ def select_good_samples(old_pred_map:np.ndarray,
 
     new_pred_map = new_pred_map.copy()
     
-    # Select only the components with confidence higher than 0.99
-    new_pred_map = np.where(new_prob_map > 0.95, new_pred_map, 0)
-    
-    # depth map
-    new_depth_map = gaussian_filter(new_depth_map, sigma = 9)
+    # new_pred_map = np.where(new_prob_map > 0.95, new_pred_map, 0)
 
-    # new_depth_map = np.where(new_depth_map > 0.4, new_depth_map, 0)
-
-    # prob map
-    new_prob_map = gaussian_filter(new_prob_map, sigma = 9)
+    prob_gauss = gaussian_filter(new_depth_map, 3)
+    depth_gauss = gaussian_filter(new_prob_map, 3)
 
     # new_prob_map = np.where(new_prob_map > 0.95, new_prob_map, 0)
 
-    mask_selection = (new_depth_map + new_prob_map) > 1.3
+    mask_selection = ((depth_gauss > 0.2) & (prob_gauss > 0.8))
 
     new_pred_map[~mask_selection] = 0
 
@@ -384,7 +378,7 @@ def select_good_samples(old_pred_map:np.ndarray,
     comp_old_stats = get_components_stats(comp_old_pred, old_pred_map)
     
     min_area = comp_old_stats["area"].min() - comp_old_stats["area"].min()*0.1
-    max_area = comp_old_stats["area"].max()*(1.1)
+    max_area = comp_old_stats["area"].max()*(1.3)
     
     # filter components too small or too large
     filter_components_by_geometric_property(new_pred_map, 
