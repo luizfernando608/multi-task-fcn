@@ -4,8 +4,6 @@
 # experiment directory
 model_dir: exp_deeplab_v4
 
-data_path: /home/luiz/multi-task-fcn/14.0_version_data
-
 # Input data for the model
 ortho_image: /home/luiz/multi-task-fcn/input_data/orthoimage/fixed_ortoA1_25tiff.tif
 train_segmentation_path: "/home/luiz/multi-task-fcn/input_data/segmentation/samples_A1_train2tif.tif"
