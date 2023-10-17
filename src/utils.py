@@ -34,6 +34,9 @@ from collections.abc import Iterable
 
 import rasterio
 
+from skimage.measure import label
+
+
 plt.set_loglevel(level = 'critical')
 
 FALSY_STRINGS = {"off", "false", "0"}
@@ -780,42 +783,62 @@ def oversamp(coords:np.ndarray, lab:np.ndarray, under = False) -> np.ndarray:
         The coordinates of the segmentation samples, where the values are non-zero.
         Theses coordinates are balanced based on the tree-type classes.
     """
-
     
-    uniq, count = np.unique(lab, return_counts=True)
+    # get the ids of each individual tree. I wil call these tree as components
+    components_lab = label(lab)
+
+    # Get the ids of each tree
+    component_ids, num_comp_pixels = np.unique(components_lab[np.nonzero(components_lab)], return_counts = True)
+
+    # Get the number of pixels of class of tree
+    label_id, num_label_pixels = np.unique(lab[np.nonzero(lab)], return_counts=True)
 
     if under:
-        max_samp = int(np.median(count))
+        max_samp = int(np.median(num_label_pixels))
 
     else:
-        max_samp = np.max(count)
+        max_samp = np.max(num_label_pixels)
 
+    # Create the array to store the coordinates
+    out_coords = np.zeros( (max_samp*len(num_label_pixels), 2), dtype='int64')
     
-    out_coords = np.zeros( (max_samp*len(uniq), 2), dtype='int64')
+    # Tracking index to define where the coordinates should be save in the outcoords
+    start_index = 0
+
+    # Iterate through each tree
+    for j, component_id in enumerate(component_ids):
+        
+        
+        # Get the class of this tree
+        comp_class = np.unique(lab[components_lab == component_id])
+
+        # Get the number of trees in the same class of this tree
+        num_comp_in_class = np.unique(components_lab[lab == comp_class]).shape[0]
+
+        # Get the number of pixels for this compoment.
+        num_pxl_for_this_comp = int(np.floor(max_samp / num_comp_in_class))
+        # With this value, we can guarantee the same number of components in each class
+
+        
+        # get the pixels coordinates of this tree
+        coords_comp = np.argwhere(components_lab == component_id)
+        
+        # Select random pixels coords for this tree 
+        selected_coords_index = np.random.randint(low = 0, 
+                                                high = coords_comp.shape[0], 
+                                                size = num_pxl_for_this_comp
+                                                )
+
+        # Save the coordinates
+        out_coords[
+            start_index : start_index + num_pxl_for_this_comp, :
+        ] = coords_comp[selected_coords_index, :].copy()
+        # Update the index to save the coordinantes in the array above
+        start_index += num_pxl_for_this_comp
     
+    # remove the values zero
+    return out_coords[np.nonzero(out_coords)].reshape(-1, 2)
 
-    for j in range(len(uniq)):
-
-        lab_ind = np.where(lab == uniq[j]) 
-
-        # If num of samples where the class is present is less than max_samp
-        # then we need to oversample
-        if len(lab_ind[0]) < max_samp:
-            # Randomly select samples with replacement to match max_samp
-            index = np.random.choice(lab_ind[0], max_samp, replace=True)
-            # Add to output array
-            out_coords[j*max_samp:(j+1)*max_samp,:] = coords[index]
-            
-        # If the number of samples where the class is present is the same as max_samp
-        # then we don't need to oversample, just add the samples randomly to the output array
-        else:
-            # Randomly select samples without replacement
-            index = np.random.choice(lab_ind[0], max_samp, replace=False)
-            # Add to output array
-            out_coords[j*max_samp:(j+1)*max_samp,:] = coords[index]
-
-            
-    return out_coords
 
 
 class AttrDict(dict):
