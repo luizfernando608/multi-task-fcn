@@ -369,7 +369,7 @@ def select_good_samples(old_pred_map:np.ndarray,
 
     # new_prob_map = np.where(new_prob_map > 0.95, new_prob_map, 0)
 
-    mask_selection = ((depth_gauss > 0.2) & (prob_gauss > 0.8))
+    mask_selection = ((depth_gauss > 0.15) & (prob_gauss > 0.9))
 
     new_pred_map[~mask_selection] = 0
 
@@ -378,7 +378,7 @@ def select_good_samples(old_pred_map:np.ndarray,
     comp_old_stats = get_components_stats(comp_old_pred, old_pred_map)
     
     min_area = comp_old_stats["area"].min() - comp_old_stats["area"].min()*0.1
-    max_area = comp_old_stats["area"].max()*(1.3)
+    max_area = comp_old_stats["area"].max()*(1.2)
     
     # filter components too small or too large
     filter_components_by_geometric_property(new_pred_map, 
@@ -388,13 +388,13 @@ def select_good_samples(old_pred_map:np.ndarray,
     
     # remove shape with non smoth borders
     filter_components_by_geometric_property(new_pred_map, 
-                                            low_limit = 0.6,  # conservative limit
+                                            low_limit = 0.65,  # conservative limit
                                             high_limit = np.inf,
                                             property = "solidity")
     
     # remove extense segmentation labels
     filter_components_by_geometric_property(new_pred_map, 
-                                            low_limit = 0.4,  # conservative limit
+                                            low_limit = 0.45,  # conservative limit
                                             high_limit = np.inf,
                                             property = "extent")
     
