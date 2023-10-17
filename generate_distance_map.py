@@ -11,7 +11,7 @@ from src.utils import check_folder, array2raster, read_tiff, read_yaml, print_su
 
 
 
-def apply_gaussian_distance_map(input_img:np.ndarray, sigma=5)->np.ndarray:
+def apply_gaussian_distance_map(input_img:np.ndarray, sigma=1)->np.ndarray:
     """Apply euclidean distance transform and gaussian filter to the input image
 
     Parameters
