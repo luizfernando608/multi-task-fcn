@@ -731,7 +731,7 @@ while True:
     current_iter_folder = get_current_iter_folder(args.data_path, args.test_itc, args.overlap)
     current_iter = int(current_iter_folder.split("_")[-1])
 
-    if current_iter > 5:
+    if current_iter > 1:
         break
     
     print("Current iteration folder: ", current_iter_folder)
