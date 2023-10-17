@@ -404,7 +404,7 @@ def train_iteration(current_iter_folder:str, args:dict):
                                                                          args.size_crops)
     
     ######## do oversampling in minor classes
-    coords_train = oversamp(coords_train, labs_coords_train, under=False)
+    coords_train = oversamp(coords_train, raster_train, under = False)
 
     if args.samples > coords_train.shape[0]:
         args.samples = None
