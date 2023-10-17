@@ -16,6 +16,8 @@ mask_path: "/home/luiz/multi-task-fcn/input_data/mask.tif"
 
 checkpoint_file: checkpoint.pth.tar
 
+# Num of iter
+num_iter : 5
 
 # pred2raster parameters
 # samples per epoch
