@@ -13,8 +13,6 @@ test_segmentation_path: "/home/luiz/multi-task-fcn/input_data/segmentation/sampl
 
 mask_path: "/home/luiz/multi-task-fcn/input_data/mask.tif"
 
-# Folder to save output from model
-data_path: /home/luiz/multi-task-fcn/11.0_version_data
 
 checkpoint_file: checkpoint.pth.tar
 
