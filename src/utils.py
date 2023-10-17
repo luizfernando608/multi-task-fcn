@@ -764,7 +764,8 @@ def oversamp(coords:np.ndarray, lab:np.ndarray, under = False) -> np.ndarray:
     coords : np.ndarray
         The coordinates of the segmentation samples, where the values are non-zero
     lab : np.ndarray
-        The segmentation labels, where the values are non-zero
+        The segmentation labels in the shape (height, width).
+        Where each value is the tree label
     under : bool, optional
         Define if the sampling is under or over.
 
