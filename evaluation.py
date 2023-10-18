@@ -178,20 +178,25 @@ def predict_network(ortho_image_shape:Tuple,
             
             c, x, y, cl = out_batch.shape
 
-            coord_x = coords[j : j+batch_size,0]
-            coord_y = coords[j : j+batch_size,1]
+            coord_x = coords[j : j + batch_size, 0]
+            coord_y = coords[j : j + batch_size, 1]
 
             # iterate through batches
             for b in range(c):
+
                 pred_prob[
                     coord_x[b] - st : coord_x[b] + st + stride % 2,
-                    coord_y[b] - st : coord_y[b] + st+stride % 2
-                    ] = out_batch[ b , overlap//2 : x-ovr+overlap%2 , overlap//2 : y - ovr + overlap % 2]
+                    coord_y[b] - st : coord_y[b] + st + stride % 2
+                    ] = out_batch[ b , int(np.ceil(overlap/2)) : x - ovr , 
+                                        int(np.ceil(overlap/2)) : y - ovr]
 
                 pred_depth[
                     coord_x[b] - st : coord_x[b] + st + stride % 2,
-                    coord_y[b] - st : coord_y[b] + st + stride%2
-                    ] = depth_out[b, 0, overlap//2 : x - ovr + overlap % 2, overlap//2 : y - ovr + overlap % 2]
+                    coord_y[b] - st : coord_y[b] + st + stride % 2
+                    ] = depth_out[b, 0, 
+                                        int(np.ceil(overlap/2)) : x - ovr, 
+                                        int(np.ceil(overlap/2)) : y - ovr 
+                                    ]
 
             j += out_batch.shape[0] 
             
