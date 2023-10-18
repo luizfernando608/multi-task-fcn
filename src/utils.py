@@ -794,7 +794,7 @@ def oversamp(coords:np.ndarray, lab:np.ndarray, under = False) -> np.ndarray:
     label_id, num_label_pixels = np.unique(lab[np.nonzero(lab)], return_counts=True)
 
     if under:
-        max_samp = int(np.median(num_label_pixels))
+        max_samp = int(np.min(num_label_pixels))
 
     else:
         max_samp = np.max(num_label_pixels)
