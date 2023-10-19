@@ -35,7 +35,7 @@ import yaml
 plt.set_loglevel(level = 'info')
 
 from src.logger import create_logger
-from src.model import define_loader, build_model, load_weights, train, save_checkpoint
+from src.model import define_loader, build_model, load_weights, train, save_checkpoint, eval
 from src.multicropdataset import DatasetFromCoord
 from src.utils import (
     restart_from_checkpoint,
@@ -203,7 +203,10 @@ def read_last_segmentation(current_iter_folder:str, train_segmentation_path:str)
 
     return image
 
-    
+
+def read_val_segmentation():
+    return read_tiff(args.train_segmentation_path)
+
 
 def read_last_distance_map(current_iter_folder:str)->np.ndarray:
     """Read the last segmentation file with gaussian filter and distance map applied.
@@ -231,6 +234,13 @@ def read_last_distance_map(current_iter_folder:str)->np.ndarray:
         
     image = read_tiff(image_path)
     return image
+
+
+def read_val_distance_map():
+    
+    IMAGE_PATH = join(args.data_path, f"iter_000", "distance_map", "train_distance_map.tif")
+
+    return read_tiff(IMAGE_PATH)
 
 
 def get_learning_rate_schedule(train_loader: torch.utils.data.DataLoader, 
@@ -434,6 +444,33 @@ def train_iteration(current_iter_folder:str, args:dict):
         shuffle=True,
     )
 
+    raster_val = read_val_segmentation()
+    depth_val = read_val_distance_map()
+
+    ########### LOAD VALIDATION SET ##################
+    _, coords_val, raster_val, _ = define_loader(args.ortho_image, 
+                                                raster_val, 
+                                                args.size_crops,
+                                                test = True)
+
+    val_dataset = DatasetFromCoord(
+        image,
+        raster_val,
+        depth_val,
+        coords_val,
+        args.size_crops,
+        args.samples//2,
+        augment = True
+    )
+
+    val_loader = torch.utils.data.DataLoader(
+        val_dataset,
+        batch_size = args.batch_size,
+        num_workers = args.workers,
+        pin_memory = True,
+        drop_last = True,
+        shuffle = True,
+    )
 
     logger.info("Building data done with {} images loaded.".format(len(train_loader)))
 
@@ -537,7 +574,8 @@ def train_iteration(current_iter_folder:str, args:dict):
                      lr_schedule, 
                      args.rank, 
                      to_restore["count_early"],
-                     logger=logger)
+                     logger=logger,
+                     val_loader = val_loader)
     gc.collect()
 
 
