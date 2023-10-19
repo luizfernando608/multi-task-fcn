@@ -375,7 +375,7 @@ def select_good_samples(old_pred_map:np.ndarray,
 
     # new_prob_map = np.where(new_prob_map > 0.95, new_prob_map, 0)
 
-    mask_selection = (new_depth_map + new_prob_map) > 1.3
+    mask_selection = (new_depth_map + new_prob_map) > 1.2
 
     new_pred_map[~mask_selection] = 0
 
@@ -383,8 +383,8 @@ def select_good_samples(old_pred_map:np.ndarray,
     
     comp_old_stats = get_components_stats(comp_old_pred, old_pred_map)
     
-    min_area = comp_old_stats["area"].min() - comp_old_stats["area"].min()*0.1
-    max_area = comp_old_stats["area"].max()*(1.1)
+    min_area = comp_old_stats["area"].min() - comp_old_stats["area"].min()
+    max_area = comp_old_stats["area"].max()*(1.05)
     
     # filter components too small or too large
     filter_components_by_geometric_property(new_pred_map, 
@@ -394,7 +394,7 @@ def select_good_samples(old_pred_map:np.ndarray,
     
     # remove shape with non smoth borders
     filter_components_by_geometric_property(new_pred_map, 
-                                            low_limit = 0.6,  # conservative limit
+                                            low_limit = 0.7,  # conservative limit
                                             high_limit = np.inf,
                                             property = "solidity")
     
