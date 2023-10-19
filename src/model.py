@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from .resnet import ResUnet
-from .metrics import evaluate_metrics
+from .metrics import evaluate_metrics, evaluate_f1
 from .utils import check_folder, load_norm, AverageMeter, plot_figures, get_device
 
 from typing import Tuple
@@ -282,6 +282,8 @@ def train(train_loader:torch.utils.data.DataLoader,
     model.train()
     loss_avg = AverageMeter()
     
+    f1_avg = AverageMeter()
+
     # define functions
     soft = nn.Softmax(dim=1).to(DEVICE)
     sig = nn.Sigmoid().to(DEVICE)   
@@ -332,6 +334,8 @@ def train(train_loader:torch.utils.data.DataLoader,
         # update the average loss
         loss_avg.update(loss.item())
 
+        f1_avg.update( evaluate_f1(soft(out_batch['out']), ref) )
+
         gc.collect()
 
         # Evaluate summaries only once in a while
@@ -356,7 +360,7 @@ def train(train_loader:torch.utils.data.DataLoader,
                          sig(out_batch['aux']),figures_path,epoch,'train')
 
             
-    return (epoch, loss_avg.avg)
+    return (epoch, f1_avg.avg)
 
 
 
