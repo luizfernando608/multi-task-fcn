@@ -494,7 +494,7 @@ def train_iteration(current_iter_folder:str, args:dict):
 
 
     #### LOAD METRICS FROM THE LAST CHECKPOINT ####
-    to_restore = {"epoch": 0, "best_val":(100.), "count_early": 0, "is_iter_finished":False}
+    to_restore = {"epoch": 0, "best_val":(0.), "count_early": 0, "is_iter_finished":False}
     restart_from_checkpoint(
         last_checkpoint,
         run_variables = to_restore,
@@ -508,7 +508,7 @@ def train_iteration(current_iter_folder:str, args:dict):
     # the model reset the metrics
     if loaded_from_last_iteration:
         to_restore["epoch"] = 0
-        to_restore["best_val"] = 100.
+        to_restore["best_val"] = 0.0
         to_restore["count_early"] = 0
         to_restore["is_iter_finished"] = False
     
@@ -540,7 +540,7 @@ def train_iteration(current_iter_folder:str, args:dict):
     # load models weights again to change status to is_iter_finished=True
     model = load_weights(model, current_checkpoint, logger)
 
-    to_restore = {"epoch": 0, "count_early": 0, "is_iter_finished":False, "best_val":(100.)}
+    to_restore = {"epoch": 0, "count_early": 0, "is_iter_finished":False, "best_val":(0.)}
     restart_from_checkpoint(
         current_checkpoint,
         run_variables=to_restore,
