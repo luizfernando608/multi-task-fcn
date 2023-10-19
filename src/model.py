@@ -397,8 +397,6 @@ def eval(val_loader:torch.utils.data.DataLoader,
             # ============ forward pass and loss ... ============
             # compute model loss and output
             inp_img = inp_img.to(DEVICE, non_blocking=True)
-            depth = depth.to(DEVICE, non_blocking=True)
-            ref = ref.to(DEVICE, non_blocking=True)
 
             # Foward Passs
             out_batch = model(inp_img)
