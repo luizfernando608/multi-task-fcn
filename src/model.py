@@ -57,7 +57,7 @@ def define_loader(orto_img:str, gt_lab:np.ndarray, size_crops:int, test=False) -
     coords = np.rollaxis(coords, 1, 0)
 
     if test:
-        return None, coords, gt_lab, None
+        return None, coords, gt_lab, gt_lab[gt_lab!=0]
     
     return image, coords, gt_lab, gt_lab[gt_lab!=0]
 
