@@ -448,10 +448,13 @@ def train_iteration(current_iter_folder:str, args:dict):
     depth_val = read_val_distance_map()
 
     ########### LOAD VALIDATION SET ##################
-    _, coords_val, raster_val, _ = define_loader(args.ortho_image, 
-                                                raster_val, 
-                                                args.size_crops,
-                                                test = True)
+    _, coords_val, raster_val, labs_coords_val = define_loader(args.ortho_image, 
+                                                    raster_val, 
+                                                    args.size_crops,
+                                                    test = True)
+
+    coords_val = oversamp(coords_val, labs_coords_val, under = True)
+
 
     val_dataset = DatasetFromCoord(
         image,
