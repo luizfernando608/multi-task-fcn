@@ -93,6 +93,52 @@ def evaluate_metrics(pred:Union[np.ndarray, torch.Tensor], gt:Union[np.ndarray, 
 
     return accu_criteria
 
+def evaluate_f1(pred:Union[np.ndarray, torch.Tensor], gt:Union[np.ndarray, torch.Tensor], num_class:int = args.nb_class) -> float:
+    """Calculte the F1 Score macro average
+
+    Parameters
+    ----------
+    pred : Union[np.ndarray, torch.Tensor]
+        Tensor with shape [row, cols, num_class]
+        This tensor has one matrix of confidence for each label class.
+        The function uses the class with highest probability/confidence to evaluate metric.
+
+    gt : Union[np.ndarray, torch.Tensor]
+        Tensor with shape [row, cols]
+        This tensor has the ground truth segmentation matrix
+
+    Returns
+    -------
+    float
+        F1 Score
+    """
+
+    if type(pred).__module__ != np.__name__:
+        pred = pred.data.cpu().numpy()
+    
+    if type(gt).__module__ != np.__name__:
+        gt = gt.data.cpu().numpy()
+
+
+    if  len(pred.shape) >= 3 and pred.shape[-1] > 1:
+        # Get the class with highest probability
+        pred = np.argmax(pred, axis=1)
+
+    else:
+        pass
+
+    # Create to just the place where the ground_truth_segmentation is non zero
+    mask = np.where(gt>0)
+
+    # Apply Mask
+    gt = gt[mask][:]
+
+    pred = pred[mask][:]+1
+
+    #### CALCULATE METRICS WITH SKLEARN ####
+    f1 = f1_score(gt, pred, average=None, zero_division=True)
+
+    return  float( np.sum(f1) / num_class )
 
 
 def evaluate_component_metrics(ground_truth_labels:np.ndarray, predicted_labels:np.ndarray, num_class:int = None, average:str = "macro")->dict:
