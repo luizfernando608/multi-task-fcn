@@ -363,6 +363,52 @@ def train(train_loader:torch.utils.data.DataLoader,
     return (epoch, f1_avg.avg)
 
 
+def eval(val_loader:torch.utils.data.DataLoader, 
+          model:nn.Module, 
+        ) -> float:
+    """Function to evaluate model based on f1 score
+
+    Parameters
+    ----------
+    val_loader : torch.utils.data.DataLoader
+        Dataloader with validation set
+    model : nn.Module
+        Model to evaluate
+
+    Returns
+    -------
+    float
+        Average f1 score of the evaluation
+    """
+    
+    # Validation
+    model.eval()
+
+    DEVICE = get_device()
+
+    f1_avg = AverageMeter()
+
+    soft = nn.Softmax(dim=1).to(DEVICE)
+
+    with torch.no_grad():
+
+        for (inp_img, depth, ref) in tqdm(val_loader):
+
+            # ============ forward pass and loss ... ============
+            # compute model loss and output
+            inp_img = inp_img.to(DEVICE, non_blocking=True)
+            depth = depth.to(DEVICE, non_blocking=True)
+            ref = ref.to(DEVICE, non_blocking=True)
+
+            # Foward Passs
+            out_batch = model(inp_img)
+
+            f1_avg.update( evaluate_f1(soft(out_batch['out']), ref) )
+
+
+    return f1_avg.avg
+
+
 
 def save_checkpoint(last_checkpoint_path:str, model:nn.Module, optimizer:torch.optim.Optimizer, epoch:int, best_acc:float, count_early:int, is_iter_finished=False):
     """Save model checkpoint at last_checkpoint_path
