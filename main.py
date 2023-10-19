@@ -297,7 +297,9 @@ def train_epochs(last_checkpoint:str,
                  rank:int, 
                  count_early:int,
                  logger,
-                 patience:int=5):
+                 val_loader:torch.utils.data.DataLoader,
+                 patience:int=5,
+                 ):
     """Train the model with the specified epochs numbers
 
     Parameters
@@ -322,6 +324,8 @@ def train_epochs(last_checkpoint:str,
         
     count_early : int
         The counting how many epochs we didnt have improving in the loss
+    val_loader : torch.utils.data.DataLoader
+        Dataloader for evaluation
     patience : int, optional
         The limit of the count early variable, by default 5
     """
@@ -346,25 +350,26 @@ def train_epochs(last_checkpoint:str,
         # train the network
         scores_tr = train(train_loader, model, optimizer, epoch, lr_schedule, figures_path, logger)
         
+        score_val = eval(val_loader, model)
+
         gc.collect()
 
         # training_stats.update(scores_tr)
         
-        print_sucess("scores_tr: {}".format(scores_tr[1]))
+        print_sucess("scores_tr: {}".format(score_val))
 
-        is_best = (best_val - scores_tr[1] ) < 0.0009
+        is_best = (best_val - score_val ) < 0.0009
 
         # save checkpoints
         if rank == 0:
             if is_best: 
                 logger.info("============ Saving best models at epoch %i ... ============" % epoch)
                 
-                best_val = scores_tr[1]
+                best_val = score_val
                 
                 save_checkpoint(last_checkpoint, model, optimizer, epoch+1, best_val, count_early)
                 
                 count_early = 0
-
 
             else:
                 count_early += 1
