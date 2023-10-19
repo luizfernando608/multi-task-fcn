@@ -462,7 +462,7 @@ def train_iteration(current_iter_folder:str, args:dict):
         depth_val,
         coords_val,
         args.size_crops,
-        args.samples//2,
+        args.samples // 5,
         augment = True
     )
 
