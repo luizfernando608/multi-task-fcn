@@ -438,9 +438,12 @@ class DeepLabv3_plus(nn.Module):
     def forward(self, x1):
         size = x1.size()[2:]
         x, low_level_features = self.resnet_features_1(x1)
+
         logits_class = self.__build_features_class(x, low_level_features, size)
+        
         logits_distance = self.__build_features_depth(x, low_level_features, size)
-        return logits_class, logits_distance
+
+        return dict(out = logits_class, aux = logits_distance)
             
 
     def freeze_bn(self):
