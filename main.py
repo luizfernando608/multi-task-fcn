@@ -26,6 +26,8 @@ from generate_distance_map import generate_distance_map
 from src.metrics import evaluate_metrics, evaluate_component_metrics
 from src.utils import get_device, get_image_metadata, save_yaml
 
+from src.deepvlab3plus import DeepLabv3_plus
+
 import matplotlib.pyplot as plt
 
 import yaml
@@ -478,13 +480,12 @@ def train_iteration(current_iter_folder:str, args:dict):
     logger.info("Building data done with {} images loaded.".format(len(train_loader)))
 
     
-    model = build_model(
-        image.shape, 
-        args.nb_class,  
-        args.arch, 
-        args.filters, 
-        args.is_pretrained)
-
+    model = DeepLabv3_plus(
+        model_depth = 10,
+        num_ch_1 = image.shape[0],
+        psize = args.size_crops,
+        nb_class = args.nb_class
+    )
 
     ########## LOAD MODEL WEIGHTS FROM THE LAST CHECKPOINT ##########
     last_checkpoint = join(current_model_folder, args.checkpoint_file)
