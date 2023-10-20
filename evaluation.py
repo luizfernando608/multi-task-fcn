@@ -34,6 +34,7 @@ from src.utils import (
     get_device,
     get_image_metadata
 )
+from src.deepvlab3plus import DeepLabv3_plus
 
 from src.multicropdataset import DatasetFromCoord
 from src.resnet import ResUnet
@@ -294,7 +295,14 @@ def evaluate_overlap(overlap:float,
     )
 
     logger.info("Building data done with {} patches loaded.".format(coords.shape[0]))
-    model = build_model(image.shape, num_classes, arch, filters, is_pretrained)
+    
+    model = DeepLabv3_plus(
+        model_depth = 10,
+        num_ch_1 = image.shape[0],
+        psize = args.size_crops,
+        nb_class = args.nb_class
+    )
+
 
     last_checkpoint = os.path.join(current_model_folder, checkpoint_file)
     model = load_weights(model, last_checkpoint, logger)
