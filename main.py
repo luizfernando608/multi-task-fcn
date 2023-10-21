@@ -481,7 +481,7 @@ def train_iteration(current_iter_folder:str, args:dict):
 
     
     model = DeepLabv3_plus(
-        model_depth = 10,
+        model_depth = 18,
         num_ch_1 = image.shape[0],
         psize = args.size_crops,
         nb_class = args.nb_class
