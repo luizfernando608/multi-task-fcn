@@ -708,7 +708,7 @@ def filter_outliers(img, bins=10000, bth=0.01, uth=0.99, mask=[0], mask_indx=0):
 
 def normalize(img:np.ndarray):
     """Normalize image inplace.
-    Apply StandardScaler to image
+    Apply np.quantile(0.99) to dividide each band
 
     Parameters
     ----------
@@ -719,10 +719,10 @@ def normalize(img:np.ndarray):
     # iterate through channels and standardize
     for i in range(img.shape[0]):
         
-        std = np.std(img[i], ddof=0)
-        mean = np.mean(img[i])
+        # std = np.std(img[i], ddof=0)
+        # mean = np.mean(img[i])
 
-        img[i] = (img[i]-mean)/std
+        img[i] = (img[i] - np.min(img[i]) )/( np.quantile(img[i], 0.99) - np.min(img[i]))
     
 
 
