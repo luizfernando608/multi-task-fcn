@@ -76,11 +76,11 @@ def evaluate_metrics(pred:Union[np.ndarray, torch.Tensor], gt:Union[np.ndarray, 
     accuracy = accuracy_score(gt, pred)*100
     accu_criteria["Accuracy"] = float(np.round(accuracy,2))
     
-    f1 = f1_score(gt, pred, average=None, zero_division=True)
+    f1 = f1_score(gt, pred, average=None, zero_division=True, labels = list(range(1, num_class + 1) ) )
 
-    pre = precision_score(gt, pred, average=None, zero_division=True)
+    pre = precision_score(gt, pred, average=None, zero_division=True, labels = list(range(1, num_class + 1) ))
 
-    rec = recall_score(gt, pred, average=None, zero_division=True)
+    rec = recall_score(gt, pred, average=None, zero_division=True, labels = list(range(1, num_class + 1) ))
 
 
     accu_criteria["avgF1"] = float(np.round(np.sum(f1)*100/num_class, 2))
