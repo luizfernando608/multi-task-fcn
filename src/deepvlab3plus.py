@@ -351,7 +351,7 @@ class DeepLabv3_plus(nn.Module):
         self.bn3 = nn.BatchNorm2d(depth)
         
         
-        self.drop = nn.Dropout2d(p=0.5)
+        self.drop = nn.Dropout2d(p=0.65)
         
         if not self.nb_class:
             self.out_layer = nn.Conv2d(depth, 1, 
