@@ -17,7 +17,7 @@ mask_path: "input_data/mask.tif"
 checkpoint_file: checkpoint.pth.tar
 
 # Num of iter
-num_iter : 5
+num_iter : 1
 
 # pred2raster parameters
 # samples per epoch
