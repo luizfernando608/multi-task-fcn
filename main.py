@@ -24,7 +24,7 @@ from tqdm import tqdm
 from generate_distance_map import generate_distance_map
 
 from src.metrics import evaluate_metrics, evaluate_component_metrics
-from src.utils import get_device, get_image_metadata, save_yaml
+from src.utils import get_device, get_image_metadata, save_yaml, fix_relative_paths
 
 import matplotlib.pyplot as plt
 
@@ -732,6 +732,7 @@ def compile_metrics(current_iter_folder, args):
 
 ROOT_PATH = dirname(__file__)
 args = read_yaml(join(ROOT_PATH, "args.yaml"))
+fix_relative_paths(args)
 
 # create output path
 check_folder(args.data_path)
