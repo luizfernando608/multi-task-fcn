@@ -185,13 +185,13 @@ def predict_network(ortho_image_shape:Tuple,
             for b in range(c):
                 pred_prob[
                     coord_x[b] - st : coord_x[b] + st + stride % 2,
-                    coord_y[b] - st : coord_y[b] + st+stride % 2
-                    ] = out_batch[ b , overlap//2 : x-ovr+overlap%2 , overlap//2 : y - ovr + overlap % 2]
+                    coord_y[b] - st : coord_y[b] + st + stride % 2
+                    ] = out_batch[ b , overlap//2 + overlap % 2 : x - ovr , overlap//2 + overlap % 2 : y - ovr ]
 
                 pred_depth[
                     coord_x[b] - st : coord_x[b] + st + stride % 2,
-                    coord_y[b] - st : coord_y[b] + st + stride%2
-                    ] = depth_out[b, 0, overlap//2 : x - ovr + overlap % 2, overlap//2 : y - ovr + overlap % 2]
+                    coord_y[b] - st : coord_y[b] + st + stride % 2
+                    ] = depth_out[b, 0, overlap//2 + overlap % 2 : x - ovr, overlap//2 + overlap % 2: y - ovr ]
 
             j += out_batch.shape[0] 
             
@@ -199,10 +199,10 @@ def predict_network(ortho_image_shape:Tuple,
         row = ortho_image_shape[0]
         col = ortho_image_shape[1]
         
-        pred_prob = pred_prob[overlap//2:,overlap//2:]
+        pred_prob = pred_prob[overlap//2 + overlap % 2 :, overlap//2 + overlap % 2 :]
         pred_prob = pred_prob[:row,:col]
         
-        pred_depth = pred_depth[overlap//2:,overlap//2:]
+        pred_depth = pred_depth[overlap//2 + overlap % 2 :, overlap//2 + overlap % 2 :]
         pred_depth = pred_depth[:row,:col]
         
 
