@@ -9,6 +9,7 @@ import argparse
 from logging import getLogger, CRITICAL
 import pickle
 import os
+from os.path import isfile, isdir, dirname, join
 
 import numpy as np
 import torch
@@ -39,6 +40,7 @@ plt.set_loglevel(level = 'critical')
 FALSY_STRINGS = {"off", "false", "0"}
 TRUTHY_STRINGS = {"on", "true", "1"}
 
+ROOT_PATH = dirname(dirname(__file__))
 
 def get_device():
     return torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -899,6 +901,25 @@ def print_sucess(message:str):
     """
     print("\033[92m {}\033[00m" .format(message))
 
+
+
+def fix_relative_paths(args:dict):
+    """Add Root Path to relative paths
+
+    Parameters
+    ----------
+    args : dict
+        Args with file paths
+    """
+    for key in args.keys():
+
+        if type(args[key]) == str:
+            
+            absolute_path = join(ROOT_PATH, args[key])
+
+            if isfile(absolute_path) or isdir(absolute_path):
+
+                args[key] = absolute_path
 
 
 if __name__ == "__main__":

@@ -4,14 +4,14 @@
 # experiment directory
 model_dir: exp_deeplab_v4
 
-data_path: /home/luiz/multi-task-fcn/16.0_version_data
+data_path: multi-task-fcn/16.0_version_data
 
 # Input data for the model
-ortho_image: /home/luiz/multi-task-fcn/input_data/orthoimage/fixed_ortoA1_25tiff.tif
-train_segmentation_path: "/home/luiz/multi-task-fcn/input_data/segmentation/samples_A1_train2tif.tif"
-test_segmentation_path: "/home/luiz/multi-task-fcn/input_data/segmentation/samples_A1_test2tif.tif"
+ortho_image: input_data/orthoimage/fixed_ortoA1_25tiff.tif
+train_segmentation_path: "input_data/segmentation/samples_A1_train2tif.tif"
+test_segmentation_path: "input_data/segmentation/samples_A1_test2tif.tif"
 
-mask_path: "/home/luiz/multi-task-fcn/input_data/mask.tif"
+mask_path: "input_data/mask.tif"
 
 
 checkpoint_file: checkpoint.pth.tar
