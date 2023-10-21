@@ -719,10 +719,10 @@ def normalize(img:np.ndarray):
     # iterate through channels and standardize
     for i in range(img.shape[0]):
         
-        # std = np.std(img[i], ddof=0)
-        # mean = np.mean(img[i])
+        std = np.std(img[i], ddof=0)
+        mean = np.mean(img[i])
 
-        img[i] = (img[i] - np.min(img[i]) )/( np.quantile(img[i], 0.99) - np.min(img[i]))
+        img[i] = (img[i] - mean )/( std )
     
 
 
