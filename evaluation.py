@@ -34,6 +34,7 @@ from src.utils import (
     get_device,
     get_image_metadata
 )
+from src.deepvlab3plus import DeepLabv3_plus
 
 from src.multicropdataset import DatasetFromCoord
 from src.resnet import ResUnet
@@ -185,13 +186,13 @@ def predict_network(ortho_image_shape:Tuple,
             for b in range(c):
                 pred_prob[
                     coord_x[b] - st : coord_x[b] + st + stride % 2,
-                    coord_y[b] - st : coord_y[b] + st+stride % 2
-                    ] = out_batch[ b , overlap//2 : x-ovr+overlap%2 , overlap//2 : y - ovr + overlap % 2]
+                    coord_y[b] - st : coord_y[b] + st + stride % 2
+                    ] = out_batch[ b , overlap//2 + overlap % 2 : x - ovr , overlap//2 + overlap % 2 : y - ovr ]
 
                 pred_depth[
                     coord_x[b] - st : coord_x[b] + st + stride % 2,
-                    coord_y[b] - st : coord_y[b] + st + stride%2
-                    ] = depth_out[b, 0, overlap//2 : x - ovr + overlap % 2, overlap//2 : y - ovr + overlap % 2]
+                    coord_y[b] - st : coord_y[b] + st + stride % 2
+                    ] = depth_out[b, 0, overlap//2 + overlap % 2 : x - ovr, overlap//2 + overlap % 2: y - ovr ]
 
             j += out_batch.shape[0] 
             
@@ -199,10 +200,10 @@ def predict_network(ortho_image_shape:Tuple,
         row = ortho_image_shape[0]
         col = ortho_image_shape[1]
         
-        pred_prob = pred_prob[overlap//2:,overlap//2:]
+        pred_prob = pred_prob[overlap//2 + overlap % 2 :, overlap//2 + overlap % 2 :]
         pred_prob = pred_prob[:row,:col]
         
-        pred_depth = pred_depth[overlap//2:,overlap//2:]
+        pred_depth = pred_depth[overlap//2 + overlap % 2 :, overlap//2 + overlap % 2 :]
         pred_depth = pred_depth[:row,:col]
         
 
@@ -294,7 +295,14 @@ def evaluate_overlap(overlap:float,
     )
 
     logger.info("Building data done with {} patches loaded.".format(coords.shape[0]))
-    model = build_model(image.shape, num_classes, arch, filters, is_pretrained)
+    
+    model = DeepLabv3_plus(
+        model_depth = 10,
+        num_ch_1 = image.shape[0],
+        psize = args.size_crops,
+        nb_class = args.nb_class
+    )
+
 
     last_checkpoint = os.path.join(current_model_folder, checkpoint_file)
     model = load_weights(model, last_checkpoint, logger)
@@ -307,8 +315,8 @@ def evaluate_overlap(overlap:float,
 
     check_folder(os.path.join(current_iter_folder, 'prediction'))
 
-    pred_prob = np.zeros(shape = (image.shape[1], image.shape[2], num_classes), dtype='float32')
-    pred_depth = np.zeros(shape = (image.shape[1], image.shape[2]), dtype='float32')
+    pred_prob = np.zeros(shape = (image.shape[1], image.shape[2], num_classes), dtype='float16')
+    pred_depth = np.zeros(shape = (image.shape[1], image.shape[2]), dtype='float16')
 
     prob_map, pred_class, depth_map = predict_network(
         ortho_image_shape = ortho_image_shape,

@@ -4,7 +4,7 @@
 # experiment directory
 model_dir: exp_deeplab_v4
 
-data_path: multi-task-fcn/16.0_version_data
+data_path: /home/luiz/multi-task-fcn/17.2_version_data
 
 # Input data for the model
 ortho_image: input_data/orthoimage/fixed_ortoA1_25tiff.tif
@@ -21,7 +21,7 @@ num_iter : 5
 
 # pred2raster parameters
 # samples per epoch
-overlap: [0.1, 0.4, 0.6]
+overlap: [0.1, 0.3, 0.5]
 # 1: Random selection, 2: 4 region, 3: chessboard
 train_protocol: 1
 # True for training with 1 fold and testing with 3. False otherwise
@@ -31,7 +31,7 @@ test_itc: False
 
 
 # num samples per epoch
-samples: 2500
+samples: 5000
 # True for data augmentation during training
 augment: True
 
@@ -49,7 +49,7 @@ filters: [32, 32, 32, 32]
 # number of total epochs to run
 epochs: 30
 # batch size per gpu, i.e. how many unique instances per gpu
-batch_size: 8
+batch_size: 32
 # base learning rate
 base_lr: 0.01
 # final learning rate
@@ -84,7 +84,7 @@ seed: [31, 10, 75, 102, 40]
 ###############################
 
 # True for training 4 disjoint regions
-size_crops: 256
+size_crops: 128
 # Número de classes
 nb_class: 14
 
