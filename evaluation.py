@@ -307,8 +307,8 @@ def evaluate_overlap(overlap:float,
 
     check_folder(os.path.join(current_iter_folder, 'prediction'))
 
-    pred_prob = np.zeros(shape = (image.shape[1], image.shape[2], num_classes), dtype='float16')
-    pred_depth = np.zeros(shape = (image.shape[1], image.shape[2]), dtype='float16')
+    pred_prob = np.zeros(shape = (image.shape[1], image.shape[2], num_classes), dtype='float32')
+    pred_depth = np.zeros(shape = (image.shape[1], image.shape[2]), dtype='float32')
 
     prob_map, pred_class, depth_map = predict_network(
         ortho_image_shape = ortho_image_shape,
