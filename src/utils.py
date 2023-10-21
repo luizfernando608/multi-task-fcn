@@ -9,6 +9,7 @@ import argparse
 from logging import getLogger, CRITICAL
 import pickle
 import os
+from os.path import isfile, isdir, dirname
 
 import numpy as np
 import torch
