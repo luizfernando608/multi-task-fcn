@@ -136,7 +136,7 @@ def evaluate_f1(pred:Union[np.ndarray, torch.Tensor], gt:Union[np.ndarray, torch
     pred = pred[mask][:]+1
 
     #### CALCULATE METRICS WITH SKLEARN ####
-    f1 = f1_score(gt, pred, average=None, zero_division=True)
+    f1 = f1_score(gt, pred, average=None, zero_division=True, labels = list(range(1, num_class + 1) ))
 
     return  float( np.sum(f1) / num_class )
 
