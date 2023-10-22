@@ -126,6 +126,13 @@ def get_current_iter_folder(data_path, test_itc, overlap):
 
     folders = pd.Series(os.listdir(data_path))
 
+    if folders.shape[0] == 0:
+        iter_0_path = join(data_path, "iter_000")
+        # create iter_0 folder if not exists
+        check_folder(iter_0_path)
+        
+        return iter_0_path
+
     folders = folders[folders.str.contains("iter_")]
 
     # num_folders = folders.str.replace("iter_", "").astype(int).sort_values(ascending=False)
