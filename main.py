@@ -123,9 +123,13 @@ def get_current_iter_folder(data_path, test_itc, overlap):
     """
 
     folders = pd.Series(os.listdir(data_path))
-
+    
+    if folders.shape[0] == 0:
+        return join(data_path, f"iter_{0:03d}")
+    
     folders = folders[folders.str.contains("iter_")]
-
+    
+        
     # num_folders = folders.str.replace("iter_", "").astype(int).sort_values(ascending=False)
 
     # iter_folders = ["iter_"+str(i) for i in num_folders.to_list()]
@@ -746,7 +750,6 @@ while True:
     print_sucess("Working ON:")
     print_sucess(get_device()) 
     
-    clear_ram_cache()
     # get current iteration folder
     current_iter_folder = get_current_iter_folder(args.data_path, args.test_itc, args.overlap)
     current_iter = int(current_iter_folder.split("_")[-1])
