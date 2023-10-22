@@ -375,7 +375,7 @@ def select_good_samples(old_pred_map:np.ndarray,
 
     # new_prob_map = np.where(new_prob_map > 0.95, new_prob_map, 0)
 
-    mask_selection = (new_depth_map > 0.1) &  (new_prob_map) > 0.95
+    mask_selection = (new_depth_map > 0.1) &  (new_prob_map > 0.95)
 
     new_pred_map[~mask_selection] = 0
 
