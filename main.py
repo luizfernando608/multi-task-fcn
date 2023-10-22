@@ -368,6 +368,8 @@ def train_epochs(last_checkpoint:str,
         
         score_val = eval(val_loader, model)
 
+        logger.info(f"F1-Score: {score_val:.4%}, Current Best Val:{best_val:.4%}")
+        
         gc.collect()
 
         # training_stats.update(scores_tr)
