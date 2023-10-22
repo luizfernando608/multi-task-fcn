@@ -124,7 +124,12 @@ def get_current_iter_folder(data_path, test_itc, overlap):
         The path to the current iteration folder
     """
 
+    iter_0_path = join(data_path, "iter_000")
+
     folders = pd.Series(os.listdir(data_path))
+    
+    if folders.shape[0] == 0:
+        return iter_0_path
 
     folders = folders[folders.str.contains("iter_")]
 
@@ -160,9 +165,8 @@ def get_current_iter_folder(data_path, test_itc, overlap):
     
     if is_iter_0_done(args.data_path):
         return join(data_path, f"iter_{1:03d}")
-    
 
-    iter_0_path = join(data_path, "iter_000")
+
     # create iter_0 folder if not exists
     check_folder(iter_0_path)
 

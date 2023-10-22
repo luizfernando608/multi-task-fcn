@@ -5,7 +5,6 @@ MyData
 *__pycache__/
 africa-biomass-challenge
 arquivos_laura
-exploration_notebooks
 notes
 *_version_data/
 Data Repo Model
@@ -13,3 +12,4 @@ Data Repo Model
 *_data/
 packages/
 *_models/
+exploration_notebooks
