@@ -31,7 +31,7 @@ test_itc: False
 
 
 # num samples per epoch
-samples: 140_000
+samples: 15_000
 # True for data augmentation during training
 augment: True
 
