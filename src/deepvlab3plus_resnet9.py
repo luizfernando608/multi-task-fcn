@@ -93,6 +93,48 @@ class ResidualBlock(nn.Module):
         return x + x_init
 
 
+class ASPPModule(nn.Module):
+    def __init__(self, pool_height, pool_width, in_channels, out_channels = 256):
+        super(ASPPModule, self).__init__()
+        
+
+        self.aspp1x1 = conv_padding_same(in_channels = in_channels, out_channels=out_channels, kernel_size=1)
+        self.aspp3x3_1 = conv_padding_same(in_channels = in_channels, out_channels=out_channels, kernel_size=3, dilation=6)
+        self.aspp3x3_2 = conv_padding_same(in_channels = in_channels, out_channels=out_channels, kernel_size=3, dilation=12)
+        self.aspp3x3_3 = conv_padding_same(in_channels = in_channels, out_channels=out_channels, kernel_size=3, dilation=18)
+
+        self.image_feature = nn.Sequential(
+            nn.AdaptiveAvgPool2d((1, 1)),
+            conv_padding_same(in_channels = in_channels, out_channels=out_channels, kernel_size=1),
+            nn.Upsample(size=(pool_height, pool_width), mode='bilinear', align_corners=True)
+        )
+
+        self.batch_norm = nn.BatchNorm2d(in_channels*5, 
+                                         momentum=0.9,
+                                            eps=1e-05,
+                                            affine=True,
+                                            track_running_stats=True,)
+        
+        self.relu = nn.ELU()
+
+
+    def forward(self, x):
+
+        aspp1x1 = self.aspp1x1(x)
+        aspp3x3_1 = self.aspp3x3_1(x)
+        aspp3x3_2 = self.aspp3x3_2(x)
+        aspp3x3_3 = self.aspp3x3_3(x)
+
+        image_feature = self.image_feature(x)
+
+        outputs = torch.cat([aspp1x1, aspp3x3_1, aspp3x3_2, aspp3x3_3, image_feature], dim=1)
+        outputs = self.batch_norm(outputs)
+        outputs = self.relu(outputs)
+
+        return outputs
+
+
+
 class DeepLabv3Plus_resnet9(nn.Module):
     def __init__(self, num_ch, psize, num_class):
         super(DeepLabv3Plus_resnet9, self).__init__()
@@ -157,6 +199,17 @@ class DeepLabv3Plus_resnet9(nn.Module):
 
 
 if __name__ == "__main__":
+    image = torch.randn(1, 128, 32, 32)
+
+    model = ASPPModule(image.size(2), 
+                       image.size(3), 
+                       image.size(1), 
+                       128)
+    model.eval()
+    
+    with torch.no_grad():
+        output = model(image)
+
     # image = torch.randn(1, 25, 128, 128)
 
     # model = ResidualBlock(in_channels=64, out_channels=64, downsample=False)
