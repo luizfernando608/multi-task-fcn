@@ -94,7 +94,7 @@ class ResidualBlock(nn.Module):
 
 
 class ASPPModule(nn.Module):
-    def __init__(self, pool_height, pool_width, in_channels, out_channels = 256):
+    def __init__(self, pool_height, pool_width, in_channels, out_channels = 128):
         super(ASPPModule, self).__init__()
         
 
@@ -109,7 +109,7 @@ class ASPPModule(nn.Module):
             nn.Upsample(size=(pool_height, pool_width), mode='bilinear', align_corners=True)
         )
 
-        self.batch_norm = nn.BatchNorm2d(in_channels*5, 
+        self.batch_norm = nn.BatchNorm2d(out_channels*5, 
                                          momentum=0.9,
                                             eps=1e-05,
                                             affine=True,
@@ -168,9 +168,20 @@ class DeepLabv3Plus_resnet9(nn.Module):
                                         out_channels=256,
                                         downsample=False)
 
-        self.batch_norm1 = nn.BatchNorm2d(num_features=256, momentum=0.9, eps=1e-05, affine=True, track_running_stats=True)
+        self.batch_norm1 = nn.BatchNorm2d(num_features=256, 
+                                          momentum=0.9, 
+                                          eps=1e-05, 
+                                          affine=True, 
+                                          track_running_stats=True)
 
         self.elu1 = nn.ELU()
+
+        self.atrous_pyramid_pooling = ASPPModule(pool_height=32, 
+                                                 pool_width=32, 
+                                                 in_channels=256, 
+                                                 out_channels=128)
+
+
 
     def enconder(self, x):
         x = self.conv1(x)
