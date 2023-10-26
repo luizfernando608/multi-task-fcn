@@ -194,22 +194,38 @@ class DeepLabv3Plus_resnet9(nn.Module):
         x = self.res_block4(x)
         x = self.batch_norm1(x)
         x = self.elu1(x)
-        
-        
+                
         return x, x_skip
+    
+    def decoder_class(self, x, x_skip):
+        self.atrous_pyramid_pooling(x)
+        return x
 
-    def decoder_class(self, x):
-        pass
-
-    def decoder_aux(self, x):
+    def decoder_aux(self, x, x_skip):
         pass
 
     def forward(self, x):
-        pass
+        x, x_skip = self.enconder(x)
+
+        x = self.decoder_class(x, x_skip)
+
+        return x
 
 
 
 if __name__ == "__main__":
+
+    image = torch.randn(1, 25, 128, 128)
+
+    model = DeepLabv3Plus_resnet9(
+        num_ch = 25,
+        num_class = 14,
+        psize = 128,
+    )
+
+    output = model(image)
+    print(output.size)
+
     image = torch.randn(1, 128, 32, 32)
 
     model = ASPPModule(image.size(2), 
@@ -237,18 +253,14 @@ if __name__ == "__main__":
     
     # print(output.size())
 
-    model = DeepLabv3Plus_resnet9(
-        num_ch=25,
-        num_class=14,
-        psize = 128,
-    )
+    
 
     model.eval()
 
     image = torch.randn(1, 25, 128, 128)
 
     with torch.no_grad():
-        x, x = model.enconder(image)
+        x, x_skip = model.enconder(image)
     
     print(x.size())
     print(x.size())
