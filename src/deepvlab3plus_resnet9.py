@@ -6,8 +6,11 @@ import numpy as np
 
 
 def conv_padding_same(kernel_size , **kwargs):
-    
-    padding = (kernel_size - 1) // 2
+    if "dilation" in kwargs.keys():
+        padding = ((kernel_size - 1) * kwargs["dilation"]) // 2
+
+    else:
+        padding = (kernel_size - 1) // 2
 
     return nn.Conv2d(**kwargs, padding = padding, kernel_size = kernel_size)
 
