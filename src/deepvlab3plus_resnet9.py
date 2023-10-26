@@ -181,6 +181,74 @@ class DeepLabv3Plus_resnet9(nn.Module):
                                                  in_channels=256, 
                                                  out_channels=128)
 
+        self.conv2 = conv_padding_same(kernel_size = 1,
+                                       in_channels = 640,
+                                       out_channels = 128
+                                       )
+
+        self.batch_norm2 = nn.BatchNorm2d(num_features=128, 
+                                          momentum=0.9, 
+                                          eps=1e-05, 
+                                          affine=True, 
+                                          track_running_stats=True)
+        self.elu1 = nn.ELU()
+        # UpSampling based in skip connection shape
+        self.upsample1 = nn.Upsample(size = (64, 64), 
+                                     mode='bilinear', 
+                                     align_corners=True)
+
+        self.conv3 = conv_padding_same(kernel_size = 3, 
+                                       in_channels = 256, 
+                                       out_channels = 128)
+        self.elu2 = nn.ELU()
+
+        self.upsample2 = nn.Upsample(size = (psize, psize),
+                                     mode = "bilinear",
+                                     align_corners=True,
+                                     )
+        self.dropout = nn.Dropout(p=0.65)
+
+        
+        self.conv_class = conv_padding_same(in_channels=128,
+                                            out_channels=self.nb_class,
+                                            kernel_size=1,
+                                            stride=1,
+                                            dilation=1)
+
+        ####### REG #######
+        self.conv4 = conv_padding_same(in_channels = 256,
+                                       out_channels = 128,
+                                       kernel_size = 1)
+        
+        self.pool1 = nn.MaxPool2d(kernel_size=2,
+                                  stride=2)
+        
+        self.upsample3 = nn.Upsample(size = (64, 64),
+                                     mode = "bilinear",
+                                     align_corners=True
+                                     )
+        
+        self.conv5 = conv_padding_same(in_channels = 256,
+                                       out_channels = 128,
+                                       kernel_size=3)
+        
+        self.batch_norm3 = nn.BatchNorm2d(num_features=128, 
+                                          momentum=0.9, 
+                                          eps=1e-05, 
+                                          affine=True, 
+                                          track_running_stats=True)
+        self.elu3 = nn.ELU()
+
+        self.upsample4 = nn.Upsample(size = (psize, psize),
+                                     mode = "bilinear",
+                                     align_corners = True
+                                     )
+
+        self.conv_reg = conv_padding_same(in_channels=128,
+                                          out_channels=1,
+                                          kernel_size=3,
+                                          stride=1,
+                                          dilation=1)
 
 
     def enconder(self, x):
@@ -200,18 +268,54 @@ class DeepLabv3Plus_resnet9(nn.Module):
         return x, x_skip
     
     def decoder_class(self, x, x_skip):
-        self.atrous_pyramid_pooling(x)
+        x = self.atrous_pyramid_pooling(x)
+        
+        x = self.conv2(x)
+        x = self.batch_norm2(x)
+        x = self.elu1(x)
+
+        x = self.upsample1(x)
+
+        x = torch.cat([x_skip, x], axis = 1)
+    
+        x = self.conv3(x)
+        x = self.elu2(x)
+
+        x = self.upsample2(x)
+        x = self.dropout(x)
+        
+        x = self.conv_class(x)
+       
         return x
+
 
     def decoder_aux(self, x, x_skip):
-        pass
+        x = self.conv4(x)
+        x = self.pool1(x)
+        x = self.upsample3(x)
+        
+        x = torch.cat([x_skip, x], axis = 1)
+
+        x = self.conv5(x)
+        x = self.batch_norm3(x)
+        x = self.elu3(x)
+        x = self.upsample4(x)
+
+        x = self.conv_reg(x)
+        
+        return x
+        
+
 
     def forward(self, x):
+        output = dict()
         x, x_skip = self.enconder(x)
 
-        x = self.decoder_class(x, x_skip)
+        output["out"] = self.decoder_class(x, x_skip)
+        
+        output["aux"] = self.decoder_aux(x, x_skip)
 
-        return x
+        return output
 
 
 
@@ -226,7 +330,7 @@ if __name__ == "__main__":
     )
 
     output = model(image)
-    print(output.size)
+    print(output["aux"])
 
     image = torch.randn(1, 128, 32, 32)
 
