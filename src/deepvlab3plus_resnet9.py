@@ -46,7 +46,7 @@ class ResidualBlock(nn.Module):
             )
 
             self.conv_down2 = conv_padding_same(
-                in_channels=out_channels,
+                in_channels=in_channels,
                 out_channels=out_channels,
                 kernel_size=1,
                 stride=2,
