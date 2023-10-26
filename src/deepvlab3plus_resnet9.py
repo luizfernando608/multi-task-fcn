@@ -15,8 +15,8 @@ def conv_padding_same(kernel_size , **kwargs):
 class ResidualBlock(nn.Module):
     def __init__(
         self,
-        input_channels: int,
-        output_channels: int,
+        in_channels: int,
+        out_channels: int,
         downsample: bool,
     ) -> None:
         super(ResidualBlock, self).__init__()
@@ -28,7 +28,7 @@ class ResidualBlock(nn.Module):
         self.downsample = downsample
 
         self.batch_norm1 = nn.BatchNorm2d(
-            num_features=input_channels,
+            num_features=in_channels,
             momentum=0.9,
             eps=1e-05,
             affine=True,
@@ -39,30 +39,30 @@ class ResidualBlock(nn.Module):
         if downsample:
   
             self.conv_down1 = conv_padding_same(
-                in_channels=input_channels,
-                out_channels=output_channels,
+                in_channels=in_channels,
+                out_channels=out_channels,
                 kernel_size=3,
                 stride=2
             )
 
             self.conv_down2 = conv_padding_same(
-                in_channels=output_channels,
-                out_channels=output_channels,
+                in_channels=out_channels,
+                out_channels=out_channels,
                 kernel_size=1,
                 stride=2,
             )
-            input_channels = output_channels
+            in_channels = out_channels
 
 
         self.conv1 = conv_padding_same(
-            in_channels=input_channels,
-            out_channels=output_channels,
+            in_channels=in_channels,
+            out_channels=out_channels,
             kernel_size=3,
             stride=1,
         )
 
         self.batch_norm2 = nn.BatchNorm2d(
-            num_features=input_channels,
+            num_features=in_channels,
             momentum=0.9,
             eps=1e-05,
             affine=True,
@@ -70,8 +70,8 @@ class ResidualBlock(nn.Module):
         )
 
         self.conv2 = conv_padding_same(
-            in_channels=input_channels,
-            out_channels=output_channels,
+            in_channels=in_channels,
+            out_channels=out_channels,
             kernel_size=3,
             stride=1,
         )
@@ -115,16 +115,31 @@ class DeepLabv3Plus_resnet9(nn.Module):
 
 
 if __name__ == "__main__":
-    model = DeepLabv3Plus_resnet9(10, 
-                 num_ch_1=25,
-                 psize = 128,
-                 nb_class = 14)
-    
-    model.eval()
+    image = torch.randn(1, 64, 128, 128)
 
-    image = torch.randn(1, 25, 128, 128)
-    
+    model = ResidualBlock(in_channels=64, out_channels=64, downsample=False)
+
     with torch.no_grad():
-        output_cl, output_depth = model.forward(image)
-    print(output_cl.size())
-    print(output_depth.size())
+        output = model(image)
+
+    print(output.size())
+
+    model = ResidualBlock(in_channels = 64, out_channels=64, downsample=True)
+
+    with torch.no_grad():
+        output = model(image)
+    
+    print(output.size())
+    # model = DeepLabv3Plus_resnet9(10,
+    #              num_ch_1 = 25,
+    #              psize = 128,
+    #              nb_class = 14)
+
+    # model.eval()
+
+    # image = torch.randn(1, 25, 128, 128)
+
+    # with torch.no_grad():
+    #     output_cl, output_depth = model.forward(image)
+    # print(output_cl.size())
+    # print(output_depth.size())
