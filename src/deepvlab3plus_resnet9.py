@@ -176,6 +176,7 @@ class DeepLabv3Plus_resnet9(nn.Module):
 
         self.elu1 = nn.ELU()
 
+        ####### CLASSIFICATION #######
         self.atrous_pyramid_pooling = ASPPModule(pool_height=32, 
                                                  pool_width=32, 
                                                  in_channels=256, 
