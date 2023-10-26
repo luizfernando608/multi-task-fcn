@@ -21,8 +21,6 @@ class ResidualBlock(nn.Module):
     ) -> None:
         super(ResidualBlock, self).__init__()
         
-        if input_channels != output_channels:
-            raise ValueError("Invalid configuration: The number of input channels ({}) should match the number of output channels ({}).".format(input_channels, output_channels))
 
         
         self.downsample = downsample
