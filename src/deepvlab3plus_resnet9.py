@@ -160,11 +160,11 @@ class DeepLabv3Plus_resnet9(nn.Module):
                                         out_channels=128,
                                         downsample=False)
     
-        self.res_block3 = ResidualBlock(in_channels=128,
+        self.res_block4 = ResidualBlock(in_channels=128,
                                         out_channels=256,
                                         downsample=True)
         
-        self.res_block4 = ResidualBlock(in_channels=256,
+        self.res_block5 = ResidualBlock(in_channels=256,
                                         out_channels=256,
                                         downsample=False)
 
@@ -192,6 +192,8 @@ class DeepLabv3Plus_resnet9(nn.Module):
         x_skip = x
 
         x = self.res_block4(x)
+        x = self.res_block5(x)
+
         x = self.batch_norm1(x)
         x = self.elu1(x)
                 
