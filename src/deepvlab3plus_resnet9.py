@@ -35,7 +35,7 @@ class ResidualBlock(nn.Module):
             affine=True,
             track_running_stats=True,
         )
-        self.elu = nn.ELU()
+        self.elu = nn.ELU(inplace=True)
 
         if downsample:
   
@@ -115,7 +115,7 @@ class ASPPModule(nn.Module):
                                             affine=True,
                                             track_running_stats=True,)
         
-        self.relu = nn.ELU()
+        self.relu = nn.ELU(inplace=True)
 
 
     def forward(self, x):
@@ -174,7 +174,7 @@ class DeepLabv3Plus_resnet9(nn.Module):
                                           affine=True, 
                                           track_running_stats=True)
 
-        self.elu1 = nn.ELU()
+        self.elu1 = nn.ELU(inplace=True)
 
         ####### CLASSIFICATION #######
         self.atrous_pyramid_pooling = ASPPModule(pool_height=32, 
@@ -192,7 +192,7 @@ class DeepLabv3Plus_resnet9(nn.Module):
                                           eps=1e-05, 
                                           affine=True, 
                                           track_running_stats=True)
-        self.elu1 = nn.ELU()
+        self.elu1 = nn.ELU(inplace=True)
         # UpSampling based in skip connection shape
         self.upsample1 = nn.Upsample(size = (64, 64), 
                                      mode='bilinear', 
@@ -201,7 +201,7 @@ class DeepLabv3Plus_resnet9(nn.Module):
         self.conv3 = conv_padding_same(kernel_size = 3, 
                                        in_channels = 256, 
                                        out_channels = 128)
-        self.elu2 = nn.ELU()
+        self.elu2 = nn.ELU(inplace=True)
 
         self.upsample2 = nn.Upsample(size = (psize, psize),
                                      mode = "bilinear",
@@ -238,7 +238,7 @@ class DeepLabv3Plus_resnet9(nn.Module):
                                           eps=1e-05, 
                                           affine=True, 
                                           track_running_stats=True)
-        self.elu3 = nn.ELU()
+        self.elu3 = nn.ELU(inplace=True)
 
         self.upsample4 = nn.Upsample(size = (psize, psize),
                                      mode = "bilinear",
