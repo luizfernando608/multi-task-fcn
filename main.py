@@ -745,7 +745,7 @@ check_folder(args.data_path)
 ##### LOOP #####
 
 # Set random seed
-fix_random_seeds(args.seed[0])
+fix_random_seeds(args.seed[1])
 
 while True:  
     print_sucess("Working ON:")
