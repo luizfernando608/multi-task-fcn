@@ -375,7 +375,7 @@ def train_epochs(last_checkpoint:str,
         
         print_sucess("scores_tr: {}".format(score_val))
 
-        is_best = (score_val - best_val) > 0.0009
+        is_best = (score_val - best_val) > 0.009
 
         # save checkpoints
         if rank == 0:
