@@ -724,10 +724,11 @@ def normalize(img:np.ndarray):
         # std = np.std(img[i], ddof=0)
         # mean = np.mean(img[i])
 
-        min_ch = np.min(img[i])
-        max_ch = np.quantile(img[i], 0.99)
+        # min_ch = np.min(img[i])
+        # max_ch = np.quantile(img[i], 0.99)
 
-        img[i] = (img[i]-min_ch)/(max_ch-min_ch)
+        # img[i] = (img[i]-min_ch)/(max_ch-min_ch)
+        img[i] = (img/255)
     
 
 
