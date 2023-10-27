@@ -126,12 +126,12 @@ class DatasetFromCoord(Dataset):
             # If augmentation is enabled, random crop the label around the position of the coord
             if self.augment:
                 # random distance between the label coord and the left side bound box
-                random_x_prop = np.random.uniform(low = 0.1, high = 0.9)
+                random_x_prop = np.random.uniform(low = 0.05, high = 0.95)
                 # the distance between the label center and the left bound box
                 dist_x_left_border = int(self.psize * random_x_prop)
 
                 # random distance between the label coord and the top side bound box
-                random_y_prop = np.random.uniform(low = 0.1, high = 0.9)
+                random_y_prop = np.random.uniform(low = 0.05, high = 0.95)
                 # the distance between the label center and the right bound box
                 dist_y_top_border = int(self.psize * random_y_prop)
 
