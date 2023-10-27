@@ -27,6 +27,7 @@ from src.metrics import evaluate_metrics, evaluate_component_metrics
 from src.utils import get_device, get_image_metadata, save_yaml, fix_relative_paths
 
 from src.deepvlab3plus import DeepLabv3_plus
+from src.deepvlab3plus_resnet9 import DeepLabv3Plus_resnet9
 
 import matplotlib.pyplot as plt
 
@@ -484,11 +485,10 @@ def train_iteration(current_iter_folder:str, args:dict):
     logger.info("Building data done with {} images loaded.".format(len(train_loader)))
 
     
-    model = DeepLabv3_plus(
-        model_depth = 10,
-        num_ch_1 = image.shape[0],
+    model = DeepLabv3Plus_resnet9(
+        num_ch = image.shape[0],
         psize = args.size_crops,
-        nb_class = args.nb_class
+        num_class = args.nb_class
     )
 
     ########## LOAD MODEL WEIGHTS FROM THE LAST CHECKPOINT ##########
