@@ -728,7 +728,7 @@ def normalize(img:np.ndarray):
         # max_ch = np.quantile(img[i], 0.99)
 
         # img[i] = (img[i]-min_ch)/(max_ch-min_ch)
-        img[i] = (img/255)
+        img[i] = (img[i]/255)
     
 
 
