@@ -35,7 +35,7 @@ samples: 5000
 # True for data augmentation during training
 augment: True
 
-# convnet architecture --> 'resunet','deeplabv3_resnet50'
+# convnet architecture --> 'resunet','deeplabv3_resnet50',deeplabv3+_resnet9, deeplabv3+
 arch: deeplabv3_resnet50
 # True for load pretrained weights from Imagenet
 is_pretrained: True

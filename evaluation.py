@@ -298,10 +298,13 @@ def evaluate_overlap(overlap:float,
     logger.info("Building data done with {} patches loaded.".format(coords.shape[0]))
     
 
-    model = DeepLabv3Plus_resnet9(
-        num_ch = image.shape[0],
-        psize = args.size_crops,
-        num_class = args.nb_class
+    model = model = build_model(
+        image.shape, 
+        args.nb_class,
+        args.arch, 
+        args.filters, 
+        args.is_pretrained,
+        psize = args.size_crops
     )
 
 
