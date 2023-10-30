@@ -24,7 +24,7 @@ from tqdm import tqdm
 from generate_distance_map import generate_distance_map
 
 from src.metrics import evaluate_metrics, evaluate_component_metrics
-from src.utils import get_device, get_image_metadata, save_yaml, fix_relative_paths
+from src.utils import get_device, get_image_metadata, save_yaml, fix_relative_paths, ParquetUpdater
 
 from src.deepvlab3plus import DeepLabv3_plus
 from src.deepvlab3plus_resnet9 import DeepLabv3Plus_resnet9
@@ -315,6 +315,7 @@ def train_epochs(last_checkpoint:str,
                  count_early:int,
                  logger,
                  val_loader:torch.utils.data.DataLoader,
+                 current_iter_folder:str,
                  patience:int=5,
                  ):
     """Train the model with the specified epochs numbers
@@ -346,8 +347,10 @@ def train_epochs(last_checkpoint:str,
     patience : int, optional
         The limit of the count early variable, by default 5
     """
-    
-    device = get_device()
+    current_iter = int(current_iter_folder.split("iter_")[-1])
+
+    training_stats = ParquetUpdater(join(args.data_path, "training_stats.parquet"))
+
     # Create figures folder to save training figures every epoch
     figures_path = join(dirname(last_checkpoint), 'figures')
     check_folder(figures_path)
@@ -365,24 +368,30 @@ def train_epochs(last_checkpoint:str,
         logger.info("============ Starting epoch %i ... ============" % epoch)
 
         # train the network
-        scores_tr = train(train_loader, model, optimizer, epoch, lr_schedule, figures_path, logger)
+        epoch, scores_tr = train(train_loader, model, optimizer, epoch, lr_schedule, figures_path, logger)
         
-        score_val = eval(val_loader, model)
+        f1_avg, f1_by_class_avg = eval(val_loader, model)
+        
+        ### Save training stats ####
+        eval_data = {f"f1_class_{num+1}": f1_score for num, f1_score in enumerate(f1_by_class_avg)}
+        eval_data["train_loss"] = scores_tr
+        eval_data["epoch"] = epoch
+        eval_data["iter"] = current_iter
+        
+        training_stats.update(eval_data)
 
         gc.collect()
-
-        # training_stats.update(scores_tr)
         
-        print_sucess("scores_tr: {}".format(score_val))
+        print_sucess("scores_tr: {}".format(f1_avg))
 
-        is_best = (score_val - best_val) > 0.0009
+        is_best = (f1_avg - best_val) > 0.0009
 
         # save checkpoints
         if rank == 0:
             if is_best: 
                 logger.info("============ Saving best models at epoch %i ... ============" % epoch)
                 
-                best_val = score_val
+                best_val = f1_avg
                 
                 save_checkpoint(last_checkpoint, model, optimizer, epoch+1, best_val, count_early)
                 
@@ -584,8 +593,9 @@ def train_iteration(current_iter_folder:str, args:dict):
                      lr_schedule, 
                      args.rank, 
                      to_restore["count_early"],
-                     logger=logger,
-                     val_loader = val_loader)
+                     logger = logger,
+                     val_loader = val_loader,
+                     current_iter_folder = current_iter_folder)
     gc.collect()
 
 
