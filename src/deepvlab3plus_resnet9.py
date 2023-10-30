@@ -138,7 +138,10 @@ class ASPPModule(nn.Module):
 class DeepLabv3Plus_resnet9(nn.Module):
     def __init__(self, num_ch, psize, num_class):
         super(DeepLabv3Plus_resnet9, self).__init__()
-
+        
+        if psize != 128:
+            raise NotImplementedError("The model does not support patch sizes other than 128x128. Please use a patch size of 128x128 for this model.")
+        
         self.num_ch = num_ch
         self.psize = psize
         self.nb_class = num_class
