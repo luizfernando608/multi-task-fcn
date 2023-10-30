@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 #
 import ast
+import pandas as pd
 import argparse
 from logging import getLogger, CRITICAL
 import pickle
@@ -922,26 +923,40 @@ def fix_relative_paths(args:dict):
                 args[key] = absolute_path
 
 
+class ParquetUpdater:
+    def __init__(self, file_path):
+        self.file_path = file_path
+
+    def update(self, data):
+        # Read the existing Parquet file
+        try:
+            existing_data = pd.read_parquet(self.file_path)
+        except FileNotFoundError:
+            # If the file doesn't exist, create a new DataFrame
+            existing_data = pd.DataFrame(columns=data.keys())
+
+        # Create a new DataFrame from the input data
+        new_data = pd.DataFrame([data])
+
+        # Concatenate the existing data with the new data
+        updated_data = pd.concat([existing_data, new_data], ignore_index=True)
+
+        # Write the updated data back to the Parquet file
+        updated_data.to_parquet(self.file_path, index=False, engine='pyarrow', compression='snappy', partition_cols=None)
+
+
+
 if __name__ == "__main__":
     from os.path import join
+    file_path = "data.parquet"
 
-    FILE_PATH = "/home/luiz/multi-task-fcn/Data/samples_A1_train2tif.tif"
-    
-    PATH_TO_SAVE = "/home/luiz/multi-task-fcn/test_repo"
+    updater = ParquetUpdater(file_path)
 
-    image = read_tiff(FILE_PATH)
-    
-    meta = get_image_metadata(FILE_PATH)
-    
-    array2raster(join(PATH_TO_SAVE, "image_byte.tif"), 
-                 image[0:1000, 0:1000],
-                 image_metadata = meta,
-                 dtype = "Byte")
-    
-    image2 = read_tiff(join(PATH_TO_SAVE, "image_byte.tif"))
-    
-    print(image2.shape)
+    data1 = {'Name': 'Alice', 'Age': 25}
+    data2 = {'Name': 'Bob', 'Age': 30}
 
+    updater.update(data1)
+    updater.update(data2)
     # array2raster("/home/luiz/multi-task-fcn/test_repo/image_float.tif", 
     #              image[:, 0:1000, 0:1000],
     #              image_metadata = meta,

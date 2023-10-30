@@ -11,7 +11,7 @@ from os.path import dirname, join
 
 from .utils import read_yaml
 
-from typing import Union
+from typing import Union, Literal
 
 from skimage.measure import label
 
@@ -90,7 +90,10 @@ def evaluate_metrics(pred:Union[np.ndarray, torch.Tensor], gt:Union[np.ndarray, 
 
     return accu_criteria
 
-def evaluate_f1(pred:Union[np.ndarray, torch.Tensor], gt:Union[np.ndarray, torch.Tensor], num_class:int = args.nb_class) -> float:
+def evaluate_f1(pred:Union[np.ndarray, torch.Tensor], 
+                gt:Union[np.ndarray, torch.Tensor], 
+                num_class:int = args.nb_class,
+                average:Literal[None, "micro", "macro", "weighted"] = "macro") -> float:
     """Calculte the F1 Score macro average
 
     Parameters
@@ -103,6 +106,9 @@ def evaluate_f1(pred:Union[np.ndarray, torch.Tensor], gt:Union[np.ndarray, torch
     gt : Union[np.ndarray, torch.Tensor]
         Tensor with shape [row, cols]
         This tensor has the ground truth segmentation matrix
+    
+    average : [None, "micro", "macro", "weighted"]
+        The average type to run calculate f1 score
 
     Returns
     -------
@@ -133,10 +139,9 @@ def evaluate_f1(pred:Union[np.ndarray, torch.Tensor], gt:Union[np.ndarray, torch
     pred = pred[mask][:]+1
 
     #### CALCULATE METRICS WITH SKLEARN ####
-    f1 = f1_score(gt, pred, average=None, zero_division=True, labels = list(range(1, num_class + 1) ))
+    f1 = f1_score(gt, pred, average=average, zero_division=True, labels = list(range(1, num_class + 1) ))
 
-    return  float( np.sum(f1) / num_class )
-
+    return f1
 
 def evaluate_component_metrics(ground_truth_labels:np.ndarray, predicted_labels:np.ndarray, num_class:int = None, average:str = "macro")->dict:
     """Evaluate the metrics of the non zero labels in ground_truth labels
