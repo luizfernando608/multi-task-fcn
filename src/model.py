@@ -431,7 +431,6 @@ def eval(val_loader:torch.utils.data.DataLoader,
             out_prob = soft(out_batch['out'])
             
             f1_macro = evaluate_f1(out_prob, ref, average="macro")
-
             f1_avg.update(f1_macro)
             
             f1_by_class = evaluate_f1(out_prob, ref, average=None)
