@@ -484,11 +484,13 @@ def train_iteration(current_iter_folder:str, args:dict):
 
     logger.info("Building data done with {} images loaded.".format(len(train_loader)))
 
-    
-    model = DeepLabv3Plus_resnet9(
-        num_ch = image.shape[0],
-        psize = args.size_crops,
-        num_class = args.nb_class
+    model  = build_model(
+        image.shape, 
+        args.nb_class,  
+        args.arch, 
+        args.filters, 
+        args.is_pretrained,
+        psize = args.size_crops
     )
 
     ########## LOAD MODEL WEIGHTS FROM THE LAST CHECKPOINT ##########

@@ -298,10 +298,13 @@ def evaluate_overlap(overlap:float,
     logger.info("Building data done with {} patches loaded.".format(coords.shape[0]))
     
 
-    model = DeepLabv3Plus_resnet9(
-        num_ch = image.shape[0],
-        psize = args.size_crops,
-        num_class = args.nb_class
+    model = model = build_model(
+        image.shape, 
+        args.nb_class,
+        args.arch, 
+        args.filters, 
+        args.is_pretrained,
+        psize = args.size_crops
     )
 
 
@@ -425,14 +428,9 @@ if __name__ == "__main__":
     ## arguments
     args = read_yaml("args.yaml")
     # external parameters
-    current_iter_folder = "/home/luiz/multi-task-fcn/5.0_version_data/iter_004"
+    current_iter_folder = os.path.join(args.data_path, "iter_001")
     current_iter = int(current_iter_folder.split("_")[-1])
     current_model_folder = os.path.join(current_iter_folder, args.model_dir)
-
-    old_pred = np.load("/home/luiz/multi-task-fcn/5.0_version_data/iter_003/prediction/pred_class_itcFalse_0.6.npy")
-
-    new_pred = np.load("/home/luiz/multi-task-fcn/5.0_version_data/iter_002/prediction/pred_class_itcFalse_0.6.npy")
-    
 
     evaluate_iteration(current_iter_folder, args)
 
