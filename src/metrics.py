@@ -103,6 +103,9 @@ def evaluate_f1(pred:Union[np.ndarray, torch.Tensor], gt:Union[np.ndarray, torch
     gt : Union[np.ndarray, torch.Tensor]
         Tensor with shape [row, cols]
         This tensor has the ground truth segmentation matrix
+    
+    average : [None, "micro", "macro", "weighted"]
+        The average type to run calculate f1 score
 
     Returns
     -------
