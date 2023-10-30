@@ -67,7 +67,7 @@ def array2raster(path_to_save:str, array:np.ndarray, image_metadata:dict, dtype:
     
     # set data type to save.
     if dtype == None:
-        RASTER_DTYPE = meta.dtype
+        RASTER_DTYPE = image_metadata.dtype
     
     elif dtype.lower() == "byte": 
         RASTER_DTYPE = array.dtype
