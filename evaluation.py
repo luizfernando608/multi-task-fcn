@@ -428,14 +428,9 @@ if __name__ == "__main__":
     ## arguments
     args = read_yaml("args.yaml")
     # external parameters
-    current_iter_folder = "/home/luiz/multi-task-fcn/5.0_version_data/iter_004"
+    current_iter_folder = os.path.join(args.data_path, "iter_001")
     current_iter = int(current_iter_folder.split("_")[-1])
     current_model_folder = os.path.join(current_iter_folder, args.model_dir)
-
-    old_pred = np.load("/home/luiz/multi-task-fcn/5.0_version_data/iter_003/prediction/pred_class_itcFalse_0.6.npy")
-
-    new_pred = np.load("/home/luiz/multi-task-fcn/5.0_version_data/iter_002/prediction/pred_class_itcFalse_0.6.npy")
-    
 
     evaluate_iteration(current_iter_folder, args)
 
