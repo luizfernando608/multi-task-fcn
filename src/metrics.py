@@ -76,20 +76,17 @@ def evaluate_metrics(pred:Union[np.ndarray, torch.Tensor], gt:Union[np.ndarray, 
     accuracy = accuracy_score(gt, pred)*100
     accu_criteria["Accuracy"] = float(np.round(accuracy,2))
     
-    f1 = f1_score(gt, pred, average=None, zero_division=True, labels = list(range(1, num_class + 1) ) )
+    list_of_labels = list(range(1, num_class + 1) )
 
-    pre = precision_score(gt, pred, average=None, zero_division=True, labels = list(range(1, num_class + 1) ))
-
-    rec = recall_score(gt, pred, average=None, zero_division=True, labels = list(range(1, num_class + 1) ))
-
-
-    accu_criteria["avgF1"] = float(np.round(np.sum(f1)*100/num_class, 2))
-    accu_criteria["avgPre"] = float(np.round(np.sum(pre)*100/num_class, 2))
-    accu_criteria["avgRec"] = float(np.round(np.sum(rec)*100/num_class, 2))
+    accu_criteria["avgF1"] = float(f1_score(gt, pred, average="macro", zero_division=True, labels =  list_of_labels))*100
+    accu_criteria["avgPre"] = float(precision_score(gt, pred, average="macro", zero_division=True, labels = list_of_labels))*100
+    accu_criteria["avgRec"] = float(recall_score(gt, pred, average="macro", zero_division=True, labels = list_of_labels))*100
     
-    # accu_criteria["F1"] = list(np.round(np.array(f1)*100,2))
-    # accu_criteria["Pre"] = list(np.round(np.array(pre)*100,2))
-    # accu_criteria["Rec"] = list(np.round(np.array(rec)*100,2))
+    accu_criteria["F1"] = (f1_score(gt, pred, average=None, zero_division=True, labels = list_of_labels)*100).tolist()
+    accu_criteria["Pre"] = (precision_score(gt, pred, average=None, zero_division=True, labels = list_of_labels)*100).tolist()
+    accu_criteria["Rec"] = (recall_score(gt, pred, average=None, zero_division=True, labels = list_of_labels)*100).tolist()
+
+    accu_criteria["KappaScore"] = float(cohen_kappa_score(gt, pred, labels=list_of_labels))*100
 
     return accu_criteria
 
