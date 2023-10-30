@@ -62,7 +62,7 @@ def define_loader(orto_img:str, gt_lab:np.ndarray, size_crops:int, test=False) -
     return image, coords, gt_lab, gt_lab[gt_lab!=0]
 
 
-def build_model(image_shape:list, num_classes:int, arch:str, filters:list, pretrained:bool)->nn.Module:
+def build_model(image_shape:list, num_classes:int, arch:str, filters:list, pretrained:bool, psize:int)->nn.Module:
     """Build model according to architecture
     The architecture can be 'resunet' or 'deeplabv3_resnet50'
     The model can be either pretrained or randomly initialized
@@ -80,7 +80,8 @@ def build_model(image_shape:list, num_classes:int, arch:str, filters:list, pretr
         List of number of filters for each block of the model, if the model is resunet
     pretrained : bool
         If True, the model is loaded from pretrained weights available in pytorch hub
-
+    psize : int
+        Patch size
     Returns
     -------
     nn.Module
@@ -149,6 +150,22 @@ def build_model(image_shape:list, num_classes:int, arch:str, filters:list, pretr
             out_channels = num_classes, 
             kernel_size=(1, 1), 
             stride=(1, 1))
+    
+    elif arch == "deeplabv3+":
+        model = DeepLabv3_plus(
+            model_depth = 10,
+            nb_class = num_classes,
+            num_ch_1 = image_shape[0],
+            psize = psize
+        )
+
+
+    elif arch == "deeplabv3+_resnet9":
+        model = DeepLabv3Plus_resnet9(
+            num_ch = image_shape[0],
+            num_class = num_classes,
+            psize = psize
+        )
     
     else:
         raise ValueError(f"Unknown architecture {arch}.\nPlease choose among 'resunet' or 'deeplabv3_resnet50'")
