@@ -377,7 +377,7 @@ def train(train_loader:torch.utils.data.DataLoader,
                     lr=optimizer.param_groups[0]["lr"],
                 )
             )
-            logger.info(summary_batch)
+            logger.info(f"Accuracy:{summary_batch['Accuracy']}, avgF1:{summary_batch['avgF1']}")
             
         if it == 0:
             # plot samples results for visual inspection
@@ -390,7 +390,7 @@ def train(train_loader:torch.utils.data.DataLoader,
 
 def eval(val_loader:torch.utils.data.DataLoader, 
           model:nn.Module, 
-        ) -> float:
+        ) -> Tuple[float, float]:
     """Function to evaluate model based on f1 score
 
     Parameters
@@ -412,6 +412,8 @@ def eval(val_loader:torch.utils.data.DataLoader,
     DEVICE = get_device()
 
     f1_avg = AverageMeter()
+    
+    f1_by_class_avg = AverageMeter()
 
     soft = nn.Softmax(dim=1).to(DEVICE)
 
@@ -425,11 +427,18 @@ def eval(val_loader:torch.utils.data.DataLoader,
 
             # Foward Passs
             out_batch = model(inp_img)
+            
+            out_prob = soft(out_batch['out'])
+            
+            f1_macro = evaluate_f1(out_prob, ref, average="macro")
 
-            f1_avg.update( evaluate_f1(soft(out_batch['out']), ref) )
+            f1_avg.update(f1_macro)
+            
+            f1_by_class = evaluate_f1(out_prob, ref, average=None)
+            f1_by_class_avg.update(f1_by_class)
+            
 
-
-    return f1_avg.avg
+    return f1_avg.avg, f1_by_class_avg.avg
 
 
 
