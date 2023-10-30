@@ -924,9 +924,8 @@ def fix_relative_paths(args:dict):
 
 
 class ParquetUpdater:
-    def __init__(self, file_path, table_name):
+    def __init__(self, file_path):
         self.file_path = file_path
-        self.table_name = table_name
 
     def update(self, data):
         # Read the existing Parquet file
@@ -950,9 +949,8 @@ class ParquetUpdater:
 if __name__ == "__main__":
     from os.path import join
     file_path = "data.parquet"
-    table_name = "my_table"
 
-    updater = ParquetUpdater(file_path, table_name)
+    updater = ParquetUpdater(file_path)
 
     data1 = {'Name': 'Alice', 'Age': 25}
     data2 = {'Name': 'Bob', 'Age': 30}
