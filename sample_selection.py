@@ -4,7 +4,7 @@ import numpy as np
 
 from skimage.measure import label, regionprops_table
 
-from src.utils import read_tiff, read_yaml
+from src.utils import read_tiff, read_yaml, fix_relative_paths
 
 import pandas as pd
 
@@ -21,7 +21,9 @@ from scipy.ndimage import gaussian_filter
 
 from src.metrics import evaluate_component_metrics
 
+
 args = read_yaml(join(dirname(__file__), "args.yaml"))
+fix_relative_paths(args)
 
 def undersample(data: pd.DataFrame, column_category: str):
     X = data.drop(column_category, axis=1).copy()
@@ -362,50 +364,44 @@ def select_good_samples(old_pred_map:np.ndarray,
 
     new_pred_map = new_pred_map.copy()
     
-    # Select only the components with confidence higher than 0.99
-    new_pred_map = np.where(new_prob_map > 0.95, new_pred_map, 0)
-    
     # depth map
-    new_depth_map = gaussian_filter(new_depth_map, sigma = 9)
-
-    # new_depth_map = np.where(new_depth_map > 0.4, new_depth_map, 0)
+    depth_gauss = gaussian_filter(new_depth_map, sigma = 9)
 
     # prob map
-    new_prob_map = gaussian_filter(new_prob_map, sigma = 9)
+    prob_gauss = gaussian_filter(new_prob_map, sigma = 9)
 
-    # new_prob_map = np.where(new_prob_map > 0.95, new_prob_map, 0)
+    new_pred_map = np.where((depth_gauss > 0.2) & (prob_gauss > 0.9), new_pred_map, 0)
 
-    mask_selection = (new_depth_map + new_prob_map) > 1.2
-
-    new_pred_map[~mask_selection] = 0
-
-    comp_old_pred = label(old_pred_map)
-    
-    comp_old_stats = get_components_stats(comp_old_pred, old_pred_map)
-    
-    min_area = comp_old_stats["area"].min() - comp_old_stats["area"].min()*0.1
-    max_area = comp_old_stats["area"].max()*(1.1)
-    
     # filter components too small or too large
     filter_components_by_geometric_property(new_pred_map, 
-                                            low_limit = min_area, 
-                                            high_limit = max_area, # high limit area
+                                            low_limit = 500, 
+                                            high_limit = np.inf, # high limit area
                                             property = "area")
-    
-    # remove shape with non smoth borders
-    filter_components_by_geometric_property(new_pred_map, 
-                                            low_limit = 0.6,  # conservative limit
-                                            high_limit = np.inf,
-                                            property = "solidity")
-    
-    # remove extense segmentation labels
-    filter_components_by_geometric_property(new_pred_map, 
-                                            low_limit = 0.4,  # conservative limit
-                                            high_limit = np.inf,
-                                            property = "extent")
     
     filter_components_by_mask(new_pred_map)
     
+    # Calculate main metrics of each tree
+    comp_old_pred = label(old_pred_map)
+    comp_old_stats = get_components_stats(comp_old_pred, old_pred_map).reset_index()
+    comp_old_stats = comp_old_stats.groupby("tree_type")[["extent", "solidity", "eccentricity", "area"]].median()
+    comp_old_stats.columns  = "ref_" + comp_old_stats.columns 
+
+    # Get metrics about the new labels
+    comp_new_pred = label(new_pred_map)
+    comp_new_stats =  get_components_stats(comp_new_pred, new_pred_map).reset_index()
+    # Join data from the last with the new one
+    comp_new_stats = comp_new_stats.merge(comp_old_stats, on = "tree_type", how = "left")
+    
+    comp_new_stats["dist_area"] =  np.abs(comp_new_stats["area"] - comp_new_stats["ref_area"])/comp_new_stats["ref_area"]
+
+    comp_new_stats["diff_soli"] =  (comp_new_stats["solidity"] - comp_new_stats["ref_solidity"])
+    # Select componentes based on some metrics
+    selected_comp = comp_new_stats[(comp_new_stats["area"] > 500) # higher than 500
+                                   & (comp_new_stats["dist_area"] < 0.7) # area between 70% less or higher
+                                   & (comp_new_stats["diff_soli"] >= -0.05) # solidity
+                                   ].copy()
+
+    new_pred_map =  np.where(np.isin(comp_new_pred, selected_comp["label"].unique()), new_pred_map, 0)
 
     return new_pred_map
 
