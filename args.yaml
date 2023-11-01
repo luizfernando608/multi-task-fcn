@@ -4,7 +4,7 @@
 # experiment directory
 model_dir: exp_deeplab_v4
 
-data_path: 18.0_version_data
+data_path: 19.0_version_data
 
 # Input data for the model
 ortho_image: input_data/orthoimage/fixed_ortoA1_25tiff.tif
@@ -17,7 +17,7 @@ mask_path: "input_data/mask.tif"
 checkpoint_file: checkpoint.pth.tar
 
 # Num of iter
-num_iter : 1
+num_iter : 10
 
 # pred2raster parameters
 # samples per epoch
