@@ -130,10 +130,18 @@ def build_model(image_shape:list,
         else:
             # If doesnt have the model, download from pytorch hub
             check_folder(model_path)
+            
+            if pretrained:
+                weights = "DeepLabV3_ResNet50_Weights.COCO_WITH_VOC_LABELS_V1"
+
+            else:
+                weights = None
+
             model = torch.hub.load('pytorch/vision:v0.10.0', 
-                arch, 
-                pretrained = pretrained,
-                aux_loss = True)
+                                    arch, 
+                                    weights = weights,
+                                    pretrained = pretrained,
+                                    aux_loss = True)
             
             torch.save(model, os.path.join(model_path,'model'))
         
