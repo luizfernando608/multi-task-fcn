@@ -759,7 +759,7 @@ def generate_labels_view(current_iter_folder):
 
     # DEPTH_MAP = read_tiff(DEPTH_MAP_PATH)
 
-    OUTPUT_MAP_FOLDER = join(args.data_path, "visualization")
+    OUTPUT_MAP_FOLDER = join(dirname(current_iter_folder), "visualization")
     # create output folder
     check_folder(OUTPUT_MAP_FOLDER)
 
