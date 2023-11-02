@@ -115,11 +115,11 @@ def build_model(image_shape:list,
         if pretrained:
             # If is pretrained, the model is loaded from pretrained_models folder.
             # the weights model were downloaded from pytorch hub
-            model_path = os.path.join('./pretrained_models', arch)
+            model_path = os.path.join(ROOT_PATH, 'pretrained_models', arch)
 
         else:
             # If is not pretrained, doesnt download/load model with pretrained weights
-            model_path = os.path.join('./random_w_models', arch)
+            model_path = os.path.join(ROOT_PATH, 'random_w_models', arch)
 
 
         if os.path.isdir(model_path):
