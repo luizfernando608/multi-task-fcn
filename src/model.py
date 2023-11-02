@@ -336,8 +336,8 @@ def train(train_loader:torch.utils.data.DataLoader,
         mask = torch.where(ref == 0, torch.tensor(0.0), torch.tensor(1.0))
         mask = mask.to(DEVICE, non_blocking=True)
 
-        ref_copy = torch.zeros(ref.shape).long().to(DEVICE, non_blocking=True)
-        ref_copy[mask>0] = torch.sub(ref[mask>0], 1)
+        # ref data with the class id
+        ref_copy = torch.where(mask > 0, torch.sub(ref, 1), 0)
         
         # Foward Passs
         out_batch = model(inp_img)
