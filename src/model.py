@@ -359,7 +359,7 @@ def train(train_loader:torch.utils.data.DataLoader,
         optimizer.step()
         
         # update the average loss
-        loss_avg.update(loss.item())
+        loss_avg.update(loss)
 
         gc.collect()
 

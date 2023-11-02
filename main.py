@@ -374,7 +374,7 @@ def train_epochs(last_checkpoint:str,
         
         ### Save training stats ####
         eval_data = {f"f1_class_{num+1}": f1_score for num, f1_score in enumerate(f1_by_class_avg)}
-        eval_data["train_loss"] = scores_tr
+        eval_data["train_loss"] = float(scores_tr)
         eval_data["epoch"] = epoch
         eval_data["iter"] = current_iter
         
