@@ -115,11 +115,11 @@ def build_model(image_shape:list,
         if pretrained:
             # If is pretrained, the model is loaded from pretrained_models folder.
             # the weights model were downloaded from pytorch hub
-            model_path = os.path.join('./pretrained_models', arch)
+            model_path = os.path.join(ROOT_PATH, 'pretrained_models', arch)
 
         else:
             # If is not pretrained, doesnt download/load model with pretrained weights
-            model_path = os.path.join('./random_w_models', arch)
+            model_path = os.path.join(ROOT_PATH, 'random_w_models', arch)
 
 
         if os.path.isdir(model_path):
@@ -130,10 +130,18 @@ def build_model(image_shape:list,
         else:
             # If doesnt have the model, download from pytorch hub
             check_folder(model_path)
+            
+            if pretrained:
+                weights = "DeepLabV3_ResNet50_Weights.COCO_WITH_VOC_LABELS_V1"
+
+            else:
+                weights = None
+
             model = torch.hub.load('pytorch/vision:v0.10.0', 
-                arch, 
-                pretrained = pretrained,
-                aux_loss = True)
+                                    arch, 
+                                    weights = weights,
+                                    pretrained = pretrained,
+                                    aux_loss = True)
             
             torch.save(model, os.path.join(model_path,'model'))
         
@@ -340,36 +348,35 @@ def train(train_loader:torch.utils.data.DataLoader,
         mask = torch.where(ref == 0, torch.tensor(0.0), torch.tensor(1.0))
         mask = mask.to(DEVICE, non_blocking=True)
 
-        ref_copy = torch.zeros(ref.shape).long().to(DEVICE, non_blocking=True)
-        ref_copy[mask>0] = torch.sub(ref[mask>0], 1)
+        # ref data with the class id
+        ref_copy = torch.where(mask > 0, torch.sub(ref, 1), 0)
         
         # Foward Passs
         out_batch = model(inp_img)
         
-        # loss1 = mask*categorical_focal_loss_2(out_batch["out"], ref_copy, alpha = 1)
-
         loss1 = mask*categorical_focal_loss(out_batch["out"], ref_copy)
 
         loss2 = mask*aux_criterion(sig(out_batch['aux'])[:,0,:,:], depth)
         
         loss = (loss1 + loss2)/2 
-        loss = torch.sum(loss)/ref[ref>0].shape[0]
+        loss = torch.sum(loss)/torch.sum(ref>0)
 
         # clear previous gradients, compute gradients of all variables wrt loss
-        optimizer.zero_grad()
+        optimizer.zero_grad(set_to_none=True)
         loss.backward()
         
         # performs updates using calculated gradients
         optimizer.step()
         
         # update the average loss
-        loss_avg.update(loss.item())
+        loss_avg.update(loss)
 
         gc.collect()
 
         # Evaluate summaries only once in a while
         if it % 50 == 0:
-            summary_batch = evaluate_metrics(soft(out_batch['out']), ref)
+            with torch.no_grad():
+                summary_batch = evaluate_metrics(soft(out_batch['out']), ref)
             
             logger.info(
                 "Epoch: [{0}][{1}]\t"
@@ -385,11 +392,16 @@ def train(train_loader:torch.utils.data.DataLoader,
             
         if it == 0:
             # plot samples results for visual inspection
-            plot_figures(inp_img, ref, soft(out_batch['out']),depth,
-                         sig(out_batch['aux']),figures_path,epoch,'train')
+            with torch.no_grad():
+                plot_figures(inp_img, 
+                            ref, 
+                            soft(out_batch['out']),
+                            depth,
+                            sig(out_batch['aux']),
+                            figures_path,epoch,'train')
 
             
-    return (epoch, loss_avg.avg)
+    return (epoch, float(loss_avg.avg))
 
 
 def eval(val_loader:torch.utils.data.DataLoader, 
