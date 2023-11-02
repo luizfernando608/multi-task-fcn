@@ -383,7 +383,7 @@ def train(train_loader:torch.utils.data.DataLoader,
                          sig(out_batch['aux']),figures_path,epoch,'train')
 
             
-    return (epoch, loss_avg.avg)
+    return (epoch, float(loss_avg.avg))
 
 
 def eval(val_loader:torch.utils.data.DataLoader, 
