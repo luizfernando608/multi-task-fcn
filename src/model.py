@@ -342,14 +342,12 @@ def train(train_loader:torch.utils.data.DataLoader,
         # Foward Passs
         out_batch = model(inp_img)
         
-        # loss1 = mask*categorical_focal_loss_2(out_batch["out"], ref_copy, alpha = 1)
-
         loss1 = mask*categorical_focal_loss(out_batch["out"], ref_copy)
 
         loss2 = mask*aux_criterion(sig(out_batch['aux'])[:,0,:,:], depth)
         
         loss = (loss1 + loss2)/2 
-        loss = torch.sum(loss)/ref[ref>0].shape[0]
+        loss = torch.sum(loss)/torch.sum(ref>0)
 
         # clear previous gradients, compute gradients of all variables wrt loss
         optimizer.zero_grad()
