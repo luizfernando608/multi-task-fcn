@@ -816,6 +816,8 @@ while True:
     
     compile_metrics(current_iter_folder, args)
 
+    generate_labels_view(current_iter_folder)
+
     print_sucess("Distance map generated")
  
 
