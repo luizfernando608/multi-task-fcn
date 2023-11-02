@@ -461,8 +461,8 @@ def train_iteration(current_iter_folder:str, args:dict):
         shuffle=True,
     )
 
-    raster_val = read_val_segmentation()
-    depth_val = read_val_distance_map()
+    raster_val = raster_train.copy()
+    depth_val = depth_img.copy()
 
     ########### LOAD VALIDATION SET ##################
     _, coords_val, raster_val, labs_coords_val = define_loader(args.ortho_image, 
