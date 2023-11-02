@@ -350,7 +350,7 @@ def train(train_loader:torch.utils.data.DataLoader,
         loss = torch.sum(loss)/torch.sum(ref>0)
 
         # clear previous gradients, compute gradients of all variables wrt loss
-        optimizer.zero_grad()
+        optimizer.zero_grad(set_to_none=True)
         loss.backward()
         
         # performs updates using calculated gradients
