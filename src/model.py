@@ -157,11 +157,15 @@ def build_model(image_shape:list,
         )
         
         # modify classifier to the num of classes
-        model.classifier[4] = nn.Conv2d(
-            in_channels = 256, 
-            out_channels = num_classes, 
-            kernel_size=(1, 1), 
-            stride=(1, 1))
+        model.classifier[4] = nn.Sequential(
+            nn.Dropout(p = 0.65),
+            nn.Conv2d(
+                in_channels = 256, 
+                out_channels = num_classes, 
+                kernel_size=(1, 1), 
+                stride=(1, 1)
+            )
+        )
     
     elif arch == "deeplabv3+":
         model = DeepLabv3_plus(

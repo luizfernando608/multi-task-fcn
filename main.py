@@ -363,6 +363,7 @@ def train_epochs(last_checkpoint:str,
                 break
         
         np.random.shuffle(train_loader.dataset.coord)
+        np.random.shuffle(val_loader.dataset.coord)
 
         # train the network for one epoch
         logger.info("============ Starting epoch %i ... ============" % epoch)
