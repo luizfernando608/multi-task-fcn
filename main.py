@@ -33,7 +33,7 @@ import matplotlib.pyplot as plt
 
 import yaml
 
-
+from skimage.color import label2rgb
 
 plt.set_loglevel(level = 'info')
 
@@ -740,6 +740,49 @@ def compile_metrics(current_iter_folder, args):
 
     save_yaml(all_labels_metrics, HIGH_PROB_COMPONENTS_PATH)
 
+
+def generate_labels_view(current_iter_folder):
+    """Function to generate images for qualitative evaluation.
+    These images are not used for any kind of numeric evaluation.
+
+    Parameters
+    ----------
+    current_iter_folder : str
+    """
+    ALL_LABELS_PATH = join(current_iter_folder, "new_labels", "all_labels_set.tif")
+    SELECTED_LABELS_PATH = join(current_iter_folder, "new_labels", "selected_labels_set.tif")
+    
+    current_iter = int(current_iter_folder.split("iter_")[-1])
+
+    ALL_LABELS_MAP = read_tiff(ALL_LABELS_PATH)
+    SELECTED_LABELS_MAP = read_tiff(SELECTED_LABELS_PATH)
+
+    # DEPTH_MAP = read_tiff(DEPTH_MAP_PATH)
+
+    OUTPUT_MAP_FOLDER = join(dirname(current_iter_folder), "visualization")
+    # create output folder
+    check_folder(OUTPUT_MAP_FOLDER)
+
+    # PLOT ALL LABELS
+    ALL_LABELS_OUT_FOLDER = join(OUTPUT_MAP_FOLDER, "all_labels",)
+    check_folder(ALL_LABELS_OUT_FOLDER)
+    
+    plt.figure(dpi = 300)
+    plt.imshow(label2rgb(ALL_LABELS_MAP))
+    plt.axis('off')
+    plt.savefig(join(ALL_LABELS_OUT_FOLDER, f"{current_iter:03d}_segmentation.png"), bbox_inches='tight', pad_inches=0)
+    plt.close()
+
+
+    # PLOT SELECTED LABELS
+    SELECTED_LABELS_OUT_FOLDER = join(OUTPUT_MAP_FOLDER, "selected_labels")
+    check_folder(SELECTED_LABELS_OUT_FOLDER)
+
+    plt.figure(dpi = 300)
+    plt.imshow(label2rgb(SELECTED_LABELS_MAP))
+    plt.axis('off')
+    plt.savefig(join(SELECTED_LABELS_OUT_FOLDER, f"{current_iter:03d}_segmentation.png"), bbox_inches='tight', pad_inches=0)
+    plt.close()
     
 
 
@@ -815,6 +858,8 @@ while True:
     delete_useless_files(current_iter_folder = current_iter_folder)
     
     compile_metrics(current_iter_folder, args)
+
+    generate_labels_view(current_iter_folder)
 
     print_sucess("Distance map generated")
  
