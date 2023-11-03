@@ -177,7 +177,7 @@ def get_label_intersection(
     components_to_iter = np.unique(new_components_img)
     components_to_iter = components_to_iter[np.nonzero(components_to_iter)]
 
-    print("Getting the intersection between the old an new segmentation")
+    print("Getting the intersection between the old and new segmentation")
     for idx in tqdm(components_to_iter):
         # if more than 90% of the area is filled it will be added to the intersection sample
         if np.mean(old_components_img[new_components_img == idx] == 0) < 0.9:
