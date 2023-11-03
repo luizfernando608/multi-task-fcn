@@ -4,7 +4,7 @@
 # experiment directory
 model_dir: exp_deeplab_v4
 
-data_path: 19.1_version_data
+data_path: 19.2_version_data
 
 # Input data for the model
 ortho_image: input_data/orthoimage/fixed_ortoA1_25tiff.tif
