@@ -464,23 +464,26 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
         samples_by_class = 5
     )
 
-
+    # get the new predicted shapes for components from old segmentation
     intersection_label_map = get_label_intersection(old_label_img = old_selected_labels, 
                                                     new_label_img = new_labels_set)
         
+    # join updated shapes with the old ones that were not updated
+    old_selected_labels_updated = join_labels_set(intersection_label_map, old_selected_labels, 0.10 )
 
-    selected_labels_set = join_labels_set(intersection_label_map, old_selected_labels, 0.10 )
 
-    selected_labels_set = join_labels_set(delta_label_map, selected_labels_set, 0.10 )
-
+    # join the old labels set with the new labels. balanced sample addition
+    selected_labels_set = join_labels_set(delta_label_map, old_selected_labels_updated, 0.10 )
+    
+    # Adding the ground truth segmentation
     selected_labels_set = join_labels_set(ground_truth_map, selected_labels_set, 0.01 )
 
 
 
-    all_labels_set = join_labels_set(intersection_label_map, old_selected_labels, 0.10 )
+    # join the old labels set with the new labels. unbalanced sample addition
+    all_labels_set = join_labels_set(unbalanced_delta, old_selected_labels_updated, 0.10)
 
-    all_labels_set = join_labels_set(unbalanced_delta, old_selected_labels, 0.10)
-
+    # Adding the ground truth segmentation
     all_labels_set = join_labels_set(ground_truth_map, all_labels_set, 0.01)
 
 
