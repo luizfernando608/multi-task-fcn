@@ -340,36 +340,35 @@ def train(train_loader:torch.utils.data.DataLoader,
         mask = torch.where(ref == 0, torch.tensor(0.0), torch.tensor(1.0))
         mask = mask.to(DEVICE, non_blocking=True)
 
-        ref_copy = torch.zeros(ref.shape).long().to(DEVICE, non_blocking=True)
-        ref_copy[mask>0] = torch.sub(ref[mask>0], 1)
+        # ref data with the class id
+        ref_copy = torch.where(mask > 0, torch.sub(ref, 1), 0)
         
         # Foward Passs
         out_batch = model(inp_img)
         
-        # loss1 = mask*categorical_focal_loss_2(out_batch["out"], ref_copy, alpha = 1)
-
         loss1 = mask*categorical_focal_loss(out_batch["out"], ref_copy)
 
         loss2 = mask*aux_criterion(sig(out_batch['aux'])[:,0,:,:], depth)
         
         loss = (loss1 + loss2)/2 
-        loss = torch.sum(loss)/ref[ref>0].shape[0]
+        loss = torch.sum(loss)/torch.sum(ref>0)
 
         # clear previous gradients, compute gradients of all variables wrt loss
-        optimizer.zero_grad()
+        optimizer.zero_grad(set_to_none=True)
         loss.backward()
         
         # performs updates using calculated gradients
         optimizer.step()
         
         # update the average loss
-        loss_avg.update(loss.item())
+        loss_avg.update(loss)
 
         gc.collect()
 
         # Evaluate summaries only once in a while
         if it % 50 == 0:
-            summary_batch = evaluate_metrics(soft(out_batch['out']), ref)
+            with torch.no_grad():
+                summary_batch = evaluate_metrics(soft(out_batch['out']), ref)
             
             logger.info(
                 "Epoch: [{0}][{1}]\t"
@@ -385,11 +384,16 @@ def train(train_loader:torch.utils.data.DataLoader,
             
         if it == 0:
             # plot samples results for visual inspection
-            plot_figures(inp_img, ref, soft(out_batch['out']),depth,
-                         sig(out_batch['aux']),figures_path,epoch,'train')
+            with torch.no_grad():
+                plot_figures(inp_img, 
+                            ref, 
+                            soft(out_batch['out']),
+                            depth,
+                            sig(out_batch['aux']),
+                            figures_path,epoch,'train')
 
             
-    return (epoch, loss_avg.avg)
+    return (epoch, float(loss_avg.avg))
 
 
 def eval(val_loader:torch.utils.data.DataLoader, 
