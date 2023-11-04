@@ -392,12 +392,14 @@ def select_good_samples(old_pred_map:np.ndarray,
     # Join data from the last with the new one
     comp_new_stats = comp_new_stats.merge(comp_old_stats, on = "tree_type", how = "left")
     
+    # Calculate the distance between the tree area and the median area of the specie.
     comp_new_stats["dist_area"] =  np.abs(comp_new_stats["area"] - comp_new_stats["ref_area"])/comp_new_stats["ref_area"]
 
     comp_new_stats["diff_soli"] =  (comp_new_stats["solidity"] - comp_new_stats["ref_solidity"])
+    
     # Select componentes based on some metrics
-    selected_comp = comp_new_stats[(comp_new_stats["area"] > 500) # higher than 500
-                                   & (comp_new_stats["dist_area"] < 0.7) # area between 70% less or higher
+    selected_comp = comp_new_stats[(comp_new_stats["area"] > 1000) # higher than 1000
+                                   & (comp_new_stats["dist_area"] < 0.5) # area between 70% less or higher
                                    & (comp_new_stats["diff_soli"] >= -0.05) # solidity
                                    ].copy()
 
@@ -488,28 +490,34 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
 
 
 if __name__ == "__main__":
-    args = read_yaml("args.yaml")
     ROOT_PATH = dirname(__file__)
     
-    version_folder = join(ROOT_PATH, "11.0_version_data")
+    version_folder = join(ROOT_PATH, "19.1_version_data")
     
-    gt_map = read_tiff(f"{version_folder}/segmentation/samples_A1_train2tif.tif")
-
-    test_gt_map = read_tiff(f"{version_folder}/segmentation/samples_A1_train2tif.tif")
+    CURRENT_ITER_NUM = 2
     
-    old_all_labels = read_tiff(f"{version_folder}/iter_001/new_labels/all_labels_set.tif")
+    ITER_FOLDER = join(version_folder, f"iter_{CURRENT_ITER_NUM:03d}")
 
-    old_selected_labels = read_tiff(f"{version_folder}/iter_001/new_labels/selected_labels_set.tif")
+    PREV_ITER_FOLDER = join(version_folder, f"iter_{CURRENT_ITER_NUM-1:03d}")
+
+
+    gt_map = read_tiff(join(ROOT_PATH, "input_data/segmentation/samples_A1_train2tif.tif"))
+    
+
+    old_all_labels = read_tiff(join(PREV_ITER_FOLDER, "new_labels/all_labels_set.tif"))
+
+    old_selected_labels = read_tiff(join(PREV_ITER_FOLDER,  "new_labels/selected_labels_set.tif"))
                                
-    new_pred_map = read_tiff(f"{version_folder}/iter_002/raster_prediction/join_class_itcFalse_1.1.TIF")
+    new_pred_map = read_tiff(join(ITER_FOLDER ,"raster_prediction/join_class_itcFalse_0.9.TIF"))
 
-    new_prob_map = read_tiff(f"{version_folder}/iter_002/raster_prediction/join_prob_itcFalse_1.1.TIF")
+    new_prob_map = read_tiff(join(ITER_FOLDER, "raster_prediction/join_prob_itcFalse_0.9.TIF"))
 
-    depth_predicted = read_tiff(f"{version_folder}/iter_001/raster_prediction/depth_itcFalse_1.1.TIF")
+    depth_predicted = read_tiff(join( ITER_FOLDER, "raster_prediction/depth_itcFalse_0.9.TIF"))
     
+
     all_labels_set, selected_labels_set =  get_new_segmentation_sample(old_selected_labels = old_selected_labels,
                                                                        old_all_labels = old_all_labels,
-
+                                                                       
                                                                        new_pred_map = new_pred_map,
                                                                        new_prob_map = new_prob_map,
                                                                        new_depth_map = depth_predicted,
