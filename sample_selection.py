@@ -399,7 +399,7 @@ def select_good_samples(old_pred_map:np.ndarray,
     
     # Select componentes based on some metrics
     selected_comp = comp_new_stats[(comp_new_stats["area"] > 1000) # higher than 1000
-                                   & (comp_new_stats["dist_area"] < 0.5) # area between 70% less or higher
+                                   & (comp_new_stats["dist_area"] < 0.5) # area between 50% less or higher
                                    & (comp_new_stats["diff_soli"] >= -0.05) # solidity
                                    ].copy()
 
