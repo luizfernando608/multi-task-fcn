@@ -749,6 +749,10 @@ def generate_labels_view(current_iter_folder):
     ----------
     current_iter_folder : str
     """
+    DEFAULT_COLORS = ('silver', 'blue', 'yellow', 'magenta', 'green', 
+                     'indigo', 'darkorange', 'cyan', 'pink', 'yellowgreen', 
+                     'red', 'darkgreen', 'gold', 'teal')
+    
     ALL_LABELS_PATH = join(current_iter_folder, "new_labels", "all_labels_set.tif")
     SELECTED_LABELS_PATH = join(current_iter_folder, "new_labels", "selected_labels_set.tif")
     
@@ -768,7 +772,7 @@ def generate_labels_view(current_iter_folder):
     check_folder(ALL_LABELS_OUT_FOLDER)
     
     plt.figure(dpi = 300)
-    plt.imshow(label2rgb(ALL_LABELS_MAP))
+    plt.imshow(label2rgb(ALL_LABELS_MAP, colors = DEFAULT_COLORS))
     plt.axis('off')
     plt.savefig(join(ALL_LABELS_OUT_FOLDER, f"{current_iter:03d}_segmentation.png"), bbox_inches='tight', pad_inches=0)
     plt.close()
@@ -779,7 +783,7 @@ def generate_labels_view(current_iter_folder):
     check_folder(SELECTED_LABELS_OUT_FOLDER)
 
     plt.figure(dpi = 300)
-    plt.imshow(label2rgb(SELECTED_LABELS_MAP))
+    plt.imshow(label2rgb(SELECTED_LABELS_MAP, colors = DEFAULT_COLORS))
     plt.axis('off')
     plt.savefig(join(SELECTED_LABELS_OUT_FOLDER, f"{current_iter:03d}_segmentation.png"), bbox_inches='tight', pad_inches=0)
     plt.close()
