@@ -2,7 +2,7 @@
 
 ## Overview
 
-Multi-task-fcn is a collaborative project with Professor Dario Oliveira and Researcher [Your Name] from FGV (Getúlio Vargas Foundation), aimed at addressing the crucial challenge of semantic segmentation for identifying tree species within vast and densely forested areas. The project's primary objective is to create a scalable model for monitoring deforestation and, more specifically, selective deforestation, which often remains imperceptible to the human eye.
+Multi-task-fcn is a collaborative project with Professor Dario Oliveira from FGV (Getúlio Vargas Foundation), aimed at addressing the crucial challenge of semantic segmentation for identifying tree species within vast and densely forested areas. The project's primary objective is to create a scalable model for monitoring deforestation and, more specifically, selective deforestation, which often remains imperceptible to the human eye.
 
 ## Project Status
 
