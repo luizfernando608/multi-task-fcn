@@ -46,7 +46,7 @@ and to detect changes that may indicate deforestation.
 If you have any questions or want to get in touch with us, please reach out to:
 
 - Professor Dario Oliveira: dario.oliveira@fgv.br
-- Researcher Luiz Luz: luiz.fernando.luz@gmail.com
+- Researcher Luiz Luz: luiz.fernando.luz608@gmail.com
 
 We welcome contributions, suggestions, and collaborations to further advance our mission of 
 monitoring and mitigating deforestation. Together, we can make a positive impact on our 
