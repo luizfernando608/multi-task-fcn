@@ -374,7 +374,7 @@ def select_good_samples(old_pred_map:np.ndarray,
 
     # filter components too small or too large
     filter_components_by_geometric_property(new_pred_map, 
-                                            low_limit = 500, 
+                                            low_limit = 800, 
                                             high_limit = np.inf, # high limit area
                                             property = "area")
     
