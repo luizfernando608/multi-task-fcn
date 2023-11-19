@@ -67,6 +67,21 @@ def evaluate_metrics(pred:Union[np.ndarray, torch.Tensor], gt:Union[np.ndarray, 
     # Create to just the place where the ground_truth_segmentation is non zero
     mask = np.where(gt>0)
 
+
+    comp_pred = label(pred)
+    
+    comp_pred_in_test = comp_pred[gt > 0]
+    comp_pred_in_test = comp_pred_in_test[comp_pred_in_test!=0].copy()
+
+    pred_in_test = np.where(np.isin(comp_pred, comp_pred_in_test), pred+1, 0)
+
+    iou_score = jaccard_score(gt.flatten(),
+                              pred_in_test.flatten(),
+                              average = "macro")
+
+  
+    accu_criteria["avgIOU"] = float(iou_score)
+
     # Apply Mask
     gt = gt[mask][:]
 
