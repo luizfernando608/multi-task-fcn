@@ -5,7 +5,7 @@ Created on Sun Aug  8 13:01:29 2021
 @author: lauracue
 """
 import numpy as np
-from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score, cohen_kappa_score
+from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score, cohen_kappa_score, jaccard_score
 import torch
 from os.path import dirname, join
 
