@@ -4,7 +4,7 @@
 # experiment directory
 model_dir: exp_deeplab_v4
 
-data_path: 19.2_version_data
+data_path: 20.0_version_data
 
 # Input data for the model
 ortho_image: input_data/orthoimage/fixed_ortoA1_25tiff.tif
@@ -31,7 +31,7 @@ test_itc: False
 
 
 # num samples per epoch
-samples: 5000
+samples: 2500
 # True for data augmentation during training
 augment: True
 
