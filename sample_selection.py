@@ -365,16 +365,16 @@ def select_good_samples(old_pred_map:np.ndarray,
     new_pred_map = new_pred_map.copy()
     
     # depth map
-    depth_gauss = gaussian_filter(new_depth_map, sigma = 9)
+    depth_gauss = gaussian_filter(new_depth_map, sigma = 1)
 
     # prob map
-    prob_gauss = gaussian_filter(new_prob_map, sigma = 9)
+    prob_gauss = gaussian_filter(new_prob_map, sigma = 1)
 
     new_pred_map = np.where((depth_gauss > 0.2) & (prob_gauss > 0.9), new_pred_map, 0)
 
     # filter components too small or too large
     filter_components_by_geometric_property(new_pred_map, 
-                                            low_limit = 1000, 
+                                            low_limit = 500, 
                                             high_limit = np.inf, # high limit area
                                             property = "area")
     
@@ -383,21 +383,33 @@ def select_good_samples(old_pred_map:np.ndarray,
     # Calculate main metrics of each tree
     comp_old_pred = label(old_pred_map)
     comp_old_stats = get_components_stats(comp_old_pred, old_pred_map).reset_index()
-    comp_old_stats = comp_old_stats.groupby("tree_type")[["extent", "solidity", "eccentricity", "area"]].median()
-    comp_old_stats.columns  = "ref_" + comp_old_stats.columns 
+
+    comp_old_stats_by_type = comp_old_stats.groupby("tree_type")[["extent", "solidity", "eccentricity", "area"]].median()
+
+    comp_old_stats_by_type["qlow_area"] = comp_old_stats.groupby("tree_type")["area"].transform(lambda x: x.quantile(0.45))
+    comp_old_stats_by_type["qhigh_area"] = comp_old_stats.groupby("tree_type")["area"].transform(lambda x: x.quantile(0.75))
+    
+    comp_old_stats_by_type.columns  = "ref_" + comp_old_stats_by_type.columns 
 
     # Get metrics about the new labels
     comp_new_pred = label(new_pred_map)
     comp_new_stats =  get_components_stats(comp_new_pred, new_pred_map).reset_index()
     # Join data from the last with the new one
-    comp_new_stats = comp_new_stats.merge(comp_old_stats, on = "tree_type", how = "left")
+    comp_new_stats = comp_new_stats.merge(comp_old_stats_by_type, on = "tree_type", how = "left")
     
     comp_new_stats["dist_area"] =  np.abs(comp_new_stats["area"] - comp_new_stats["ref_area"])/comp_new_stats["ref_area"]
 
     comp_new_stats["diff_soli"] =  (comp_new_stats["solidity"] - comp_new_stats["ref_solidity"])
+    
+    confidence_interval = 0.10
+
+    comp_new_stats["low_limit"] = comp_new_stats["ref_qlow_area"] -  comp_new_stats["ref_qlow_area"]*confidence_interval
+    
+    comp_new_stats["high_limit"] = comp_new_stats["ref_qhigh_area"] +  comp_new_stats["ref_qhigh_area"]*confidence_interval
+    
     # Select componentes based on some metrics
-    selected_comp = comp_new_stats[(comp_new_stats["area"] > 500) # higher than 500
-                                   & (comp_new_stats["dist_area"] < 0.7) # area between 70% less or higher
+    selected_comp = comp_new_stats[(comp_new_stats["area"] >= comp_new_stats["low_limit"]) # area between 70% less or higher
+                                   & (comp_new_stats["area"] <= comp_new_stats["high_limit"]) # area between 70% less or higher
                                    & (comp_new_stats["diff_soli"] >= -0.05) # solidity
                                    ].copy()
 
