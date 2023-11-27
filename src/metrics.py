@@ -80,8 +80,8 @@ def evaluate_metrics(pred:Union[np.ndarray, torch.Tensor], gt:Union[np.ndarray, 
                               average = "macro")
 
   
-    accu_criteria["avgIOU"] = float(iou_score)
-
+    accu_criteria["avgIOU"] = iou_score
+    
     # Apply Mask
     gt = gt[mask][:]
 
@@ -102,6 +102,10 @@ def evaluate_metrics(pred:Union[np.ndarray, torch.Tensor], gt:Union[np.ndarray, 
     accu_criteria["Rec"] = (recall_score(gt, pred, average=None, zero_division=True, labels = list_of_labels)*100).tolist()
 
     accu_criteria["KappaScore"] = float(cohen_kappa_score(gt, pred, labels=list_of_labels))*100
+
+
+ 
+    
 
     return accu_criteria
 
