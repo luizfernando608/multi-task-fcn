@@ -372,11 +372,6 @@ def select_good_samples(old_pred_map:np.ndarray,
 
     new_pred_map = np.where((depth_gauss > 0.2) & (prob_gauss > 0.9), new_pred_map, 0)
 
-    # filter components too small or too large
-    filter_components_by_geometric_property(new_pred_map, 
-                                            low_limit = 800, 
-                                            high_limit = np.inf, # high limit area
-                                            property = "area")
     
     filter_components_by_mask(new_pred_map)
     
@@ -396,9 +391,9 @@ def select_good_samples(old_pred_map:np.ndarray,
 
     comp_new_stats["diff_soli"] =  (comp_new_stats["solidity"] - comp_new_stats["ref_solidity"])
     # Select componentes based on some metrics
-    selected_comp = comp_new_stats[(comp_new_stats["area"] > 800) # higher than 500
-                                   & (comp_new_stats["dist_area"] < 0.1) # area between 10% less or higher
-                                   & (comp_new_stats["diff_soli"] >= -0.05) # solidity
+    selected_comp = comp_new_stats[(comp_new_stats["area"] > 200) # higher than 200
+                                   & (comp_new_stats["dist_area"] <= 2) # area between 200% less or higher
+                                   & (comp_new_stats["diff_soli"] >= -0.25) # solidity
                                    ].copy()
 
     new_pred_map =  np.where(np.isin(comp_new_pred, selected_comp["label"].unique()), new_pred_map, 0)
