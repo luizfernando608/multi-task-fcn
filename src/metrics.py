@@ -80,7 +80,7 @@ def evaluate_metrics(pred:Union[np.ndarray, torch.Tensor], gt:Union[np.ndarray, 
                               average = "macro")
 
   
-    accu_criteria["avgIOU"] = float(iou_score)
+    accu_criteria["avgIOU"] = float(iou_score)*100
 
     # Apply Mask
     gt = gt[mask][:]
