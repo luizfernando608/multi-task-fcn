@@ -41,6 +41,21 @@ We are utilizing state-of-the-art techniques in deep learning, particularly the 
 to achieve precise semantic segmentation of tree species. Our model leverages multi-task learning to improve overall accuracy
 and to detect changes that may indicate deforestation.
 
+## First Reults
+
+
+<figure>
+  <img src="results\mapa_avaliacao_qualitativa.png" alt="my alt text"/>
+  <figcaption>Model Evaluation on image subset</figcaption>
+</figure>
+
+
+<figure>
+  <img src="results\versao_balanceada.png" alt="my alt text"/>
+  <figcaption>Evolution of annotated pool </figcaption>
+</figure>
+
+
 ## Contact
 
 If you have any questions or want to get in touch with us, please reach out to:
