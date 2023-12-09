@@ -45,13 +45,13 @@ and to detect changes that may indicate deforestation.
 
 
 <figure>
-  <img src="results\mapa_avaliacao_qualitativa.png" alt="my alt text"/>
+  <img src="https://github.com/luizfernando608/multi-task-fcn/blob/main/views/mapa_avaliacao_qualitativa.png?raw=true" alt="my alt text"/>
   <figcaption>Model Evaluation on image subset</figcaption>
 </figure>
 
 
 <figure>
-  <img src="results\versao_balanceada.png" alt="my alt text"/>
+  <img src="https://github.com/luizfernando608/multi-task-fcn/blob/main/views/versao_balanceada.png?raw=true" alt="my alt text"/>
   <figcaption>Evolution of annotated pool </figcaption>
 </figure>
 
