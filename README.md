@@ -41,7 +41,7 @@ We are utilizing state-of-the-art techniques in deep learning, particularly the 
 to achieve precise semantic segmentation of tree species. Our model leverages multi-task learning to improve overall accuracy
 and to detect changes that may indicate deforestation.
 
-## First Reults
+## First Results
 
 
 <figure>
