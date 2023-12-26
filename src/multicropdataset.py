@@ -9,7 +9,6 @@ from logging import getLogger
 import numpy as np
 from torch.utils.data import Dataset
 import torch
-import kornia.augmentation as K
 import torch.nn as nn
 
 from typing import Tuple

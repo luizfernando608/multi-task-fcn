@@ -1,8 +1,4 @@
-#%%
-import argparse
-import math
 import os
-from logging import getLogger
 
 import gc
 
@@ -13,18 +9,12 @@ import torch.nn.parallel
 import torch.backends.cudnn as cudnn
 import torch.optim
 
-import glob
-
-from sklearn.model_selection import train_test_split
-from sklearn.model_selection import StratifiedKFold
-from skimage.morphology import dilation, disk
-
 from tqdm import tqdm
 
-from src.metrics import evaluate_metrics
 from src.logger import create_logger
-from src.utils import extract_patches_coord, add_padding_new, array2raster
 from src.utils import (
+    extract_patches_coord, 
+    add_padding_new,
     bool_flag,
     read_tiff,
     load_norm,
@@ -34,15 +24,13 @@ from src.utils import (
     get_device,
     get_image_metadata
 )
-from src.deepvlab3plus import DeepLabv3_plus
-from src.deepvlab3plus_resnet9 import DeepLabv3Plus_resnet9
 
 from src.multicropdataset import DatasetFromCoord
-from src.resnet import ResUnet
 from src.model import build_model, load_weights
 
-from typing import Tuple, Union, Iterable
+from typing import Tuple
 from logging import Logger
+
 
 ROOT_PATH = os.path.dirname(__file__)
 args = read_yaml(os.path.join(ROOT_PATH, "args.yaml"))

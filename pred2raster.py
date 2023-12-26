@@ -1,5 +1,3 @@
-"""Save predictions to raster"""
-#%%
 import os
 from os.path import isfile
 

@@ -1,49 +1,23 @@
 import os
 from os.path import dirname, join
+
 import numpy as np
-
-from skimage.measure import label, regionprops_table
-
-from src.utils import read_tiff, read_yaml, fix_relative_paths
-
 import pandas as pd
 
 import matplotlib.pyplot as plt
 
 from tqdm import tqdm
 
-from imblearn.under_sampling import RandomUnderSampler
-
 from typing import List, Tuple
 
-from generate_distance_map import apply_gaussian_distance_map
 from scipy.ndimage import gaussian_filter
+from skimage.measure import label, regionprops_table
 
-from src.metrics import evaluate_component_metrics
+from src.utils import read_tiff, read_yaml, fix_relative_paths
 
 
 args = read_yaml(join(dirname(__file__), "args.yaml"))
 fix_relative_paths(args)
-
-def undersample(data: pd.DataFrame, column_category: str):
-    X = data.drop(column_category, axis=1).copy()
-
-    X.reset_index(inplace=True, names=["index"])
-
-    y = data[column_category].copy()
-    # define undersample strategy
-    undersample_selector = RandomUnderSampler(
-        sampling_strategy="majority", random_state=42
-    )
-    # fit and apply the transform
-    X, y = undersample_selector.fit_resample(X, data[column_category])
-
-    # summarize class distribution
-    # columns_namem = X.columns.tolist()+[column_category]
-    undersampled_data = pd.concat([X, y], axis=1)
-    undersampled_data.set_index("index", inplace=True)
-
-    return undersampled_data
 
 
 def set_same_class_at_component(label_img:np.ndarray):
