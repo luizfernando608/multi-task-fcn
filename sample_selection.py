@@ -264,7 +264,9 @@ def filter_components_by_mask(pred_map:np.ndarray):
     """
     
     mask = read_tiff(args["mask_path"])
-    mask = np.where(mask == 99, False, True)
+    
+    if not mask.dtype == "bool":
+        mask = np.where(mask > 0, False, True)
 
     components_pred_map = label(pred_map)
     
