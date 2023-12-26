@@ -25,8 +25,7 @@ def apply_gaussian_distance_map(input_img:np.ndarray, sigma=5)->np.ndarray:
         Output image matrix with the distance map and gaussian filter applied to each segmentation component
     """
 
-    ref = input_img.copy()
-    ref[ref>0] = 1
+    ref = (input_img > 0).astype("bool")
 
     # label the image as components
     label_ref = label(ref)
@@ -49,7 +48,6 @@ def apply_gaussian_distance_map(input_img:np.ndarray, sigma=5)->np.ndarray:
 
 
 
-# %%
 def generate_distance_map(input_image_path:str, output_image_path:str):
     """Generate the distance map from the input image and save it in the output path
     

@@ -169,7 +169,7 @@ def predict_network(ortho_image_shape:Tuple,
             # compute model loss and output
             input_batch = inputs.to(DEVICE, non_blocking=True)
             
-            out_pred = model(input_batch) 
+            out_pred = model(torch.tensor(input_batch, dtype=torch.float32)) 
                
             out_batch = soft(out_pred['out'])
             out_batch = out_batch.permute(0,2,3,1)
