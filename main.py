@@ -1,8 +1,5 @@
-#%%
-import argparse
 import math
 import os
-
 from os.path import dirname, join, exists, isfile
 
 import subprocess
@@ -23,15 +20,7 @@ from tqdm import tqdm
 
 from generate_distance_map import generate_distance_map
 
-from src.metrics import evaluate_metrics, evaluate_component_metrics
-from src.utils import get_device, get_image_metadata, save_yaml, fix_relative_paths, ParquetUpdater
-
-from src.deepvlab3plus import DeepLabv3_plus
-from src.deepvlab3plus_resnet9 import DeepLabv3Plus_resnet9
-
 import matplotlib.pyplot as plt
-
-import yaml
 
 from skimage.color import label2rgb
 
@@ -40,6 +29,7 @@ plt.set_loglevel(level = 'info')
 from src.logger import create_logger
 from src.model import define_loader, build_model, load_weights, train, save_checkpoint, eval
 from src.multicropdataset import DatasetFromCoord
+from src.metrics import evaluate_metrics, evaluate_component_metrics
 from src.utils import (
     restart_from_checkpoint,
     fix_random_seeds,
@@ -48,7 +38,12 @@ from src.utils import (
     print_sucess,
     oversamp,
     read_yaml,
-    array2raster
+    array2raster,
+    get_device, 
+    get_image_metadata, 
+    save_yaml, 
+    fix_relative_paths, 
+    ParquetUpdater
 )
 
 from evaluation import evaluate_iteration
