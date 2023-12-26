@@ -4,12 +4,12 @@
 # experiment directory
 model_dir: exp_deeplab_v4
 
-data_path: 19.2_version_data
+data_path: 1.0_amazon_version_data
 
 # Input data for the model
-ortho_image: input_data/orthoimage/fixed_ortoA1_25tiff.tif
-train_segmentation_path: "input_data/segmentation/samples_A1_train2tif.tif"
-test_segmentation_path: "input_data/segmentation/samples_A1_test2tif.tif"
+ortho_image: amazon_sm_input_data/orthoimage/NOV_2017_FINAL_004.tif
+train_segmentation_path: amazon_sm_input_data/segmentation/train_set.tif
+test_segmentation_path: amazon_sm_input_data/segmentation/test_set.tif
 
 mask_path: "input_data/mask.tif"
 
@@ -49,7 +49,7 @@ filters: [32, 32, 32, 32]
 # number of total epochs to run
 epochs: 30
 # batch size per gpu, i.e. how many unique instances per gpu
-batch_size: 32
+batch_size: 16
 # base learning rate
 base_lr: 0.01
 # final learning rate
@@ -86,7 +86,7 @@ seed: [31, 10, 75, 102, 40]
 # True for training 4 disjoint regions
 size_crops: 128
 # Número de classes
-nb_class: 14
+nb_class: 17
 
 # True for patch wise classification
 patch_wise: False
