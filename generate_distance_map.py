@@ -80,7 +80,7 @@ if __name__ == "__main__":
     
     args = read_yaml("args.yaml")
     
-    train_input_path = os.path.join(args.data_path, args.train_segmentation_file)
+    train_input_path = args.train_segmentation_path
 
     train_output_path = os.path.join(args.data_path, "test", "train_distance_map.tif")
     
