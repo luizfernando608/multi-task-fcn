@@ -1,39 +1,22 @@
-# Copyright (c) Facebook, Inc. and its affiliates.
-# All rights reserved.
-#
-# This source code is licensed under the license found in the
-# LICENSE file in the root directory of this source tree.
-#
-import ast
-import pandas as pd
 import argparse
-from logging import getLogger, CRITICAL
-
-import os
-from os.path import isfile, isdir, dirname, join
-
-import numpy as np
-import torch
-
-
-import torch.distributed as dist
-
+import ast
 import errno
-import random
-import matplotlib.pyplot as plt
-import yaml
-
 import gc
-
-import matplotlib.pyplot as plt
-
+import os
+import random
+import warnings
+from collections.abc import Iterable
+from logging import CRITICAL, getLogger
+from os.path import dirname, isdir, isfile, join
 from typing import Tuple
 
-import warnings
-
-from collections.abc import Iterable
-
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 import rasterio
+import torch
+import torch.distributed as dist
+import yaml
 
 plt.set_loglevel(level = 'critical')
 

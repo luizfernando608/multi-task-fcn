@@ -1,22 +1,12 @@
-# Copyright (c) Facebook, Inc. and its affiliates.
-# All rights reserved.
-#
-# This source code is licensed under the license found in the
-# LICENSE file in the root directory of this source tree.
-#
+import os
 from logging import getLogger
-
-import numpy as np
-from torch.utils.data import Dataset
-import torch
-import torch.nn as nn
-
 from typing import Tuple
 
-import os
-
-import torchvision.transforms as transforms 
-
+import numpy as np
+import torch
+import torch.nn as nn
+import torchvision.transforms as transforms
+from torch.utils.data import Dataset
 from tqdm import tqdm
 
 logger = getLogger()
@@ -201,7 +191,7 @@ if __name__ == "__main__":
     sys.path.append("/home/luiz/multi-task-fcn")
 
     from model import define_loader
-    from utils import oversamp, read_yaml, read_tiff
+    from utils import oversamp, read_tiff, read_yaml
 
     args = read_yaml("args.yaml")
 

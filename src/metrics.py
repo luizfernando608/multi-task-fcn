@@ -1,19 +1,13 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Sun Aug  8 13:01:29 2021
-
-@author: lauracue
-"""
-import numpy as np
-from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score, cohen_kappa_score, jaccard_score
-import torch
 from os.path import dirname, join
+from typing import Literal, Union
+
+import numpy as np
+import torch
+from skimage.measure import label
+from sklearn.metrics import (accuracy_score, cohen_kappa_score, f1_score,
+                             jaccard_score, precision_score, recall_score)
 
 from .utils import read_yaml
-
-from typing import Union, Literal
-
-from skimage.measure import label
 
 ROOT_PATH = dirname(dirname(__file__))
 
@@ -219,8 +213,10 @@ def evaluate_component_metrics(ground_truth_labels:np.ndarray, predicted_labels:
 
 if __name__ == "__main___":
     import os
-    from utils import read_yaml, read_tiff
+
     import yaml
+
+    from utils import read_tiff, read_yaml
 
     args = read_yaml("../args.yaml")
 

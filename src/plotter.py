@@ -1,14 +1,6 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Sun Apr 18 18:11:30 2021
-
-@author: laura
-"""
-import matplotlib
-# matplotlib.use('Agg') #https://stackoverflow.com/questions/49921721/runtimeerror-main-thread-is-not-in-main-loop-with-matplotlib-and-flask
-import matplotlib.pyplot as plt
 from collections import OrderedDict
+
+import matplotlib.pyplot as plt
 from torch import Tensor
 
 plt.set_loglevel(level = 'critical')

@@ -1,36 +1,22 @@
-import os
-
 import gc
+import os
+from logging import Logger
+from typing import Tuple
 
 import numpy as np
 import torch
+import torch.backends.cudnn as cudnn
 import torch.nn as nn
 import torch.nn.parallel
-import torch.backends.cudnn as cudnn
 import torch.optim
-
 from tqdm import tqdm
 
 from src.logger import create_logger
-from src.utils import (
-    extract_patches_coord, 
-    add_padding_new,
-    bool_flag,
-    read_tiff,
-    load_norm,
-    normalize,
-    check_folder,
-    read_yaml,
-    get_device,
-    get_image_metadata
-)
-
-from src.multicropdataset import DatasetFromCoord
 from src.model import build_model, load_weights
-
-from typing import Tuple
-from logging import Logger
-
+from src.multicropdataset import DatasetFromCoord
+from src.utils import (add_padding_new, check_folder,
+                       extract_patches_coord, get_device, get_image_metadata,
+                       normalize, read_tiff, read_yaml)
 
 ROOT_PATH = os.path.dirname(__file__)
 args = read_yaml(os.path.join(ROOT_PATH, "args.yaml"))

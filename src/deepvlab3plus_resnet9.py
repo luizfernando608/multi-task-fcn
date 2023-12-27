@@ -2,7 +2,6 @@ import torch
 from torch import nn
 
 
-
 def conv_padding_same(kernel_size , **kwargs):
     if "dilation" in kwargs.keys():
         padding = ((kernel_size - 1) * kwargs["dilation"]) // 2

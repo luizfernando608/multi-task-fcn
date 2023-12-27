@@ -1,19 +1,14 @@
 import os
 from os.path import dirname, join
-
+from typing import List, Tuple
 
 import numpy as np
 import pandas as pd
-
-from tqdm import tqdm
-
-from typing import List, Tuple
-
 from scipy.ndimage import gaussian_filter
 from skimage.measure import label, regionprops_table
+from tqdm import tqdm
 
-from src.utils import read_tiff, read_yaml, fix_relative_paths
-
+from src.utils import fix_relative_paths, read_tiff, read_yaml
 
 args = read_yaml(join(dirname(__file__), "args.yaml"))
 fix_relative_paths(args)

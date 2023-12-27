@@ -1,56 +1,39 @@
 import math
 import os
-from os.path import dirname, join, exists, isfile
-
-import subprocess
-
 import shutil
+import subprocess
+from os.path import dirname, exists, isfile, join
 
-import pandas as pd
-
+import matplotlib.pyplot as plt
 import numpy as np
-
+import pandas as pd
 import torch
+import torch.backends.cudnn as cudnn
 import torch.nn as nn
 import torch.nn.parallel
-import torch.backends.cudnn as cudnn
 import torch.optim
-
+from skimage.color import label2rgb
 from tqdm import tqdm
 
 from generate_distance_map import generate_distance_map
 
-import matplotlib.pyplot as plt
-
-from skimage.color import label2rgb
-
 plt.set_loglevel(level = 'info')
 
-from src.logger import create_logger
-from src.model import define_loader, build_model, load_weights, train, save_checkpoint, eval
-from src.multicropdataset import DatasetFromCoord
-from src.metrics import evaluate_metrics, evaluate_component_metrics
-from src.utils import (
-    restart_from_checkpoint,
-    fix_random_seeds,
-    read_tiff,
-    check_folder,
-    print_sucess,
-    oversamp,
-    read_yaml,
-    array2raster,
-    get_device, 
-    get_image_metadata, 
-    save_yaml, 
-    fix_relative_paths, 
-    ParquetUpdater
-)
+import gc
 
 from evaluation import evaluate_iteration
 from pred2raster import pred2raster
 from sample_selection import get_new_segmentation_sample
+from src.logger import create_logger
+from src.metrics import evaluate_component_metrics, evaluate_metrics
+from src.model import (build_model, define_loader, eval, load_weights,
+                       save_checkpoint, train)
+from src.multicropdataset import DatasetFromCoord
+from src.utils import (ParquetUpdater, array2raster, check_folder,
+                       fix_random_seeds, fix_relative_paths, get_device,
+                       get_image_metadata, oversamp, print_sucess, read_tiff,
+                       read_yaml, restart_from_checkpoint, save_yaml)
 
-import gc
 gc.set_threshold(0)
 
 

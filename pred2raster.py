@@ -3,7 +3,8 @@ from os.path import isfile
 
 import numpy as np
 
-from src.utils import array2raster, read_yaml, check_folder, get_image_metadata
+from src.utils import array2raster, check_folder, get_image_metadata, read_yaml
+
 
 def pred2raster(current_iter_folder, args):
 
