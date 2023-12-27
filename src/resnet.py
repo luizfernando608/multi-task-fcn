@@ -1,6 +1,8 @@
+import copy
+
 import torch
 import torch.nn as nn
-import copy
+
 
 class new_model(nn.Module):
     def __init__(self, model, channels, nb_classes,

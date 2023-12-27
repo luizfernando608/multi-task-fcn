@@ -1,5 +1,7 @@
 import subprocess
+
 from src.utils import print_sucess
+
 filename = 'main.py'
 
 while True:

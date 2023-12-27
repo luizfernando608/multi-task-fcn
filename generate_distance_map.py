@@ -1,14 +1,11 @@
-#%%
 import os
-import numpy as np
 
-from scipy.ndimage import distance_transform_edt
-from scipy.ndimage import gaussian_filter
+import numpy as np
+from scipy.ndimage import distance_transform_edt, gaussian_filter
 from skimage.measure import label
 
-from src.utils import check_folder, array2raster, read_tiff, read_yaml, print_sucess, get_image_metadata
-
-
+from src.utils import (array2raster, check_folder, get_image_metadata,
+                       print_sucess, read_tiff, read_yaml)
 
 
 def apply_gaussian_distance_map(input_img:np.ndarray, sigma=5)->np.ndarray:

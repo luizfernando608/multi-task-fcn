@@ -1,23 +1,21 @@
+import gc
 import os
-from os.path import join, dirname
+from logging import Logger
+from os.path import dirname, join
+from typing import Literal, Tuple
 
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from tqdm import tqdm
+
 from .deepvlab3plus import DeepLabv3_plus
 from .deepvlab3plus_resnet9 import DeepLabv3Plus_resnet9
+from .metrics import evaluate_f1, evaluate_metrics
 from .resnet import ResUnet
-from .metrics import evaluate_metrics, evaluate_f1
-from .utils import check_folder, load_norm, AverageMeter, plot_figures, get_device, read_yaml
-
-from typing import Tuple, Literal
-
-import gc
-
-from logging import Logger
-
-from tqdm import tqdm
+from .utils import (AverageMeter, check_folder, get_device, load_norm,
+                    plot_figures, read_yaml)
 
 ROOT_PATH = dirname(dirname(__file__))
 
