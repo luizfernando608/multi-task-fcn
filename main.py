@@ -252,6 +252,33 @@ def read_val_distance_map():
     return read_tiff(IMAGE_PATH)
 
 
+def normalize_orthoimage_by_255():
+    
+    INPUT_PATH = args.ortho_image
+    
+    OUTPUT_PATH = join(
+        dirname(INPUT_PATH), "ortho_image_normalized_by_255.tiff"
+    )
+
+    if os.path.isfile(OUTPUT_PATH):
+        return
+    
+    img = read_tiff(INPUT_PATH).astype("float32")
+    img_metadata = get_image_metadata(INPUT_PATH)
+
+    for band in range(img.shape[0]):
+        
+        img[band] = img[band] / 255
+    
+    array2raster(
+        path_to_save = OUTPUT_PATH,
+        array=img,
+        dtype="float32",
+        image_metadata=img_metadata,
+    )
+
+
+
 def get_learning_rate_schedule(train_loader: torch.utils.data.DataLoader, 
                                base_lr:float,
                                final_lr:float, 
@@ -793,7 +820,7 @@ def generate_labels_view(current_iter_folder):
 
 
 
-
+normalize_orthoimage_by_255()
 
 ##### LOOP #####
 
