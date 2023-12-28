@@ -430,28 +430,46 @@ class DataSetFromImagePath(Dataset):
 
         return image, distance_map, segmentation
 
+
+if __name__ == "__main__":
+    from utils import fix_relative_paths
+
+    args = read_yaml("args.yaml")
+    fix_relative_paths(args=args)
+    
+    ORTHO_PATH = args.ortho_image
+    
+    SEG_PATH  = args.train_segmentation_path
+    
+    DIST_MP_PATH = join(
+        ROOT_PATH,
+        r"1.0_amazon_version_data\iter_000\distance_map\train_distance_map.tif"
+    )
+
+
     # build data for training
-    train_dataset = DatasetFromCoord(
-        image,
-        raster_train,
-        depth_img,
-        coords_train,
-        args.size_crops,
-        args.samples,
+    train_dataset = DataSetFromImagePath(
+        image_path = ORTHO_PATH,
+        segmentation_path = SEG_PATH,
+        distance_map_path = DIST_MP_PATH,
+        samples = 1000,
+        crop_size = 5000,
+        dataset_type = "test",
+        overlap_rate = 0.3,
         augment = True
     )
 
+
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
-        batch_size=args.batch_size,
+        batch_size=8,
         num_workers=args.workers,
         pin_memory=True,
         drop_last=True,
-        shuffle=True,
+        shuffle=False,
     )
 
-    np.random.shuffle(train_loader.dataset.coord)
 
-    for batch in train_loader:
-        batch
+    for it, (inp_img, depth, ref) in enumerate(tqdm(train_loader)):  
+        print("oi")
         pass
