@@ -165,7 +165,37 @@ def get_current_iter_folder(data_path, test_itc, overlap):
     return iter_0_path
     
 
-def read_last_segmentation(current_iter_folder:str, train_segmentation_path:str)-> np.ndarray:
+def get_last_segmentation_path(current_iter_folder:str) -> str:
+    
+    current_iter = int(current_iter_folder.split("_")[-1])
+    
+    data_path = dirname(current_iter_folder)
+
+    if current_iter == 1:
+        return args.train_segmentation_path
+        
+    else:
+        return join(
+            data_path, f"iter_{current_iter-1:03d}", "new_labels", "selected_labels_set.tif"
+        )
+
+
+def get_last_distance_map_path(current_iter_folder):
+    
+    current_iter = int(current_iter_folder.split("_")[-1])
+    data_path = dirname(current_iter_folder)
+
+    if current_iter == 1:
+        distance_map_filename = "train_distance_map.tif"
+    
+    else:
+        distance_map_filename = "selected_distance_map.tif"
+
+    return join(data_path, f"iter_{current_iter-1:03d}", "distance_map", distance_map_filename)
+        
+
+
+def read_last_segmentation(current_iter_folder:str)-> np.ndarray:
     """Read the segmentation labels from the last iteration.
     If is the first iteration, the function reads the ground_truth_segmentation
     If is not, the function reads the output from the last iteration in the folder `new_labels/`
@@ -183,21 +213,9 @@ def read_last_segmentation(current_iter_folder:str, train_segmentation_path:str)
         A image array with the segmentation set
     """
 
-    
-    current_iter = int(current_iter_folder.split("_")[-1])
-
-    data_path = dirname(current_iter_folder)
-
-    if current_iter == 1:
-        image_path = train_segmentation_path
-        
-
-    else:
-        image_path = join(data_path, f"iter_{current_iter-1:03d}", "new_labels", "selected_labels_set.tif")
-
+    image_path = get_last_segmentation_path(current_iter_folder)
 
     image = read_tiff(image_path)
-
 
     return image
 
@@ -220,17 +238,10 @@ def read_last_distance_map(current_iter_folder:str)->np.ndarray:
     np.ndarray
         Image with the application of distance map.
     """
-    current_iter = int(current_iter_folder.split("_")[-1])
-    data_path = dirname(current_iter_folder)
-
-    if current_iter == 1:
-        distance_map_filename = "train_distance_map.tif"
-    else:
-        distance_map_filename = "selected_distance_map.tif"
-
-    image_path = join(data_path, f"iter_{current_iter-1:03d}", "distance_map", distance_map_filename)
-        
+    image_path = get_last_distance_map_path(current_iter_folder)
+    
     image = read_tiff(image_path)
+    
     return image
 
 
@@ -419,7 +430,7 @@ def train_iteration(current_iter_folder:str, args:dict):
     logger.info("============ Initialized Training ============")
     
     ######### Define Loader ############
-    raster_train = read_last_segmentation(current_iter_folder, args.train_segmentation_path)
+    raster_train = read_last_segmentation(current_iter_folder)
     depth_img = read_last_distance_map(current_iter_folder)
 
     image, coords_train, raster_train, labs_coords_train = define_loader(args.ortho_image, 
