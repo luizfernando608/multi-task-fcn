@@ -470,8 +470,8 @@ class DataSetFromImagePath(Dataset):
             angle = int(np.random.choice([0, 90, 180, 270]))
             
             image = transforms.functional.rotate(image.unsqueeze(0), angle).squeeze(0)
-            segmentation = transforms.functional.rotate(segmentation.unsqueeze(0), angle).squeeze(0)
-            distance_map = transforms.functional.rotate(distance_map.unsqueeze(0), angle).squeeze(0)
+            segmentation = transforms.functional.rotate(segmentation, angle).squeeze(0)
+            distance_map = transforms.functional.rotate(distance_map, angle).squeeze(0)
 
 
         return image, distance_map, segmentation.long()            
