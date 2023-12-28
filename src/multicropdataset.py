@@ -261,14 +261,22 @@ class DataSetFromImagePath(Dataset):
                  samples:int,
                  crop_size:int,
                  dataset_type:Literal["train", "val", "test"],
-                 augment:bool,
-                 overlap_rate = None
+                 augment:bool = False,
+                 overlap_rate:float = None
                  ) -> None:
         
         super().__init__()
 
         if (dataset_type == "test") and (overlap_rate == None):
             raise ValueError("Provide 'overlap_rate' for 'test' dataset_type")
+
+        if (dataset_type == "test") and (augment):
+            raise ValueError("'test' dataset_type does not accept augmentation")
+        
+        if overlap_rate is not None:
+            if (overlap_rate >= 1) or (overlap_rate <= 0):
+                raise ValueError("overlap_rate only accept values between (0.0, 1.0) ")
+
 
         self.image_path = image_path
         self.segmentation_path = segmentation_path
