@@ -8,10 +8,13 @@ import torch
 import torchvision.transforms as transforms
 from torch.utils.data import Dataset
 from tqdm import tqdm
-
-from utils import read_tiff, read_yaml
+import sys
 
 ROOT_PATH = dirname(dirname(__file__))
+sys.path.append(ROOT_PATH)
+
+from src.utils import read_tiff, read_yaml
+
 ARGS = read_yaml(join(ROOT_PATH, "args.yaml"))
 
 class DatasetFromCoord(Dataset):
