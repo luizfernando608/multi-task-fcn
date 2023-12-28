@@ -793,16 +793,7 @@ def generate_labels_view(current_iter_folder):
 
 
 
-#############
-### SETUP ###
-#############
 
-ROOT_PATH = dirname(__file__)
-args = read_yaml(join(ROOT_PATH, "args.yaml"))
-fix_relative_paths(args)
-
-# create output path
-check_folder(args.data_path)
 
 ##### LOOP #####
 
