@@ -37,6 +37,19 @@ from src.utils import (ParquetUpdater, array2raster, check_folder,
 gc.set_threshold(0)
 
 
+
+####### SETUP #########
+# GLOBAL VARIABLES
+ROOT_PATH = dirname(__file__)
+
+args = read_yaml(join(ROOT_PATH, "args.yaml"))
+fix_relative_paths(args)
+
+# create output path
+check_folder(args.data_path)
+
+
+
 def clear_ram_cache():
     """Execute some command in Unix kernel the free up garbage from the cache
     """
