@@ -329,7 +329,7 @@ class DataSetFromImagePath(Dataset):
         self.coords = np.array(coords)
 
 
-    def read_window(self, coord, img_path):
+    def read_window(self, coord:np.ndarray, img_path:str) -> torch.Tensor:
 
 
         pad_width = [[0,0], [0,0]]
@@ -395,7 +395,7 @@ class DataSetFromImagePath(Dataset):
         if (image_crop.shape[-1] != self.crop_size) or (image_crop.shape[-2] != self.crop_size):
             raise ValueError(f"There is a bug relationed to the shape {image_crop.shape}")
 
-        return image_crop
+        return torch.tensor(image_crop)
 
 
     def __len__(self):
