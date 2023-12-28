@@ -1,16 +1,18 @@
 import os
-from logging import getLogger
-from typing import Tuple
+from os.path import dirname, join
+from typing import Literal, Tuple
 
 import numpy as np
+import rasterio
 import torch
-import torch.nn as nn
 import torchvision.transforms as transforms
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
-logger = getLogger()
+from utils import read_tiff, read_yaml
 
+ROOT_PATH = dirname(dirname(__file__))
+ARGS = read_yaml(join(ROOT_PATH, "args.yaml"))
 
 class DatasetFromCoord(Dataset):
     """Dataset to load training data"""
