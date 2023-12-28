@@ -436,7 +436,29 @@ class DataSetFromImagePath(Dataset):
         segmentation = self.read_window(current_coord, self.segmentation_path)
         distance_map = self.read_window(current_coord, self.distance_map_path)
 
-        return image, distance_map, segmentation
+
+        if self.augment:
+            # Run Horizontal Flip
+            if np.random.random() > 0.5:
+                image = transforms.functional.hflip(image)
+                segmentation = transforms.functional.hflip(segmentation)
+                distance_map = transforms.functional.hflip(distance_map)
+
+            # Run Vertical Flip
+            if np.random.random() > 0.5:
+                image = transforms.functional.vflip(image)
+                segmentation = transforms.functional.vflip(segmentation)
+                distance_map = transforms.functional.vflip(distance_map)
+            
+            # Run random rotation
+            angle = int(np.random.choice([0, 90, 180, 270]))
+            
+            image = transforms.functional.rotate(image.unsqueeze(0), angle).squeeze(0)
+            segmentation = transforms.functional.rotate(segmentation.unsqueeze(0), angle).squeeze(0)
+            distance_map = transforms.functional.rotate(distance_map.unsqueeze(0), angle).squeeze(0)
+
+
+        return image, distance_map, segmentation.long()            
 
 
 if __name__ == "__main__":
@@ -461,8 +483,8 @@ if __name__ == "__main__":
         segmentation_path = SEG_PATH,
         distance_map_path = DIST_MP_PATH,
         samples = 1000,
-        crop_size = 5000,
-        dataset_type = "test",
+        crop_size = 500,
+        dataset_type = "train",
         overlap_rate = 0.3,
         augment = True
     )
