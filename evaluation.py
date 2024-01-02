@@ -20,8 +20,8 @@ from src.utils import (add_padding_new, check_folder,
                        get_image_shape,
                        normalize, read_tiff, read_yaml)
 
-ROOT_PATH = os.path.dirname(__file__)
-args = read_yaml(os.path.join(ROOT_PATH, "args.yaml"))
+ROOT_PATH = dirname(__file__)
+args = read_yaml(join(ROOT_PATH, "args.yaml"))
 
 
         
@@ -292,7 +292,7 @@ def evaluate_overlap(overlap:float,
     )
 
 
-    last_checkpoint = os.path.join(current_model_folder, checkpoint_file)
+    last_checkpoint = join(current_model_folder, checkpoint_file)
     model = load_weights(model, last_checkpoint, logger)
     logger.info("Model loaded from {}".format(last_checkpoint))
 
@@ -301,7 +301,7 @@ def evaluate_overlap(overlap:float,
 
     cudnn.benchmark = True
 
-    check_folder(os.path.join(current_iter_folder, 'prediction'))
+    check_folder(join(current_iter_folder, 'prediction'))
   
     # CREATE MAP TO STORE INFERENCE
     height = int(np.ceil(image_shape[-2] / stride) * stride)
@@ -325,21 +325,21 @@ def evaluate_overlap(overlap:float,
 
     gc.collect()
 
-    prob_map_path = os.path.join(current_iter_folder, 'prediction', f'prob_map_itc{test_itc}_{overlap}.npy')
+    prob_map_path = join(current_iter_folder, 'prediction', f'prob_map_itc{test_itc}_{overlap}.npy')
     np.save(prob_map_path, prob_map)
     del prob_map
     gc.collect()
     logger.info("Probability map done and saved.")
     
 
-    pred_class_path = os.path.join(current_iter_folder, 'prediction', f'pred_class_itc{test_itc}_{overlap}.npy')
+    pred_class_path = join(current_iter_folder, 'prediction', f'pred_class_itc{test_itc}_{overlap}.npy')
     np.save(pred_class_path, pred_class)
     del pred_class
     gc.collect()
     logger.info("Prediction done and saved.")
     
     
-    depth_map_path = os.path.join(current_iter_folder, 'prediction', f'depth_map_itc{test_itc}_{overlap}.npy')
+    depth_map_path = join(current_iter_folder, 'prediction', f'depth_map_itc{test_itc}_{overlap}.npy')
     np.save(depth_map_path, depth_map)
     del depth_map
     gc.collect()
@@ -361,7 +361,7 @@ def evaluate_iteration(current_iter_folder:str, args:dict):
         Dictionary of arguments.
     """
 
-    logger = create_logger(os.path.join(current_iter_folder, "inference.log"), rank=0)
+    logger = create_logger(join(current_iter_folder, "inference.log"), rank=0)
     logger.info("============ Initialized Evaluation ============")
 
     ## show each args
@@ -371,7 +371,7 @@ def evaluate_iteration(current_iter_folder:str, args:dict):
     test_itc = args.test_itc
 
 
-    current_model_folder = os.path.join(current_iter_folder, args.model_dir)
+    current_model_folder = join(current_iter_folder, args.model_dir)
 
     ortho_image_metadata = get_image_metadata(args.ortho_image)
     
@@ -386,9 +386,9 @@ def evaluate_iteration(current_iter_folder:str, args:dict):
     for overlap in overlaps:
 
         # Verify if the prediction is already done
-        is_depth_done = os.path.exists(os.path.join(current_iter_folder, 'prediction', f'depth_map_itc{test_itc}_{overlap}.npy'))
-        is_prob_done = os.path.exists(os.path.join(current_iter_folder, 'prediction', f'prob_map_itc{test_itc}_{overlap}.npy'))
-        is_pred_done = os.path.exists(os.path.join(current_iter_folder, 'prediction', f'pred_class_itc{test_itc}_{overlap}.npy'))
+        is_depth_done = exists(join(current_iter_folder, 'prediction', f'depth_map_itc{test_itc}_{overlap}.npy'))
+        is_prob_done = exists(join(current_iter_folder, 'prediction', f'prob_map_itc{test_itc}_{overlap}.npy'))
+        is_pred_done = exists(join(current_iter_folder, 'prediction', f'pred_class_itc{test_itc}_{overlap}.npy'))
         
         if is_depth_done and is_prob_done and is_pred_done:
 
@@ -417,9 +417,9 @@ if __name__ == "__main__":
     ## arguments
     args = read_yaml("args.yaml")
     # external parameters
-    current_iter_folder = os.path.join(args.data_path, "iter_001")
+    current_iter_folder = join(args.data_path, "iter_001")
     current_iter = int(current_iter_folder.split("_")[-1])
-    current_model_folder = os.path.join(current_iter_folder, args.model_dir)
+    current_model_folder = join(current_iter_folder, args.model_dir)
 
     evaluate_iteration(current_iter_folder, args)
 
