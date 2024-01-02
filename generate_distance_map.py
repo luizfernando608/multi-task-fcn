@@ -1,5 +1,5 @@
 import os
-
+import matplotlib.pyplot as plt
 import numpy as np
 from scipy.ndimage import distance_transform_edt, gaussian_filter
 from skimage.measure import label
@@ -22,23 +22,53 @@ def apply_gaussian_distance_map(input_img:np.ndarray, sigma=5)->np.ndarray:
         Output image matrix with the distance map and gaussian filter applied to each segmentation component
     """
 
+    BLOCK_SIZE = 1000
+
+    # convert into bool to improve label() func performance
     ref = (input_img > 0).astype("bool")
 
     # label the image as components
     label_ref = label(ref)
 
-    # apply distance transform and gaussian filter
-    new_lab = label_ref.copy()
-    new_lab = distance_transform_edt(new_lab)
-    new_lab = gaussian_filter(new_lab, sigma)
-    
+    # Get the dimensions of the image
+    height, width = label_ref.shape
+
+    # Iterate over blocks and apply distance transform
+    result = np.zeros((height, width), dtype=np.float32)
+
+    # Apply transformation to blocks with overlap
+    for y in range(0, height, BLOCK_SIZE//2):
+
+        for x in range(0, width, BLOCK_SIZE//2):
+            
+            # Define the boundaries of the block
+            y_end = min(y + BLOCK_SIZE, height)
+            x_end = min(x + BLOCK_SIZE, width)
+
+            # Process the current block
+            block = label_ref[y:y_end, x:x_end]
+            
+            # Apply euclidean distance transform
+            block = distance_transform_edt(block)
+            # Apply gaussian filter
+            block = gaussian_filter(block, sigma)
+            
+            # Select the minimum non-zero value for each pixel
+            final_block = np.where(result[y:y_end, x:x_end] > 0,
+                                   np.minimum(block, result[y:y_end, x:x_end]),
+                                   block)
+
+            # store block transformed
+            result[y:y_end, x:x_end] = final_block
+
 
     # create the new image with the distance map
     save_lab = np.zeros(label_ref.shape)
 
-    for obj in np.unique(label_ref)[1:]:
+    for obj in np.unique(label_ref[np.nonzero(label_ref)]):
+        
         # normalize the distance map
-        save_lab[label_ref==obj] = new_lab[label_ref==obj]/np.max(new_lab[label_ref==obj])
+        save_lab[label_ref==obj] = result[label_ref==obj]/np.max(result[label_ref==obj])
         
     return save_lab
     
@@ -84,5 +114,5 @@ if __name__ == "__main__":
     check_folder(os.path.dirname(train_output_path))
 
     generate_distance_map(train_input_path, train_output_path)
-    
+
     print_sucess("Distance map generated successfully")
