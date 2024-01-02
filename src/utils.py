@@ -606,7 +606,11 @@ def get_image_metadata(tiff_file:str) -> dict:
 
     return src.meta
 
-
+def get_image_shape(tiff_file:str) -> dict:
+    
+    img_metadata = get_image_metadata(tiff_file)
+    
+    return (img_metadata["count"], img_metadata["height"], img_metadata["width"])
 
 def load_norm(path, mask=[0], mask_indx = 0):
     """Read image from `path` divide all values by 255
