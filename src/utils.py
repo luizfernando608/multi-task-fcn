@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import rasterio
+from rasterio.windows import Window
 import torch
 import torch.distributed as dist
 import yaml
@@ -931,17 +932,111 @@ class ParquetUpdater:
 
 
 
+
+def read_window(tiff_file, bbox):
+    """
+    Reads a specific window (bounding box) from a TIFF file.
+
+    Parameters:
+    ----------
+    tiff_file : str
+        Path to the input TIFF file.
+    bbox : tuple
+        Bounding box coordinates in the format ((x_min, x_max), (y_min, y_max)).
+
+    Returns:
+    ----------
+    numpy.ndarray: 
+        Image data within the specified window.
+    """
+    
+    
+    with rasterio.open(tiff_file) as src:
+        window = Window.from_slices(*bbox)
+        image = src.read(window=window)
+
+    return image
+
+
+def get_window_metadata(tiff_file, bbox):
+    """
+    Retrieves the metadata (profile) for a specific window (bounding box) from a TIFF file.
+
+    Parameters:
+    ----------
+    tiff_file : str
+        Path to the input TIFF file.
+    bbox : tuple 
+        Bounding box coordinates in the format ((x_min, x_max), (y_min, y_max)).
+
+    Returns:
+    ----------
+    dict: 
+        Metadata (profile) for the specified window.
+    """
+    with rasterio.open(tiff_file) as src:
+        window = Window.from_slices(*bbox)
+        profile = src.profile
+        profile.update({
+            'height': window.height,
+            'width': window.width,
+            'transform': src.window_transform(window)
+        })
+    return profile
+
+
+def write_window(tiff_file:str, img_array:np.ndarray, bbox:tuple) -> None:
+    """ 
+    Write image data into a specified window within a TIFF file.
+
+    Parameters
+    ----------
+    tiff_file : str
+        The path to the TIFF file where the image data will be written.
+    img_array : np.ndarray
+        The image data to be written into the TIFF file's specified window.
+    bbox : tuple
+        Bounding box coordinates in the format ((x_min, x_max), (y_min, y_max)).
+    """
+    
+    image_profile = get_image_metadata(tiff_file)
+
+    with rasterio.open(tiff_file, 'r+', **image_profile) as src:
+        
+        window = Window.from_slices(*bbox)
+
+        src.write(img_array, window=window)
+
+
 if __name__ == "__main__":
-    from os.path import join
-    file_path = "data.parquet"
+    
+    ORTHO_PATH = join(ROOT_PATH, r"amazon_mc_input_data\orthoimage\NOV_2017_FINAL_004.tif")
 
-    updater = ParquetUpdater(file_path)
+    
+    window_img = read_window(ORTHO_PATH, ((1000, 2000), (1000, 2000)))
+    
+    window_img = np.where(window_img < 200, window_img + 50, window_img)
 
-    data1 = {'Name': 'Alice', 'Age': 25}
-    data2 = {'Name': 'Bob', 'Age': 30}
+    metadata = get_window_metadata(ORTHO_PATH,  ((1000, 2000), (1000, 2000)))
+    
+    OUT_PATH = join(ROOT_PATH, "NOV_2017_FINAL_004.tif")
 
-    updater.update(data1)
-    updater.update(data2)
+    write_window(OUT_PATH, window_img, ((1000, 2000), (1000, 2000)) )
+
+    IMG_OUT = read_tiff(OUT_PATH)
+
+    
+    print(IMG_OUT.shape)
+    # from os.path import join
+    # file_path = "data.parquet"
+
+    # updater = ParquetUpdater(file_path)
+
+    # data1 = {'Name': 'Alice', 'Age': 25}
+    # data2 = {'Name': 'Bob', 'Age': 30}
+
+    # updater.update(data1)
+    # updater.update(data2)
     # array2raster("/home/luiz/multi-task-fcn/test_repo/image_float.tif", 
     #              image[:, 0:1000, 0:1000],
     #              image_metadata = meta,

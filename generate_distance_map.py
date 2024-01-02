@@ -1,4 +1,5 @@
 import os
+from os.path import dirname, join
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.ndimage import distance_transform_edt, gaussian_filter
@@ -6,7 +7,10 @@ from skimage.measure import label
 
 from src.utils import (array2raster, check_folder, get_image_metadata,
                        print_sucess, read_tiff, read_yaml)
+from tqdm import tqdm
+import gc
 
+ROOT_PATH = dirname(__file__)
 
 def apply_gaussian_distance_map(input_img:np.ndarray, sigma=5)->np.ndarray:
     """Apply euclidean distance transform and gaussian filter to the input image
@@ -37,7 +41,7 @@ def apply_gaussian_distance_map(input_img:np.ndarray, sigma=5)->np.ndarray:
     result = np.zeros((height, width), dtype=np.float32)
 
     # Apply transformation to blocks with overlap
-    for y in range(0, height, BLOCK_SIZE//2):
+    for y in tqdm(range(0, height, BLOCK_SIZE//2)):
 
         for x in range(0, width, BLOCK_SIZE//2):
             
@@ -60,8 +64,9 @@ def apply_gaussian_distance_map(input_img:np.ndarray, sigma=5)->np.ndarray:
 
             # store block transformed
             result[y:y_end, x:x_end] = final_block
-
-
+        
+        gc.collect()
+    
     # create the new image with the distance map
     save_lab = np.zeros(label_ref.shape)
 
@@ -107,12 +112,15 @@ if __name__ == "__main__":
     
     args = read_yaml("args.yaml")
     
-    train_input_path = args.train_segmentation_path
-
-    train_output_path = os.path.join(args.data_path, "test", "train_distance_map.tif")
     
-    check_folder(os.path.dirname(train_output_path))
+    # train_input_path = args.train_segmentation_path
+    train_input_path = join(ROOT_PATH, r"amazon_input_data\segmentation\train_set.tif")
+
+    train_output_path = join(ROOT_PATH, "test_data", "train_distance_map.tif")
+    
+    check_folder(dirname(train_output_path))
 
     generate_distance_map(train_input_path, train_output_path)
+
 
     print_sucess("Distance map generated successfully")
