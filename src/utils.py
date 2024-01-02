@@ -954,6 +954,10 @@ def read_window(tiff_file, bbox):
     with rasterio.open(tiff_file) as src:
         window = Window.from_slices(*bbox)
         image = src.read(window=window)
+    
+    if image.shape[0] == 1:
+        
+        return image[0]
 
     return image
 
