@@ -28,7 +28,9 @@ from src.logger import create_logger
 from src.metrics import evaluate_component_metrics, evaluate_metrics
 from src.model import (build_model, define_loader, eval, load_weights,
                        save_checkpoint, train)
-from src.multicropdataset import DatasetFromCoord
+
+from src.multicropdataset import DatasetFromCoord, DataSetFromImagePath
+
 from src.utils import (ParquetUpdater, array2raster, check_folder,
                        fix_random_seeds, fix_relative_paths, get_device,
                        get_image_metadata, oversamp, print_sucess, read_tiff,
@@ -252,6 +254,33 @@ def read_val_distance_map():
     return read_tiff(IMAGE_PATH)
 
 
+def normalize_orthoimage_by_255():
+    
+    INPUT_PATH = args.ortho_image
+    
+    OUTPUT_PATH = join(
+        dirname(INPUT_PATH), "ortho_image_normalized_by_255.tiff"
+    )
+
+    if os.path.isfile(OUTPUT_PATH):
+        return
+    
+    img = read_tiff(INPUT_PATH).astype("float32")
+    img_metadata = get_image_metadata(INPUT_PATH)
+
+    for band in range(img.shape[0]):
+        
+        img[band] = img[band] / 255
+    
+    array2raster(
+        path_to_save = OUTPUT_PATH,
+        array=img,
+        dtype="float32",
+        image_metadata=img_metadata,
+    )
+
+
+
 def get_learning_rate_schedule(train_loader: torch.utils.data.DataLoader, 
                                base_lr:float,
                                final_lr:float, 
@@ -364,8 +393,6 @@ def train_epochs(last_checkpoint:str,
                 logger.info("============ Early Stop at epoch %i ... ============" % epoch)
                 break
         
-        np.random.shuffle(train_loader.dataset.coord)
-        np.random.shuffle(val_loader.dataset.coord)
 
         # train the network for one epoch
         logger.info("============ Starting epoch %i ... ============" % epoch)
@@ -430,28 +457,19 @@ def train_iteration(current_iter_folder:str, args:dict):
     logger.info("============ Initialized Training ============")
     
     ######### Define Loader ############
-    raster_train = read_last_segmentation(current_iter_folder)
-    depth_img = read_last_distance_map(current_iter_folder)
-
-    image, coords_train, raster_train, labs_coords_train = define_loader(args.ortho_image, 
-                                                                         raster_train, 
-                                                                         args.size_crops)
+    PATH_NORM_ORTHO_IMG = join(
+        dirname(args.ortho_image), "ortho_image_normalized_by_255.tiff"
+    )
     
-    ######## do oversampling in minor classes
-    coords_train = oversamp(coords_train, labs_coords_train, under=False)
-
-    if args.samples > coords_train.shape[0]:
-        args.samples = None
-
-    # build data for training
-    train_dataset = DatasetFromCoord(
-        image,
-        raster_train,
-        depth_img,
-        coords_train,
-        args.size_crops,
-        args.samples,
-        augment = args.augment
+    ########### LOAD TRAIN SET ###########
+    train_dataset = DataSetFromImagePath(
+        image_path = PATH_NORM_ORTHO_IMG,
+        segmentation_path = get_last_segmentation_path(current_iter_folder),
+        distance_map_path = get_last_distance_map_path(current_iter_folder),
+        samples = args.samples,
+        crop_size = args.size_crops,
+        dataset_type = "train",
+        augment = True
     )
 
     train_loader = torch.utils.data.DataLoader(
@@ -463,45 +481,37 @@ def train_iteration(current_iter_folder:str, args:dict):
         shuffle=True,
     )
 
-    raster_val = raster_train.copy()
-    depth_val = depth_img.copy()
 
-    ########### LOAD VALIDATION SET ##################
-    _, coords_val, raster_val, labs_coords_val = define_loader(args.ortho_image, 
-                                                    raster_val, 
-                                                    args.size_crops,
-                                                    test = True)
-
-    coords_val = oversamp(coords_val, labs_coords_val, under = True)
-
-
-    val_dataset = DatasetFromCoord(
-        image,
-        raster_val,
-        depth_val,
-        coords_val,
-        args.size_crops,
-        args.samples // 5,
+    ########### LOAD VALIDATION SET ###########
+    val_dataset = DataSetFromImagePath(
+        image_path = PATH_NORM_ORTHO_IMG,
+        segmentation_path = get_last_segmentation_path(current_iter_folder),
+        distance_map_path = get_last_distance_map_path(current_iter_folder),
+        samples = args.samples // 5,
+        crop_size = args.size_crops,
+        dataset_type = "val",
         augment = True
     )
 
     val_loader = torch.utils.data.DataLoader(
         val_dataset,
-        batch_size = args.batch_size,
-        num_workers = args.workers,
-        pin_memory = True,
-        drop_last = True,
-        shuffle = True,
+        batch_size=args.batch_size,
+        num_workers=args.workers,
+        pin_memory=True,
+        drop_last=True,
+        shuffle=True,
     )
 
-    logger.info("Building data done with {} images loaded.".format(len(train_loader)))
+    logger.info(
+        "Building data done with {} images loaded.".format(len(train_loader))
+    )
 
     model  = build_model(
-        image.shape, 
-        args.nb_class,  
-        args.arch, 
-        args.filters, 
-        args.is_pretrained,
+        image_shape = [3, ], 
+        num_classes = args.nb_class,  
+        arch = args.arch, 
+        filters = args.filters, 
+        pretrained = args.is_pretrained,
         psize = args.size_crops
     )
 
@@ -793,7 +803,7 @@ def generate_labels_view(current_iter_folder):
 
 
 
-
+normalize_orthoimage_by_255()
 
 ##### LOOP #####
 

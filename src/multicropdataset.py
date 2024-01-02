@@ -13,7 +13,7 @@ import sys
 ROOT_PATH = dirname(dirname(__file__))
 sys.path.append(ROOT_PATH)
 
-from src.utils import read_tiff, read_yaml
+from src.utils import read_tiff, read_yaml, get_image_shape
 
 ARGS = read_yaml(join(ROOT_PATH, "args.yaml"))
 
@@ -261,9 +261,9 @@ class DataSetFromImagePath(Dataset):
                  image_path:str,
                  segmentation_path:str,
                  distance_map_path:str,
-                 samples:int,
                  crop_size:int,
                  dataset_type:Literal["train", "val", "test"],
+                 samples:int = None,
                  augment:bool = False,
                  overlap_rate:float = None
                  ) -> None:
@@ -291,8 +291,11 @@ class DataSetFromImagePath(Dataset):
         self.augment = augment
 
         self.overlap_rate = overlap_rate
-
-        self.img_segmentation = read_tiff(segmentation_path)
+        
+        if dataset_type in ["train", "val"]:
+            self.img_segmentation = read_tiff(segmentation_path)
+        
+        self.image_shape = get_image_shape(image_path)
 
         self.generate_coords()
 
@@ -326,12 +329,12 @@ class DataSetFromImagePath(Dataset):
         elif self.dataset_type == "test":            
             coords_list = []
 
-            overlap_size = int(self.crop_size * self.overlap_rate)
-            stride_size = self.crop_size - overlap_size
+            self.overlap_size = int(self.crop_size * self.overlap_rate)
+            self.stride_size = self.crop_size - self.overlap_size
 
-            for m in range(self.crop_size//2, self.img_segmentation.shape[0], stride_size):
+            for m in range(self.stride_size//2, self.image_shape[1], self.stride_size):
 
-                for n in range(self.crop_size//2, self.img_segmentation.shape[1], stride_size):
+                for n in range(self.stride_size//2, self.image_shape[2], self.stride_size):
     
                     coords_list.append([m,n])
             
@@ -356,9 +359,9 @@ class DataSetFromImagePath(Dataset):
 
 
         end_row = coord[0] + self.crop_size // 2
-        if end_row > self.img_segmentation.shape[0]:
+        if end_row > self.image_shape[1]:
             
-            end_row = self.img_segmentation.shape[0]
+            end_row = self.image_shape[1]
             
             pad_width[0][1] = abs(coord[0] + self.crop_size//2 - end_row)
         
@@ -375,9 +378,9 @@ class DataSetFromImagePath(Dataset):
 
         end_column = coord[1] + self.crop_size // 2
         
-        if end_column > self.img_segmentation.shape[1]:
+        if end_column > self.image_shape[2]:
             
-            end_column = self.img_segmentation.shape[1]
+            end_column = self.image_shape[2]
 
             pad_width[1][1] = abs(coord[1] + (self.crop_size // 2) - end_column)
 
@@ -410,8 +413,11 @@ class DataSetFromImagePath(Dataset):
 
 
     def __len__(self):
-        
-        if (self.samples > len(self.coords)) or (self.samples is None):
+
+        if (self.samples is None):
+            return len(self.coords)
+
+        if (self.samples > len(self.coords)):
             return len(self.coords)
         
         
@@ -447,8 +453,12 @@ class DataSetFromImagePath(Dataset):
             current_coord[0] += int(random_row_prop * (self.crop_size//2))
             current_coord[1] += int(random_column_prop * (self.crop_size//2))
 
-
         image = self.read_window(current_coord, self.image_path)
+
+        if self.dataset_type == "test":
+            
+            return image, current_coord
+
         segmentation = self.read_window(current_coord, self.segmentation_path)
         distance_map = self.read_window(current_coord, self.distance_map_path)
 
