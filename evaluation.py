@@ -304,8 +304,8 @@ def evaluate_overlap(overlap:float,
     check_folder(os.path.join(current_iter_folder, 'prediction'))
   
     # CREATE MAP TO STORE INFERENCE
-    height = stride//2 + ((image_shape[-2] - stride // 2) // stride)* stride + stride//2
-    width = stride//2 + ((image_shape[-1] - stride // 2) // stride)* stride + stride//2
+    height = int(np.ceil(image_shape[-2] / stride) * stride)
+    width = int(np.ceil(image_shape[-1] / stride) * stride)
 
     pred_prob = np.zeros(shape = (height, width, num_classes), dtype='float16')
     pred_depth = np.zeros(shape = (height, width), dtype='float16')
