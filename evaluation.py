@@ -1,5 +1,6 @@
 import gc
 import os
+from os.path import join, dirname, exists
 from logging import Logger
 from typing import Tuple
 
@@ -13,9 +14,10 @@ from tqdm import tqdm
 
 from src.logger import create_logger
 from src.model import build_model, load_weights
-from src.multicropdataset import DatasetFromCoord
+from src.multicropdataset import DatasetFromCoord, DataSetFromImagePath
 from src.utils import (add_padding_new, check_folder,
                        extract_patches_coord, get_device, get_image_metadata,
+                       get_image_shape,
                        normalize, read_tiff, read_yaml)
 
 ROOT_PATH = os.path.dirname(__file__)
@@ -138,7 +140,7 @@ def predict_network(ortho_image_shape:Tuple,
     
     j = 0
     with torch.no_grad(): 
-        for i, inputs in enumerate(tqdm(dataloader)):      
+        for i, (inputs, coord) in enumerate(tqdm(dataloader)):      
             # ============ multi-res forward passes ... ============
             # compute model loss and output
             input_batch = inputs.to(DEVICE, non_blocking=True)
@@ -154,20 +156,24 @@ def predict_network(ortho_image_shape:Tuple,
             
             c, x, y, cl = out_batch.shape
 
-            coord_x = coords[j : j+batch_size,0]
-            coord_y = coords[j : j+batch_size,1]
 
             # iterate through batches
             for b in range(c):
                 pred_prob[
-                    coord_x[b] - st : coord_x[b] + st + stride % 2,
-                    coord_y[b] - st : coord_y[b] + st + stride % 2
-                    ] = out_batch[ b , overlap//2 + overlap % 2 : x - ovr , overlap//2 + overlap % 2 : y - ovr ]
+                    coord[b][0] - st : coord[b][0] + st + stride % 2,
+                    coord[b][1] - st : coord[b][1] + st + stride % 2
+                    ] = out_batch[b,
+                                  x//2 - st : x//2 + st + stride % 2,
+                                  y//2 - st : y//2 + st + stride % 2]
 
                 pred_depth[
-                    coord_x[b] - st : coord_x[b] + st + stride % 2,
-                    coord_y[b] - st : coord_y[b] + st + stride % 2
-                    ] = depth_out[b, 0, overlap//2 + overlap % 2 : x - ovr, overlap//2 + overlap % 2: y - ovr ]
+                    coord[b][0] - st : coord[b][0] + st + stride % 2,
+                    coord[b][1] - st : coord[b][1] + st + stride % 2
+                    ] = depth_out[b,
+                                  0,
+                                  x//2 - st : x//2 + st + stride % 2, 
+                                  y//2 - st : y//2 + st + stride % 2 
+                     ]
 
             j += out_batch.shape[0] 
             
@@ -175,10 +181,8 @@ def predict_network(ortho_image_shape:Tuple,
         row = ortho_image_shape[0]
         col = ortho_image_shape[1]
         
-        pred_prob = pred_prob[overlap//2 + overlap % 2 :, overlap//2 + overlap % 2 :]
+
         pred_prob = pred_prob[:row,:col]
-        
-        pred_depth = pred_depth[overlap//2 + overlap % 2 :, overlap//2 + overlap % 2 :]
         pred_depth = pred_depth[:row,:col]
         
 
@@ -245,39 +249,45 @@ def evaluate_overlap(overlap:float,
     
     DEVICE = get_device()
 
-    image, coords, stride, overlap_in_pixels = define_test_loader(ortho_image, 
-                                                                    size_crops, 
-                                                                    overlap, 
-                                                                    test_itc, 
-                                                                    ref)
 
-    test_dataset = DatasetFromCoord(
-            image,
-            labels = None,
-            depth_img = None,
-            coords = coords,
-            psize = size_crops,
-            evaluation = True,
-        )
+    PATH_NORM_ORTHO_IMG = join(
+        dirname(args.ortho_image), "ortho_image_normalized_by_255.tiff"
+    )
+    
+    image_shape = get_image_shape(PATH_NORM_ORTHO_IMG)
 
-    test_loader = torch.utils.data.DataLoader(
-            test_dataset,
-            batch_size=batch_size,
-            num_workers=workers,
-            pin_memory=True,
-            drop_last=False,
-            shuffle=False,
+    test_dataset = DataSetFromImagePath(
+        image_path = PATH_NORM_ORTHO_IMG,
+        segmentation_path = None,
+        distance_map_path = None,
+        samples = None,
+        crop_size = args.size_crops,
+        dataset_type = "test",
+        overlap_rate = overlap,
     )
 
-    logger.info("Building data done with {} patches loaded.".format(coords.shape[0]))
-    
+    coords = test_dataset.coords
+    stride = test_dataset.stride_size
+    overlap_in_pixels = test_dataset.overlap_size
 
+    test_loader = torch.utils.data.DataLoader(
+        test_dataset,
+        batch_size=batch_size,
+        num_workers=workers,
+        pin_memory=True,
+        drop_last=False,
+        shuffle=False,
+    )
+
+    logger.info("Building data done with {} patches loaded.".format(len(test_dataset)))
+    
+    
     model = model = build_model(
-        image.shape, 
-        args.nb_class,
-        args.arch, 
-        args.filters, 
-        args.is_pretrained,
+        image_shape = image_shape, 
+        num_classes = args.nb_class,
+        arch = args.arch, 
+        filters = args.filters, 
+        pretrained = args.is_pretrained,
         psize = args.size_crops
     )
 
@@ -292,9 +302,14 @@ def evaluate_overlap(overlap:float,
     cudnn.benchmark = True
 
     check_folder(os.path.join(current_iter_folder, 'prediction'))
+  
+    # CREATE MAP TO STORE INFERENCE
+    height = stride//2 + ((image_shape[-2] - stride // 2) // stride)* stride + stride//2
+    width = stride//2 + ((image_shape[-1] - stride // 2) // stride)* stride + stride//2
 
-    pred_prob = np.zeros(shape = (image.shape[1], image.shape[2], num_classes), dtype='float16')
-    pred_depth = np.zeros(shape = (image.shape[1], image.shape[2]), dtype='float16')
+    pred_prob = np.zeros(shape = (height, width, num_classes), dtype='float16')
+    pred_depth = np.zeros(shape = (height, width), dtype='float16')
+    
 
     prob_map, pred_class, depth_map = predict_network(
         ortho_image_shape = ortho_image_shape,
