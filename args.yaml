@@ -7,11 +7,11 @@ model_dir: exp_deeplab_v4
 data_path: 1.0_amazon_version_data
 
 # Input data for the model
-ortho_image: amazon_sm_input_data/orthoimage/NOV_2017_FINAL_004.tif
-train_segmentation_path: amazon_sm_input_data/segmentation/train_set.tif
-test_segmentation_path: amazon_sm_input_data/segmentation/test_set.tif
+ortho_image: amazon_mc_input_data/orthoimage/NOV_2017_FINAL_004.tif
+train_segmentation_path: amazon_mc_input_data/segmentation/train_set.tif
+test_segmentation_path: amazon_mc_input_data/segmentation/test_set.tif
 
-mask_path: "input_data/mask.tif"
+mask_path: "amazon_mc_input_data/mask.tif"
 
 
 checkpoint_file: checkpoint.pth.tar
@@ -47,7 +47,7 @@ filters: [32, 32, 32, 32]
 
 ### optim parameters ###
 # number of total epochs to run
-epochs: 30
+epochs: 1
 # batch size per gpu, i.e. how many unique instances per gpu
 batch_size: 16
 # base learning rate
