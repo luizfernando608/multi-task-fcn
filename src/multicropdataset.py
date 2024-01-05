@@ -332,9 +332,9 @@ class DataSetFromImagePath(Dataset):
             self.overlap_size = int(self.crop_size * self.overlap_rate)
             self.stride_size = self.crop_size - self.overlap_size
 
-            for m in range(self.stride_size//2, self.image_shape[1], self.stride_size):
+            for m in range(self.stride_size//2, self.image_shape[1] + self.stride_size//2, self.stride_size):
 
-                for n in range(self.stride_size//2, self.image_shape[2], self.stride_size):
+                for n in range(self.stride_size//2, self.image_shape[2] + self.stride_size//2, self.stride_size):
     
                     coords_list.append([m,n])
             

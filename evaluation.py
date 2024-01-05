@@ -160,11 +160,6 @@ def predict_network(ortho_image_shape:Tuple,
                 col_end = coord[b][1].item() + st + stride % 2
                 col_end = np.minimum(col_end, ortho_image_shape[-1])
                 
-                # only for debugging
-                # TODO save this image without the border
-                if np.abs(col_end - ortho_image_shape[-1]) < 100:
-                    pass
-                
 
                 width = col_end - col_start
                 
@@ -434,6 +429,9 @@ def evaluate_iteration(current_iter_folder:str, args:dict):
 #### E V A L U A T I O N #####
 ##############################
 if __name__ == "__main__":
+    
+    import matplotlib.pyplot as plt
+
     ## arguments
     args = read_yaml("args.yaml")
     # external parameters
