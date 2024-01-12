@@ -932,6 +932,55 @@ class ParquetUpdater:
 
 
 
+def create_empty_tiff(filename:str, shape:tuple, dtype:str, img_metadata):
+    """
+    Create an empty TIFF file with the specified properties.
+
+    Parameters
+    ----------
+    filename : str
+        The path to the output TIFF file.
+    shape : tuple
+        The shape of the image in the format (bands, height, width).
+    dtype : str
+        The data type of the image.
+    metadata : dict
+        Additional metadata including 'transform', 'crs', and 'driver'.
+
+    Returns
+    -------
+    None
+    """
+    
+    if len(shape) == 3:
+        bands, height, width = shape
+    
+    elif len(shape) == 2:
+        bands = 1
+        height, width = shape
+    
+
+    crs = img_metadata['crs']
+    transform = img_metadata['transform']
+    driver = img_metadata['driver']
+
+    # Define the transformation and metadata
+    
+    metadata = {
+        'driver': driver,
+        'count': bands,
+        'dtype': dtype,
+        'width': width,
+        'height': height,
+        'crs': crs,  # Adjust as needed
+        'transform': transform,
+    }
+
+    with rasterio.open(filename, 'w', **metadata) as dst:
+        # The file is created without explicitly writing data
+        pass
+
+
 
 def read_window(tiff_file, bbox):
     """
@@ -1017,23 +1066,31 @@ def write_window(tiff_file:str, img_array:np.ndarray, bbox:tuple) -> None:
 
 if __name__ == "__main__":
     
-    ORTHO_PATH = join(ROOT_PATH, r"amazon_mc_input_data\orthoimage\NOV_2017_FINAL_004.tif")
+    filename = join("test_data", 'empty.tif')
+    
+    shape = (1, 512, 512)  # 3 bands, 512x512 pixels
+    
+    dtype = 'uint16'
+    
+    TRAIN_PATH = join(ROOT_PATH, r"amazon_mc_input_data\segmentation\train_set.tif")
+
+    img_meta = get_image_metadata(TRAIN_PATH)
+
+
+    create_empty_tiff(filename, shape, dtype, img_meta)
+    
+    img_empty = read_tiff(filename)
+    print(img_empty.shape, img_empty.min(), img_empty.max())
 
     
-    window_img = read_window(ORTHO_PATH, ((1000, 2000), (1000, 2000)))
-    
-    window_img = np.where(window_img < 200, window_img + 50, window_img)
+    create_empty_tiff(filename, (512, 512), dtype, img_meta)
+    img_empty = read_tiff(filename)
+    print(img_empty.shape, img_empty.min(), img_empty.max())
 
-    metadata = get_window_metadata(ORTHO_PATH,  ((1000, 2000), (1000, 2000)))
-    
-    OUT_PATH = join(ROOT_PATH, "NOV_2017_FINAL_004.tif")
 
-    write_window(OUT_PATH, window_img, ((1000, 2000), (1000, 2000)) )
 
-    IMG_OUT = read_tiff(OUT_PATH)
 
     
-    print(IMG_OUT.shape)
     # from os.path import join
     # file_path = "data.parquet"
 
