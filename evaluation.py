@@ -92,7 +92,6 @@ def predict_network(ortho_image_shape:Tuple,
                     dataloader:torch.utils.data.DataLoader, 
                     model:nn.Module, 
                     prob_map_path:str,
-                    pred_class_path:str,
                     depth_map_path:str,
                     stride:int
                     ) -> None:
@@ -178,16 +177,10 @@ def predict_network(ortho_image_shape:Tuple,
                 
                 bbox = ((row_start, row_end), (col_start,  col_end))
 
-                # TODO Save theses images with multithreading
+                # TODO Save these images with multithreading
                 write_window(
                     prob_map_path,
                     np.moveaxis(prob_output, 2, 0),
-                    bbox=bbox
-                )
-
-                write_window(
-                    pred_class_path,
-                    np.argmax(prob_output, axis=-1),
                     bbox=bbox
                 )
 
@@ -327,17 +320,6 @@ def evaluate_overlap(overlap:float,
     del pred_prob
 
 
-
-    pred_class = np.zeros(shape = (height, width), dtype='uint16')
-
-    pred_class_path = join(current_iter_folder, 'prediction', f'pred_class_itc{test_itc}_{overlap}.tiff')
-
-    array2raster(pred_class_path, pred_class, get_image_metadata(args.train_segmentation_path), dtype="uint8")
-    
-    del pred_class
-
-
-
     pred_depth = np.zeros(shape = (height, width), dtype='float16')
 
     depth_map_path = join(current_iter_folder, 'prediction', f'depth_map_itc{test_itc}_{overlap}.tiff')
@@ -353,7 +335,6 @@ def evaluate_overlap(overlap:float,
         dataloader = test_loader,
         model = model,
         prob_map_path = prob_map_path,
-        pred_class_path = pred_class_path,
         depth_map_path = depth_map_path,
         stride = stride,
     )
