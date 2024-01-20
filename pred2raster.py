@@ -2,6 +2,7 @@ import os
 from os.path import isfile, join
 
 import numpy as np
+from tqdm import tqdm
 
 from src.utils import array2raster, check_folder, fix_relative_paths,get_image_metadata, read_yaml, get_image_shape, read_window, write_window
 
@@ -57,9 +58,9 @@ def pred2raster(current_iter_folder, args):
             dtype = "float32"
         )
 
-        PSIZE = 500
+        PSIZE = 1000
 
-        for row in range(0, img_shape[-2], PSIZE):
+        for row in tqdm(range(0, img_shape[-2], PSIZE)):
             for col in range(0, img_shape[-1], PSIZE):
                 
                 depth_list = []
