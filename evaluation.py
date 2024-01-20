@@ -285,7 +285,7 @@ def evaluate_overlap(overlap:float,
     logger.info("Building data done with {} patches loaded.".format(len(test_dataset)))
     
     
-    model = model = build_model(
+    model = build_model(
         image_shape = image_shape, 
         num_classes = num_classes,
         arch = arch, 
