@@ -19,6 +19,11 @@ import torch
 import torch.distributed as dist
 import yaml
 
+from rasterio import logging
+
+log = logging.getLogger()
+log.setLevel(logging.ERROR)
+
 plt.set_loglevel(level = 'critical')
 
 FALSY_STRINGS = {"off", "false", "0"}
@@ -1058,14 +1063,13 @@ def write_window(tiff_file:str, img_array:np.ndarray, bbox:tuple) -> None:
     image_profile = get_image_metadata(tiff_file)
 
     image_profile.update(
-        compress="lzw", 
         num_threads='all_cpus'
     )
 
     if img_array.ndim == 2:
         img_array = np.expand_dims(img_array, axis = 0)
 
-    with rasterio.open(tiff_file, 'w', **image_profile) as src:
+    with rasterio.open(tiff_file, 'r+', **image_profile) as src:
         
         window = Window.from_slices(*bbox)
 
