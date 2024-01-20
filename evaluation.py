@@ -382,9 +382,8 @@ def evaluate_iteration(current_iter_folder:str, args:dict):
     for overlap in overlaps:
 
         # Verify if the prediction is already done
-        is_depth_done = exists(join(current_iter_folder, 'prediction', f'depth_map_itc{test_itc}_{overlap}.npy'))
-        is_prob_done = exists(join(current_iter_folder, 'prediction', f'prob_map_itc{test_itc}_{overlap}.npy'))
-        is_pred_done = exists(join(current_iter_folder, 'prediction', f'pred_class_itc{test_itc}_{overlap}.npy'))
+        is_depth_done = exists(join(current_iter_folder, 'prediction', f'depth_map_itc{test_itc}_{overlap}.tiff'))
+        is_prob_done = exists(join(current_iter_folder, 'prediction', f'prob_map_itc{test_itc}_{overlap}.tiff'))
         
         if is_depth_done and is_prob_done and is_pred_done:
 

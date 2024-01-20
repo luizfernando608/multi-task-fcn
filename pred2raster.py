@@ -32,8 +32,7 @@ def pred2raster(current_iter_folder, args):
     
                
     
-    # if not (isfile(prediction_file) and isfile(prob_file) and isfile(depth_file)):
-    if True:
+    if not (isfile(prediction_file) and isfile(prob_file) and isfile(depth_file)):
         
         # create empty tiff files
         array2raster(
