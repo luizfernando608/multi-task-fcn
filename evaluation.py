@@ -389,7 +389,7 @@ def evaluate_iteration(current_iter_folder:str, args:dict):
         is_depth_done = exists(join(current_iter_folder, 'prediction', f'depth_map_itc{test_itc}_{overlap}.tiff'))
         is_prob_done = exists(join(current_iter_folder, 'prediction', f'prob_map_itc{test_itc}_{overlap}.tiff'))
         
-        if is_depth_done and is_prob_done and is_pred_done:
+        if is_depth_done and is_prob_done:
 
             logger.info(f"Overlap {overlap} is already done. Skipping...")
 
