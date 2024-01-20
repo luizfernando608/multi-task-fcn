@@ -81,7 +81,9 @@ def array2raster(path_to_save:str, array:np.ndarray, image_metadata:dict, dtype:
         count = BAND_NUM,
         dtype = RASTER_DTYPE,
         crs = image_metadata['crs'],
-        transform = image_metadata['transform']
+        transform = image_metadata['transform'],
+        compress="lzw",
+        num_threads='all_cpus'
     ) as writer:
         
         if BAND_NUM > 1:
@@ -974,6 +976,7 @@ def create_empty_tiff(filename:str, shape:tuple, dtype:str, img_metadata):
         'height': height,
         'crs': crs,  # Adjust as needed
         'transform': transform,
+        'compress':"lzw"
     }
 
     with rasterio.open(filename, 'w', **metadata) as dst:
@@ -1000,7 +1003,7 @@ def read_window(tiff_file, bbox):
     """
     
     
-    with rasterio.open(tiff_file) as src:
+    with rasterio.open(tiff_file, num_threads='all_cpus') as src:
         window = Window.from_slices(*bbox)
         image = src.read(window=window)
     
@@ -1054,10 +1057,15 @@ def write_window(tiff_file:str, img_array:np.ndarray, bbox:tuple) -> None:
     
     image_profile = get_image_metadata(tiff_file)
 
+    image_profile.update(
+        compress="lzw", 
+        num_threads='all_cpus'
+    )
+
     if img_array.ndim == 2:
         img_array = np.expand_dims(img_array, axis = 0)
 
-    with rasterio.open(tiff_file, 'r+', **image_profile) as src:
+    with rasterio.open(tiff_file, 'w', **image_profile) as src:
         
         window = Window.from_slices(*bbox)
 
