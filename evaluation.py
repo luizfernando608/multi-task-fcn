@@ -123,7 +123,10 @@ def predict_network(ortho_image_shape:Tuple,
     
     st = stride//2
     
-    with torch.no_grad(): 
+    # avoid torch multithreading reading and writing
+    torch.set_num_threads(1)
+
+    with torch.inference_mode(): 
         for i, (inputs, coord) in enumerate(tqdm(dataloader)):      
             # ============ multi-res forward passes ... ============
             # compute model loss and output
@@ -139,7 +142,8 @@ def predict_network(ortho_image_shape:Tuple,
             depth_out = sig(out_pred['aux']).data.cpu().numpy()
             
             c, x, y, cl = out_batch.shape
-
+            
+            torch.cuda.synchronize()
 
             # iterate through batches
             for b in range(c):
