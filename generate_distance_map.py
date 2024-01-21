@@ -82,7 +82,7 @@ def apply_gaussian_distance_map(input_img:np.ndarray, sigma=5)->np.ndarray:
 
 def lazy_gaussian_distance_map(input_image_path:str, output_image_path:str, sigma = 5):
     
-    BLOCK_SIZE = 500
+    BLOCK_SIZE = 5000
 
     img_metadata = get_image_metadata(input_image_path)
     img_shape = get_image_shape(input_image_path)
@@ -102,7 +102,7 @@ def lazy_gaussian_distance_map(input_image_path:str, output_image_path:str, sigm
     # Apply transformation to blocks with overlap
     for y in tqdm(range(0, height, BLOCK_SIZE//2), position=1):
 
-        for x in range(0, width, BLOCK_SIZE//2):
+        for x in tqdm(range(0, width, BLOCK_SIZE//2), position=2):
             
             # Define the boundaries of the block
             y_end = min(y + BLOCK_SIZE, height)
@@ -131,10 +131,6 @@ def lazy_gaussian_distance_map(input_image_path:str, output_image_path:str, sigm
             
             # Apply gaussian filter
             depth_map = gaussian_filter(depth_map, sigma)
-            
-        
-            ###### NORMALIZE EVERY LABEL FOR A VALUE BETWEEN 0 AND 1 ######
-            label_final = label(depth_map > 0)
             
             # Select the minimum non-zero value for each pixel
             depth_map = np.where(temp_img > 0,
@@ -234,7 +230,7 @@ if __name__ == "__main__":
     args = read_yaml("args.yaml")
     
     # train_input_path = args.train_segmentation_path
-    train_input_path = join(ROOT_PATH, r"amazon_mc_input_data\segmentation\train_set.tif")
+    train_input_path = join(ROOT_PATH, r"amazon_input_data\segmentation\train_set.tif")
 
     train_output_path = join(ROOT_PATH, "test_data", "train_distance_map.tif")
     
