@@ -6,7 +6,9 @@ from scipy.ndimage import distance_transform_edt, gaussian_filter
 from skimage.measure import label
 
 from src.utils import (array2raster, check_folder, get_image_metadata,
-                       print_sucess, read_tiff, read_yaml)
+                       print_sucess, read_tiff, read_yaml,
+                       get_image_shape, read_window, write_window,
+                       create_empty_tiff)
 from tqdm import tqdm
 import gc
 
@@ -78,6 +80,79 @@ def apply_gaussian_distance_map(input_img:np.ndarray, sigma=5)->np.ndarray:
     return save_lab
     
 
+def lazy_gaussian_distance_map(input_image_path:str, output_image_path:str, sigma = 5):
+    
+    BLOCK_SIZE = 2000
+
+    img_metadata = get_image_metadata(input_image_path)
+    img_shape = get_image_shape(input_image_path)
+
+    create_empty_tiff(
+        filename = output_image_path,
+        dtype="float32",
+        img_metadata=img_metadata,
+        shape=img_shape
+    )
+
+    # Get the dimensions of the image
+    height, width = img_shape[-2:]
+
+    # Apply transformation to blocks with overlap
+    for y in tqdm(range(0, height, BLOCK_SIZE//2), position=1):
+
+        for x in tqdm(range(0, width, BLOCK_SIZE//2), position=2):
+            
+            # Define the boundaries of the block
+            y_end = min(y + BLOCK_SIZE, height)
+            x_end = min(x + BLOCK_SIZE, width)
+
+            # Process the current block
+            # block = label_ref[y:y_end, x:x_end]
+            bbox = ((y, y_end), (x,x_end))
+
+            input_img = read_window(input_image_path, bbox=bbox)
+
+            # if all the values are 0, pass
+            if np.all(input_img == 0):
+                continue
+
+            output_img = read_window(output_image_path, bbox=bbox)
+
+            # convert into bool to improve label() func performance
+            ref = (input_img > 0).astype("bool")
+
+            # label the image as components
+            label_ref = label(ref)
+            
+            # Apply euclidean distance transform
+            depth_map = distance_transform_edt(label_ref)
+            
+            # Apply gaussian filter
+            depth_map = gaussian_filter(depth_map, sigma)
+            
+            # Select the minimum non-zero value for each pixel
+            final_block = np.where(output_img > 0,
+                                   np.minimum(depth_map, output_img),
+                                   depth_map)
+            
+            
+            ###### NORMALIZE EVERY LABEL FOR A VALUE BETWEEN 0 AND 1 ######
+            label_final = label(final_block > 0)
+
+            # iterate through labels to normalize
+            for obj in np.unique(label_final[np.nonzero(label_final)]):
+                
+                # normalize the distance map
+                final_block[label_final==obj] = final_block[label_final==obj]/np.max(final_block[label_final==obj])
+
+
+            # store block transformed
+            write_window(
+                output_image_path, 
+                final_block,
+                bbox
+            )
+
 
 
 def generate_distance_map(input_image_path:str, output_image_path:str):
@@ -112,7 +187,6 @@ if __name__ == "__main__":
     
     args = read_yaml("args.yaml")
     
-    
     # train_input_path = args.train_segmentation_path
     train_input_path = join(ROOT_PATH, r"amazon_input_data\segmentation\train_set.tif")
 
@@ -120,7 +194,8 @@ if __name__ == "__main__":
     
     check_folder(dirname(train_output_path))
 
-    generate_distance_map(train_input_path, train_output_path)
+    # generate_distance_map(train_input_path, train_output_path)
+    lazy_gaussian_distance_map(train_input_path, train_output_path)
 
 
     print_sucess("Distance map generated successfully")
