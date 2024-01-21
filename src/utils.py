@@ -19,10 +19,6 @@ import torch
 import torch.distributed as dist
 import yaml
 
-from rasterio import logging
-
-log = logging.getLogger()
-log.setLevel(logging.ERROR)
 
 plt.set_loglevel(level = 'critical')
 
@@ -36,7 +32,7 @@ def get_device():
 
 
 
-def array2raster(path_to_save:str, array:np.ndarray, image_metadata:dict, dtype:str):
+def array2raster(path_to_save:str, array:np.ndarray, image_metadata:dict, dtype:str, compress="lzw"):
     """Save a NumPy array as a GeoTIFF file.
 
     Parameters
@@ -87,7 +83,7 @@ def array2raster(path_to_save:str, array:np.ndarray, image_metadata:dict, dtype:
         dtype = RASTER_DTYPE,
         crs = image_metadata['crs'],
         transform = image_metadata['transform'],
-        compress="lzw",
+        compress=None,
         num_threads='all_cpus'
     ) as writer:
         
@@ -939,7 +935,7 @@ class ParquetUpdater:
 
 
 
-def create_empty_tiff(filename:str, shape:tuple, dtype:str, img_metadata):
+def create_empty_tiff(filename:str, shape:tuple, dtype:str, img_metadata, compress="lzw"):
     """
     Create an empty TIFF file with the specified properties.
 
@@ -981,7 +977,7 @@ def create_empty_tiff(filename:str, shape:tuple, dtype:str, img_metadata):
         'height': height,
         'crs': crs,  # Adjust as needed
         'transform': transform,
-        'compress':"lzw"
+        'compress':compress
     }
 
     with rasterio.open(filename, 'w', **metadata) as dst:
@@ -1046,7 +1042,7 @@ def get_window_metadata(tiff_file, bbox):
     return profile
 
 
-def write_window(tiff_file:str, img_array:np.ndarray, bbox:tuple) -> None:
+def write_window(tiff_file:str, img_array:np.ndarray, bbox:tuple, compress="lzw") -> None:
     """ 
     Write image data into a specified window within a TIFF file.
 
@@ -1061,13 +1057,17 @@ def write_window(tiff_file:str, img_array:np.ndarray, bbox:tuple) -> None:
     """
     
     image_profile = get_image_metadata(tiff_file)
+    
+    
+    image_profile['compress'] = compress
+    image_profile["num_threads"] ='all_cpus'
 
-    image_profile.update(
-        num_threads='all_cpus'
-    )
 
     if img_array.ndim == 2:
         img_array = np.expand_dims(img_array, axis = 0)
+    
+    # Remove warning writing with compress
+    getLogger('rasterio').setLevel(level=CRITICAL)
 
     with rasterio.open(tiff_file, 'r+', **image_profile) as src:
         
