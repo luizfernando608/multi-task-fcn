@@ -82,13 +82,15 @@ def apply_gaussian_distance_map(input_img:np.ndarray, sigma=5)->np.ndarray:
 
 def lazy_gaussian_distance_map(input_image_path:str, output_image_path:str, sigma = 5):
     
-    BLOCK_SIZE = 2000
+    BLOCK_SIZE = 500
 
     img_metadata = get_image_metadata(input_image_path)
     img_shape = get_image_shape(input_image_path)
 
+    temp_file = join(dirname(output_image_path), "temp_file.tiff")
+    
     create_empty_tiff(
-        filename = output_image_path,
+        filename = temp_file,
         dtype="float32",
         img_metadata=img_metadata,
         shape=img_shape
@@ -100,7 +102,7 @@ def lazy_gaussian_distance_map(input_image_path:str, output_image_path:str, sigm
     # Apply transformation to blocks with overlap
     for y in tqdm(range(0, height, BLOCK_SIZE//2), position=1):
 
-        for x in tqdm(range(0, width, BLOCK_SIZE//2), position=2):
+        for x in range(0, width, BLOCK_SIZE//2):
             
             # Define the boundaries of the block
             y_end = min(y + BLOCK_SIZE, height)
@@ -116,7 +118,7 @@ def lazy_gaussian_distance_map(input_image_path:str, output_image_path:str, sigm
             if np.all(input_img == 0):
                 continue
 
-            output_img = read_window(output_image_path, bbox=bbox)
+            temp_img = read_window(temp_file, bbox=bbox)
 
             # convert into bool to improve label() func performance
             ref = (input_img > 0).astype("bool")
@@ -130,28 +132,72 @@ def lazy_gaussian_distance_map(input_image_path:str, output_image_path:str, sigm
             # Apply gaussian filter
             depth_map = gaussian_filter(depth_map, sigma)
             
+        
+            ###### NORMALIZE EVERY LABEL FOR A VALUE BETWEEN 0 AND 1 ######
+            label_final = label(depth_map > 0)
+            
             # Select the minimum non-zero value for each pixel
-            final_block = np.where(output_img > 0,
-                                   np.minimum(depth_map, output_img),
+            depth_map = np.where(temp_img > 0,
+                                   np.minimum(depth_map, temp_img),
                                    depth_map)
             
+            # store block transformed
+            write_window(
+                temp_file, 
+                depth_map,
+                bbox
+            )
+
+
+
+    create_empty_tiff(
+        filename = output_image_path,
+        dtype="float32",
+        img_metadata=img_metadata,
+        shape=img_shape
+    )
+
+
+    # Apply transformation to blocks with overlap
+    for y in tqdm(range(0, height, BLOCK_SIZE//2), position=1):
+
+        for x in range(0, width, BLOCK_SIZE//2):
             
-            ###### NORMALIZE EVERY LABEL FOR A VALUE BETWEEN 0 AND 1 ######
-            label_final = label(final_block > 0)
+            # Define the boundaries of the block
+            y_end = min(y + BLOCK_SIZE, height)
+            x_end = min(x + BLOCK_SIZE, width)
+
+            # Process the current block
+            bbox = ((y, y_end), (x,x_end))
+
+            temp_img = read_window(temp_file, bbox=bbox)
+            
+            label_final = label(temp_img > 0)
+
+            norm_depth = np.zeros_like(temp_img)
+
+            
+            output_img = read_window(output_image_path, bbox=bbox)
 
             # iterate through labels to normalize
             for obj in np.unique(label_final[np.nonzero(label_final)]):
                 
                 # normalize the distance map
-                final_block[label_final==obj] = final_block[label_final==obj]/np.max(final_block[label_final==obj])
+                norm_depth[label_final==obj] = temp_img[label_final==obj]/np.max(temp_img[label_final==obj])
+            
 
-
+            norm_depth = np.where(output_img > 0,
+                                   np.minimum(norm_depth, output_img),
+                                   norm_depth)
+            
             # store block transformed
             write_window(
                 output_image_path, 
-                final_block,
+                norm_depth,
                 bbox
             )
+    
+    os.remove(temp_file)
 
 
 
@@ -188,7 +234,7 @@ if __name__ == "__main__":
     args = read_yaml("args.yaml")
     
     # train_input_path = args.train_segmentation_path
-    train_input_path = join(ROOT_PATH, r"amazon_input_data\segmentation\train_set.tif")
+    train_input_path = join(ROOT_PATH, r"amazon_mc_input_data\segmentation\train_set.tif")
 
     train_output_path = join(ROOT_PATH, "test_data", "train_distance_map.tif")
     
