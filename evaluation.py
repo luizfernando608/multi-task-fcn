@@ -19,7 +19,8 @@ from src.utils import (add_padding_new, check_folder,
                        extract_patches_coord, get_device, get_image_metadata,
                        get_image_shape,
                        normalize, read_tiff, read_yaml,
-                       read_window, write_window, array2raster)
+                       read_window, write_window, array2raster,
+                       create_empty_tiff)
 
 ROOT_PATH = dirname(__file__)
 args = read_yaml(join(ROOT_PATH, "args.yaml"))
@@ -314,23 +315,26 @@ def evaluate_overlap(overlap:float,
     height = image_shape[-2]
     width = image_shape[-1]
 
-
-    pred_prob = np.zeros(shape = (num_classes, height, width), dtype='float32')
+    
 
     prob_map_path = join(current_iter_folder, 'prediction', f'prob_map_itc{test_itc}_{overlap}.tiff')
 
-    array2raster(prob_map_path, pred_prob, get_image_metadata(args.train_segmentation_path), dtype="float32")
-    
-    del pred_prob
+    create_empty_tiff(prob_map_path, 
+                      shape =  (num_classes, height, width), 
+                      dtype="float32", 
+                      img_metadata=get_image_metadata(args.train_segmentation_path)
+                    )
 
 
-    pred_depth = np.zeros(shape = (height, width), dtype='float16')
 
     depth_map_path = join(current_iter_folder, 'prediction', f'depth_map_itc{test_itc}_{overlap}.tiff')
 
-    array2raster(depth_map_path, pred_depth, get_image_metadata(args.train_segmentation_path), dtype="float32")
-    
-    del pred_depth
+    create_empty_tiff(
+        depth_map_path, 
+        shape = (height, width), 
+        dtype="float32",
+        img_metadata=get_image_metadata(args.train_segmentation_path)
+        )
 
 
 
