@@ -397,6 +397,10 @@ def train_epochs(last_checkpoint:str,
         # train the network for one epoch
         logger.info("============ Starting epoch %i ... ============" % epoch)
 
+        # Shufffle coords order before each train and evaluation
+        np.random.shuffle(train_loader.dataset.coords)
+        np.random.shuffle(val_loader.dataset.coords)
+
         # train the network
         epoch, scores_tr = train(train_loader, model, optimizer, epoch, lr_schedule, figures_path, logger)
         
