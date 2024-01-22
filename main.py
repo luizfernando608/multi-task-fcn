@@ -15,7 +15,7 @@ import torch.optim
 from skimage.color import label2rgb
 from tqdm import tqdm
 
-from generate_distance_map import generate_distance_map
+from generate_distance_map import generate_distance_map, lazy_gaussian_distance_map
 
 plt.set_loglevel(level = 'info')
 
@@ -861,7 +861,8 @@ while True:
         
         check_folder(dirname(TEST_DISTANCE_MAP_OUTPUT))
 
-        generate_distance_map(TEST_SEGMENTATION_PATH, TEST_DISTANCE_MAP_OUTPUT)
+        # generate_distance_map(TEST_SEGMENTATION_PATH, TEST_DISTANCE_MAP_OUTPUT)
+        lazy_gaussian_distance_map(TEST_SEGMENTATION_PATH, TEST_DISTANCE_MAP_OUTPUT)
 
 
         TRAIN_SEGMENTATION_PATH  = args.train_segmentation_path
@@ -869,7 +870,8 @@ while True:
 
         check_folder(dirname(TRAIN_DISTANCE_MAP_OUTPUT))
 
-        generate_distance_map(TRAIN_SEGMENTATION_PATH, TRAIN_DISTANCE_MAP_OUTPUT)
+        # generate_distance_map(TRAIN_SEGMENTATION_PATH, TRAIN_DISTANCE_MAP_OUTPUT)
+        lazy_gaussian_distance_map(TRAIN_SEGMENTATION_PATH, TRAIN_DISTANCE_MAP_OUTPUT)
         continue
     
     with torch.no_grad():
