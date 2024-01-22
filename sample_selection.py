@@ -355,13 +355,13 @@ def select_good_samples(old_pred_map:np.ndarray,
     filter_components_by_mask(new_pred_map)
     
     # Calculate main metrics of each tree
-    comp_old_pred = label(old_pred_map)
+    comp_old_pred = label(old_pred_map > 0)
     comp_old_stats = get_components_stats(comp_old_pred, old_pred_map).reset_index()
     comp_old_stats = comp_old_stats.groupby("tree_type")[["extent", "solidity", "eccentricity", "area"]].median()
     comp_old_stats.columns  = "ref_" + comp_old_stats.columns 
 
     # Get metrics about the new labels
-    comp_new_pred = label(new_pred_map)
+    comp_new_pred = label(new_pred_map > 0)
     comp_new_stats =  get_components_stats(comp_new_pred, new_pred_map).reset_index()
     # Join data from the last with the new one
     comp_new_stats = comp_new_stats.merge(comp_old_stats, on = "tree_type", how = "left")
@@ -408,6 +408,10 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
         The same set as all_labels_set but with some filters applied to minimize unbalanced classes problem
     """
     
+    # binarize high confidence sample
+    # Read and Write the prediction and select the best samples by distance and probability map
+    
+
     # set labels at the same scale as ground truth labels
     new_pred_map += 1
 

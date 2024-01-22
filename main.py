@@ -34,7 +34,10 @@ from src.multicropdataset import DatasetFromCoord, DataSetFromImagePath
 from src.utils import (ParquetUpdater, array2raster, check_folder,
                        fix_random_seeds, fix_relative_paths, get_device,
                        get_image_metadata, oversamp, print_sucess, read_tiff,
-                       read_yaml, restart_from_checkpoint, save_yaml)
+                       read_yaml, restart_from_checkpoint, save_yaml, get_image_shape, 
+                       read_window,
+                       write_window, 
+                       create_empty_tiff)
 
 gc.set_threshold(0)
 
@@ -265,19 +268,42 @@ def normalize_orthoimage_by_255():
     if os.path.isfile(OUTPUT_PATH):
         return
     
-    img = read_tiff(INPUT_PATH).astype("float32")
     img_metadata = get_image_metadata(INPUT_PATH)
-
-    for band in range(img.shape[0]):
-        
-        img[band] = img[band] / 255
+    img_shape = get_image_shape(INPUT_PATH)
     
-    array2raster(
-        path_to_save = OUTPUT_PATH,
-        array=img,
+    create_empty_tiff(
+        OUTPUT_PATH,
         dtype="float32",
-        image_metadata=img_metadata,
+        img_metadata=img_metadata,
+        shape=img_shape
     )
+
+    PSIZE = 1000
+
+    for row in tqdm(range(0, img_shape[-2], PSIZE)):
+        for col in range(0, img_shape[-1], PSIZE):
+            # Create BBOX
+            row_end = min([row + PSIZE, img_shape[-2]])
+
+            col_end = min([col + PSIZE, img_shape[-1]])
+
+            bbox = ((row, row_end), (col, col_end))
+            
+            # read windows
+            img = read_window(
+                INPUT_PATH,
+                bbox
+            )
+
+            # normalize
+            img_norm = img/255
+            
+            # write normalized image
+            write_window(
+                OUTPUT_PATH,
+                img_norm,
+                bbox,
+            )
 
 
 
