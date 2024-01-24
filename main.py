@@ -487,9 +487,7 @@ def train_iteration(current_iter_folder:str, args:dict):
     logger.info("============ Initialized Training ============")
     
     ######### Define Loader ############
-    PATH_NORM_ORTHO_IMG = join(
-        dirname(args.ortho_image), "ortho_image_normalized_by_255.tiff"
-    )
+    PATH_NORM_ORTHO_IMG = args.ortho_image
     
     ########### LOAD TRAIN SET ###########
     train_dataset = DataSetFromImagePath(
@@ -833,7 +831,7 @@ def generate_labels_view(current_iter_folder):
 
 
 
-normalize_orthoimage_by_255()
+
 
 ##### LOOP #####
 

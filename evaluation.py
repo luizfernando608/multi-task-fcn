@@ -260,9 +260,7 @@ def evaluate_overlap(overlap:float,
     DEVICE = get_device()
 
 
-    PATH_NORM_ORTHO_IMG = join(
-        dirname(args.ortho_image), "ortho_image_normalized_by_255.tiff"
-    )
+    PATH_NORM_ORTHO_IMG = args.ortho_image
     
     image_shape = get_image_shape(PATH_NORM_ORTHO_IMG)
 

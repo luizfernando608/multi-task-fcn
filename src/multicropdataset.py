@@ -454,6 +454,9 @@ class DataSetFromImagePath(Dataset):
             current_coord[1] += int(random_column_prop * (self.crop_size//2))
 
         image = self.read_window(current_coord, self.image_path)
+        
+        # normalize by 255
+        image = (image/255)
 
         if self.dataset_type == "test":
             
