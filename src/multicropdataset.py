@@ -391,7 +391,7 @@ class DataSetFromImagePath(Dataset):
             (start_column, end_column)
         )
 
-        with rasterio.open(img_path) as src:
+        with rasterio.open(img_path, num_threads='all_cpus') as src:
             image_crop = src.read(window = window)
 
         if len(image_crop.shape) == 3:
