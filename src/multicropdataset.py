@@ -312,7 +312,7 @@ class DataSetFromImagePath(Dataset):
             
             coords_label = self.img_segmentation[np.nonzero(self.img_segmentation)]
 
-            coords = oversample(coords, coords_label, "max")
+            coords = oversample(coords, coords_label, "median")
 
 
         elif self.dataset_type == "val":
