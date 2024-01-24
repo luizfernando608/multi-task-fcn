@@ -4,20 +4,20 @@
 # experiment directory
 model_dir: exp_deeplab_v4
 
-data_path: 1.0_amazon_version_data
+data_path: 1.3_amazon_version_data
 
 # Input data for the model
-ortho_image: amazon_mc_input_data/orthoimage/NOV_2017_FINAL_004.tif
-train_segmentation_path: amazon_mc_input_data/segmentation/train_set.tif
-test_segmentation_path: amazon_mc_input_data/segmentation/test_set.tif
+ortho_image: amazon_input_data/orthoimage/NOV_2017_FINAL_004.tif
+train_segmentation_path: amazon_input_data/segmentation/train_set.tif
+test_segmentation_path: amazon_input_data/segmentation/test_set.tif
 
-mask_path: "amazon_mc_input_data/mask.tif"
+mask_path: "amazon_input_data/mask.tif"
 
 
 checkpoint_file: checkpoint.pth.tar
 
 # Num of iter
-num_iter : 20
+num_iter : 10
 
 # pred2raster parameters
 # samples per epoch
@@ -47,9 +47,9 @@ filters: [32, 32, 32, 32]
 
 ### optim parameters ###
 # number of total epochs to run
-epochs: 1
+epochs: 30
 # batch size per gpu, i.e. how many unique instances per gpu
-batch_size: 16
+batch_size: 8
 # base learning rate
 base_lr: 0.01
 # final learning rate
@@ -84,7 +84,7 @@ seed: [31, 10, 75, 102, 40]
 ###############################
 
 # True for training 4 disjoint regions
-size_crops: 128
+size_crops: 256
 # Número de classes
 nb_class: 17
 
