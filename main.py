@@ -789,7 +789,6 @@ while True:
     print_sucess("Working ON:")
     print_sucess(get_device()) 
     
-    clear_ram_cache()
     # get current iteration folder
     current_iter_folder = get_current_iter_folder(args.data_path, args.test_itc, args.overlap)
     current_iter = int(current_iter_folder.split("_")[-1])
