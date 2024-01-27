@@ -225,7 +225,7 @@ if __name__ == "__main___":
     GROUND_TRUTH_PATH = os.path.join(args.data_path, args.test_segmentation_path)
     ground_truth_test = read_tiff(GROUND_TRUTH_PATH)
 
-    PRED_PATH = os.path.join(current_iter_folder, "raster_prediction", f"join_class_itc{args.test_itc}_{np.sum(args.overlap)}.TIF")
+    PRED_PATH = os.path.join(current_iter_folder, "raster_prediction", f"join_class_{np.sum(args.overlap)}.TIF")
     predicted_seg = read_tiff(PRED_PATH)
 
     

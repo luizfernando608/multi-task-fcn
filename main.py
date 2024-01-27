@@ -84,7 +84,7 @@ def is_iter_0_done(data_path:str):
         return False
 
 
-def get_current_iter_folder(data_path, test_itc, overlap):
+def get_current_iter_folder(data_path, overlap):
     """Get the current iteration folder
     This function verify which iteration folder isn't finished yet and return the path to it.
 
@@ -92,8 +92,6 @@ def get_current_iter_folder(data_path, test_itc, overlap):
     ----------
     data_path : str
         Path to the data folder 
-    test_itc : bool
-        Parameter used for create the output file name
     overlap : float
         Parameter used for create the output file name
 
@@ -112,12 +110,7 @@ def get_current_iter_folder(data_path, test_itc, overlap):
 
     folders = folders[folders.str.contains("iter_")]
 
-    # num_folders = folders.str.replace("iter_", "").astype(int).sort_values(ascending=False)
-
-    # iter_folders = ["iter_"+str(i) for i in num_folders.to_list()]
-
     iter_folders = folders.sort_values(ascending=False)
-
 
     for idx, iter_folder_name in enumerate(iter_folders):
         
@@ -126,9 +119,9 @@ def get_current_iter_folder(data_path, test_itc, overlap):
         prediction_path = join(iter_path, "raster_prediction")
         
         is_folder_generated = exists(prediction_path)
-        is_depth_done = isfile(join(prediction_path, f"depth_itc{test_itc}_{np.sum(overlap)}.TIF"))
-        is_pred_done = isfile(join(prediction_path, f"join_class_itc{test_itc}_{np.sum(overlap)}.TIF"))
-        is_prob_done = isfile(join(prediction_path, f"join_prob_itc{test_itc}_{np.sum(overlap)}.TIF"))
+        is_depth_done = isfile(join(prediction_path, f"depth_{np.sum(overlap)}.TIF"))
+        is_pred_done = isfile(join(prediction_path, f"join_class_{np.sum(overlap)}.TIF"))
+        is_prob_done = isfile(join(prediction_path, f"join_prob_{np.sum(overlap)}.TIF"))
         
         distance_map_path = join(iter_path, "distance_map")
         is_distance_map_done = isfile(join(distance_map_path, "selected_distance_map.tif"))
@@ -289,7 +282,6 @@ def train_epochs(last_checkpoint:str,
                  model:nn.Module, 
                  optimizer:torch.optim.Optimizer, 
                  lr_schedule:np.ndarray, 
-                 rank:int, 
                  count_early:int,
                  logger,
                  val_loader:torch.utils.data.DataLoader,
@@ -315,9 +307,7 @@ def train_epochs(last_checkpoint:str,
     optimizer : torch.optim.optimizer
         Pytorch optimizer
     lr_schedule : np.ndarray
-        Learning rate schedule to use at each iteration
-    rank : int
-        
+        Learning rate schedule to use at each iteration        
     count_early : int
         The counting how many epochs we didnt have improving in the loss
     val_loader : torch.utils.data.DataLoader
@@ -335,10 +325,10 @@ def train_epochs(last_checkpoint:str,
 
     for epoch in tqdm(range(start_epoch, num_epochs)):
 
-        if rank == 0:
-            if count_early == patience:
-                logger.info("============ Early Stop at epoch %i ... ============" % epoch)
-                break
+        
+        if count_early == patience:
+            logger.info("============ Early Stop at epoch %i ... ============" % epoch)
+            break
         
         np.random.shuffle(train_loader.dataset.coord)
         np.random.shuffle(val_loader.dataset.coord)
@@ -365,19 +355,18 @@ def train_epochs(last_checkpoint:str,
 
         is_best = (f1_avg - best_val) > 0.0009
 
-        # save checkpoints
-        if rank == 0:
-            if is_best: 
-                logger.info("============ Saving best models at epoch %i ... ============" % epoch)
-                
-                best_val = f1_avg
-                
-                save_checkpoint(last_checkpoint, model, optimizer, epoch+1, best_val, count_early)
-                
-                count_early = 0
+        # save checkpoints        
+        if is_best: 
+            logger.info("============ Saving best models at epoch %i ... ============" % epoch)
+            
+            best_val = f1_avg
+            
+            save_checkpoint(last_checkpoint, model, optimizer, epoch+1, best_val, count_early)
+            
+            count_early = 0
 
-            else:
-                count_early += 1
+        else:
+            count_early += 1
 
             
     print_sucess("Training done !")
@@ -570,7 +559,6 @@ def train_iteration(current_iter_folder:str, args:dict):
                      model, 
                      optimizer, 
                      lr_schedule, 
-                     args.rank, 
                      to_restore["count_early"],
                      logger = logger,
                      val_loader = val_loader,
@@ -615,13 +603,13 @@ def generate_labels_for_next_iteration(current_iter_folder:str, args:dict):
 
     current_iter = int(current_iter_folder.split("iter_")[-1])
 
-    NEW_PRED_FILE = join(current_iter_folder, "raster_prediction", f'join_class_itc{args.test_itc}_{np.sum(args.overlap)}.TIF')
+    NEW_PRED_FILE = join(current_iter_folder, "raster_prediction", f'join_class_{np.sum(args.overlap)}.TIF')
     new_pred_map = read_tiff(NEW_PRED_FILE)
 
-    NEW_PROB_FILE = join(current_iter_folder, "raster_prediction", f'join_prob_itc{args.test_itc}_{np.sum(args.overlap)}.TIF')
+    NEW_PROB_FILE = join(current_iter_folder, "raster_prediction", f'join_prob_{np.sum(args.overlap)}.TIF')
     new_prob_map = read_tiff(NEW_PROB_FILE)
 
-    NEW_DEPTH_FILE = join(current_iter_folder, "raster_prediction", f'depth_itc{args.test_itc}_{np.sum(args.overlap)}.TIF')
+    NEW_DEPTH_FILE = join(current_iter_folder, "raster_prediction", f'depth_{np.sum(args.overlap)}.TIF')
     new_depth_map = read_tiff(NEW_DEPTH_FILE)
 
 
@@ -685,7 +673,6 @@ def generate_labels_for_next_iteration(current_iter_folder:str, args:dict):
 
 def compile_metrics(current_iter_folder, args):
     # read test segmentation 
-    # f'join_class_itc{args.test_itc}_{np.sum(args.overlap)}.TIF'
     DATA_PATH = dirname(current_iter_folder)
 
     GROUND_TRUTH_TEST_PATH = args.test_segmentation_path
@@ -694,7 +681,7 @@ def compile_metrics(current_iter_folder, args):
     GROUND_TRUTH_TRAIN_PATH = args.train_segmentation_path
     ground_truth_train = read_tiff(GROUND_TRUTH_TRAIN_PATH)
 
-    PRED_PATH = join(current_iter_folder, "raster_prediction", f"join_class_itc{args.test_itc}_{np.sum(args.overlap)}.TIF")
+    PRED_PATH = join(current_iter_folder, "raster_prediction", f"join_class_{np.sum(args.overlap)}.TIF")
     predicted_seg = read_tiff(PRED_PATH)
 
     ### Save test metrics ###
@@ -790,7 +777,7 @@ while True:
     print_sucess(get_device()) 
     
     # get current iteration folder
-    current_iter_folder = get_current_iter_folder(args.data_path, args.test_itc, args.overlap)
+    current_iter_folder = get_current_iter_folder(args.data_path, args.overlap)
     current_iter = int(current_iter_folder.split("_")[-1])
 
     if current_iter > args.num_iter:
@@ -824,7 +811,6 @@ while True:
     current_model_folder = join(current_iter_folder, args.model_dir)
     check_folder(current_model_folder)
 
-    # logger, training_stats = initialize_exp(current_iter_folder, args, "epoch", "loss")
 
     train_iteration(current_iter_folder, args)
 

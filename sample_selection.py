@@ -469,11 +469,11 @@ if __name__ == "__main__":
 
     old_selected_labels = read_tiff(f"{version_folder}/iter_001/new_labels/selected_labels_set.tif")
                                
-    new_pred_map = read_tiff(f"{version_folder}/iter_002/raster_prediction/join_class_itcFalse_1.1.TIF")
+    new_pred_map = read_tiff(f"{version_folder}/iter_002/raster_prediction/join_class_1.1.TIF")
 
-    new_prob_map = read_tiff(f"{version_folder}/iter_002/raster_prediction/join_prob_itcFalse_1.1.TIF")
+    new_prob_map = read_tiff(f"{version_folder}/iter_002/raster_prediction/join_prob_1.1.TIF")
 
-    depth_predicted = read_tiff(f"{version_folder}/iter_001/raster_prediction/depth_itcFalse_1.1.TIF")
+    depth_predicted = read_tiff(f"{version_folder}/iter_001/raster_prediction/depth_1.1.TIF")
     
     all_labels_set, selected_labels_set =  get_new_segmentation_sample(old_selected_labels = old_selected_labels,
                                                                        old_all_labels = old_all_labels,

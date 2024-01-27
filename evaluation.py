@@ -23,7 +23,7 @@ args = read_yaml(os.path.join(ROOT_PATH, "args.yaml"))
 
 
         
-def define_test_loader(ortho_image:str, size_crops:int, overlap_rate:float, test_itc:bool, lab:np.ndarray = None,)->Tuple:
+def define_test_loader(ortho_image:str, size_crops:int, overlap_rate:float)->Tuple:
     """Define the PyTorch loader for evaluation.\\
     This loader is different from the trainning loader.\\
     Here, the loader gets patches from the entire image map.\\
@@ -37,9 +37,6 @@ def define_test_loader(ortho_image:str, size_crops:int, overlap_rate:float, test
         - The size of each patch    
     overlap_rate : float
         - The overlap rate between each patch
-    test_itc : bool
-    lab : np.ndarray, optional
-        Ground Truth Segmentation, by default None
 
     Returns
     -------
@@ -58,9 +55,9 @@ def define_test_loader(ortho_image:str, size_crops:int, overlap_rate:float, test
 
     image = read_tiff(ortho_image)
 
-    if not test_itc:
-        lab = np.ones(image.shape[1:])
-        lab[np.sum(image, axis=0) == (11*image.shape[0]) ] = 0
+
+    lab = np.ones(image.shape[1:])
+    lab[np.sum(image, axis=0) == (11*image.shape[0]) ] = 0
 
     # image = load_norm(ortho_image)
     # image = normalize(image)
@@ -141,7 +138,7 @@ def predict_network(ortho_image_shape:Tuple,
         for i, inputs in enumerate(tqdm(dataloader)):      
             # ============ multi-res forward passes ... ============
             # compute model loss and output
-            input_batch = inputs.to(DEVICE, non_blocking=True)
+            input_batch = inputs.to(DEVICE, non_blocking=True, dtype = torch.float)
             
             out_pred = model(input_batch) 
                
@@ -185,8 +182,7 @@ def predict_network(ortho_image_shape:Tuple,
         return pred_prob, np.argmax(pred_prob,axis=-1), pred_depth
 
 
-def evaluate_overlap(overlap:float, 
-                     ref:np.ndarray, 
+def evaluate_overlap(overlap:float,
                      current_iter_folder:str,
                      current_model_folder:str, 
                      ortho_image_shape:tuple,
@@ -194,7 +190,6 @@ def evaluate_overlap(overlap:float,
                      size_crops:int = args.size_crops, 
                      num_classes:int = args.nb_class,
                      ortho_image:str = args.ortho_image, 
-                     test_itc:bool = args.test_itc, 
                      batch_size:int = args.batch_size, 
                      workers:int = args.workers, 
                      checkpoint_file:str = args.checkpoint_file, 
@@ -209,8 +204,6 @@ def evaluate_overlap(overlap:float,
     ----------
     overlap : float
         Overlap rate between each patch
-    ref : np.ndarray
-        Ground truth segmentation
     current_iter_folder : str
         The path to the current iteration folder
     current_model_folder : str
@@ -225,8 +218,6 @@ def evaluate_overlap(overlap:float,
         Num of tree_types, by default args.nb_class
     ortho_image : str, optional
         The path to the image from remote sensing, by default args.ortho_image
-    test_itc : bool, optional
-        True for predicting only the test ITCs, by default args.test_itc
     batch_size : int, optional
         The batch size of the stochastic trainnig, by default args.batch_size
     workers : int, optional
@@ -247,9 +238,8 @@ def evaluate_overlap(overlap:float,
 
     image, coords, stride, overlap_in_pixels = define_test_loader(ortho_image, 
                                                                     size_crops, 
-                                                                    overlap, 
-                                                                    test_itc, 
-                                                                    ref)
+                                                                    overlap,
+                                                                    )
 
     test_dataset = DatasetFromCoord(
             image,
@@ -310,21 +300,21 @@ def evaluate_overlap(overlap:float,
 
     gc.collect()
 
-    prob_map_path = os.path.join(current_iter_folder, 'prediction', f'prob_map_itc{test_itc}_{overlap}.npy')
+    prob_map_path = os.path.join(current_iter_folder, 'prediction', f'prob_map_{overlap}.npy')
     np.save(prob_map_path, prob_map)
     del prob_map
     gc.collect()
     logger.info("Probability map done and saved.")
     
 
-    pred_class_path = os.path.join(current_iter_folder, 'prediction', f'pred_class_itc{test_itc}_{overlap}.npy')
+    pred_class_path = os.path.join(current_iter_folder, 'prediction', f'pred_class_{overlap}.npy')
     np.save(pred_class_path, pred_class)
     del pred_class
     gc.collect()
     logger.info("Prediction done and saved.")
     
     
-    depth_map_path = os.path.join(current_iter_folder, 'prediction', f'depth_map_itc{test_itc}_{overlap}.npy')
+    depth_map_path = os.path.join(current_iter_folder, 'prediction', f'depth_map_{overlap}.npy')
     np.save(depth_map_path, depth_map)
     del depth_map
     gc.collect()
@@ -353,7 +343,6 @@ def evaluate_iteration(current_iter_folder:str, args:dict):
     # logger.info("\n".join("%s: %s" % (k, str(v)) for k, v in sorted(dict(vars(args)).items())))
     
     overlaps = args.overlap
-    test_itc = args.test_itc
 
 
     current_model_folder = os.path.join(current_iter_folder, args.model_dir)
@@ -362,18 +351,14 @@ def evaluate_iteration(current_iter_folder:str, args:dict):
     
     ortho_image_shape = (ortho_image_metadata["height"], ortho_image_metadata["width"])
     
-    if test_itc:
-        ref = read_tiff(args.train_segmentation_path)
-    else:
-        ref = None
 
     # Iterate over the different overlap values
     for overlap in overlaps:
 
         # Verify if the prediction is already done
-        is_depth_done = os.path.exists(os.path.join(current_iter_folder, 'prediction', f'depth_map_itc{test_itc}_{overlap}.npy'))
-        is_prob_done = os.path.exists(os.path.join(current_iter_folder, 'prediction', f'prob_map_itc{test_itc}_{overlap}.npy'))
-        is_pred_done = os.path.exists(os.path.join(current_iter_folder, 'prediction', f'pred_class_itc{test_itc}_{overlap}.npy'))
+        is_depth_done = os.path.exists(os.path.join(current_iter_folder, 'prediction', f'depth_map_{overlap}.npy'))
+        is_prob_done = os.path.exists(os.path.join(current_iter_folder, 'prediction', f'prob_map_{overlap}.npy'))
+        is_pred_done = os.path.exists(os.path.join(current_iter_folder, 'prediction', f'pred_class_{overlap}.npy'))
         
         if is_depth_done and is_prob_done and is_pred_done:
 
@@ -383,7 +368,6 @@ def evaluate_iteration(current_iter_folder:str, args:dict):
         
         logger.info(f"Overlap {overlap} is not done. Starting...")
         evaluate_overlap(overlap, 
-                         ref, 
                          current_iter_folder, 
                          current_model_folder,
                          ortho_image_shape, 
