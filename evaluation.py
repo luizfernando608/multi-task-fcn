@@ -336,7 +336,7 @@ def evaluate_iteration(current_iter_folder:str, args:dict):
         Dictionary of arguments.
     """
 
-    logger = create_logger(os.path.join(current_iter_folder, "inference.log"), rank=0)
+    logger = create_logger(os.path.join(current_iter_folder, "inference.log"))
     logger.info("============ Initialized Evaluation ============")
 
     ## show each args

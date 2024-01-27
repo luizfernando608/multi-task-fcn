@@ -391,7 +391,7 @@ def train_iteration(current_iter_folder:str, args:dict):
 
     current_iter = int(current_iter_folder.split("_")[-1])
 
-    logger = create_logger(join(current_iter_folder, "train.log"), rank=0)
+    logger = create_logger(join(current_iter_folder, "train.log"))
     logger.info("============ Initialized Training ============")
     
     ######### Define Loader ############

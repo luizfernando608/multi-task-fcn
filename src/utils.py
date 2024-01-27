@@ -275,8 +275,10 @@ def plot_figures(img_mult:np.ndarray, ref:np.ndarray, pred:np.ndarray, depth:np.
     
     # Load the first 5 images in the batch
     batch = 5
+    
+    if img_mult.shape[1] > 5:
+        img_mult = img_mult[:batch,[5,3,2],:,:]
 
-    img_mult = img_mult[:batch,[5,3,2],:,:]
     img_mult = np.moveaxis(img_mult,1,3)
 
     ref = ref[:batch,:,:]
@@ -285,8 +287,7 @@ def plot_figures(img_mult:np.ndarray, ref:np.ndarray, pred:np.ndarray, depth:np.
 
     depth = depth[:batch,:,:]
     dist = dist[:batch,0,:,:]
-    
-    # pred_cl[ref==0] = 0
+
 
     nrows = 6
     ncols = batch
@@ -407,36 +408,6 @@ def init_distributed_mode(args):
     torch.cuda.set_device(args.gpu_to_work_on)
     return
 
-
-# def initialize_exp(params, *args, dump_params=True):
-#     """
-#     Initialize the experience:
-#     - dump parameters
-#     - create checkpoint repo
-#     - create a logger
-#     - create a panda object to keep track of the training statistics
-#     """
-
-#     # dump parameters
-#     if dump_params:
-#         pickle.dump(params, open(os.path.join(params.model_dir, "params.pkl"), "wb"))
-
-#     # create a panda object to log loss and acc
-#     training_stats = PD_Stats(
-#         os.path.join(params.model_dir, "stats" + str(params.rank) + ".pkl"), args
-#     )
-
-#     # create a logger
-#     logger = create_logger(
-#         os.path.join(params.model_dir, "train.log"), rank=params.rank
-#     )
-#     logger.info("============ Initialized logger ============")
-#     logger.info(
-#         "\n".join("%s: %s" % (k, str(v)) for k, v in sorted(dict(vars(params)).items()))
-#     )
-#     logger.info("The experiment will be stored in %s\n" % params.model_dir)
-#     logger.info("")
-#     return logger, training_stats
 
 
 def restart_from_checkpoint(ckp_paths:str, logger, run_variables:dict=None, **kwargs):
