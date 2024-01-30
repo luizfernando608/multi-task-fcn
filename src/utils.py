@@ -844,19 +844,6 @@ def save_yaml(data_dict:dict, yaml_path:str):
             yaml.dump(data_to_save, file)
 
 
-
-def print_sucess(message:str):
-    """Print success message in green color
-    
-    Parameters:
-    ----------
-    message: str
-        Message to print
-    """
-    print("\033[92m {}\033[00m" .format(message))
-
-
-
 def fix_relative_paths(args:dict):
     """Add Root Path to relative paths
 
@@ -874,6 +861,44 @@ def fix_relative_paths(args:dict):
             if isfile(absolute_path) or isdir(absolute_path):
 
                 args[key] = absolute_path
+
+
+
+
+def load_args(yaml_path:str)->dict:
+    """
+    1. Load arguments saved on yaml file.
+    2. Convert path inside the args to absolute path
+    
+    Parameters
+    ----------
+    yaml_path : str
+        Path to yaml with args
+    
+    Returns:
+    ----------
+    dict:
+        Arguments as dict
+    """
+    
+    args = read_yaml(yaml_path)
+    
+    fix_relative_paths(args)    
+    
+    return args
+
+
+def print_sucess(message:str):
+    """Print success message in green color
+    
+    Parameters:
+    ----------
+    message: str
+        Message to print
+    """
+    print("\033[92m {}\033[00m" .format(message))
+
+
 
 
 class ParquetUpdater:

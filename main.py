@@ -32,7 +32,7 @@ from src.multicropdataset import DatasetFromCoord
 from src.utils import (ParquetUpdater, array2raster, check_folder,
                        fix_random_seeds, fix_relative_paths, get_device,
                        get_image_metadata, oversamp, print_sucess, read_tiff,
-                       read_yaml, restart_from_checkpoint, save_yaml)
+                       read_yaml, restart_from_checkpoint, save_yaml, load_args)
 
 gc.set_threshold(0)
 
@@ -761,18 +761,22 @@ def generate_labels_view(current_iter_folder):
 #############
 
 ROOT_PATH = dirname(__file__)
-args = read_yaml(join(ROOT_PATH, "args.yaml"))
-fix_relative_paths(args)
+args = load_args(join(ROOT_PATH, "args.yaml"))
+
 
 # create output path
 check_folder(args.data_path)
 
+# Save args state into data_path
+save_yaml(args, join(args.data_path, "args.yaml"))
+
+
 ##### LOOP #####
 
 # Set random seed
-fix_random_seeds(args.seed[0])
+fix_random_seeds(args.seed)
 
-while True:  
+while True:
     print_sucess("Working ON:")
     print_sucess(get_device()) 
     
