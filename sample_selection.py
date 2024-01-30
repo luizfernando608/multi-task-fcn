@@ -34,6 +34,32 @@ def set_same_class_at_component(label_img:np.ndarray):
 
 
 def get_components_stats(components_img: np.ndarray, label_img: np.ndarray):
+    """
+    Calculate various geometric and intensity statistics for connected components in an image.
+
+    This function computes statistics such as area, convex area, bounding box area, extent, solidity, eccentricity,
+    orientation, centroid, bounding box, label, and mean intensity (tree_type) for each connected component in the
+    input image.
+
+    Parameters
+    ----------
+    components_img : np.ndarray
+        Image containing connected components represented by unique integer labels.
+    label_img : np.ndarray
+        Labeled image corresponding to the connected components in components_img.
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame containing computed statistics for each connected component. The component labels are set as
+        the index, and the "intensity_mean" column is renamed to "tree_type".
+
+    Notes
+    -----
+    The input images are expected to have components labeled with unique integers. The resulting DataFrame
+    includes geometric and intensity statistics for each labeled component.
+    """
+
     properties = [
         "area",
         "convex_area",
@@ -68,9 +94,30 @@ def remove_components_by_index(
     components_img: np.ndarray,
     label_img: np.ndarray,
 ):
-    # for idx in component_ids_to_remove:
-    #     label_img[components_img == idx] = 0
-    #     components_img[components_img == idx] = 0
+    """
+    Remove components from labeled and component images by their indices.
+
+    Given an array of component indices to be removed, this function sets the corresponding pixels in both the
+    components_img and label_img arrays to zero, effectively removing the specified components.
+
+    Parameters
+    ----------
+    component_ids_to_remove : np.ndarray
+        Array of component indices to be removed.
+    components_img : np.ndarray
+        Image containing connected components represented by unique integer labels.
+    label_img : np.ndarray
+        Labeled image corresponding to the connected components in components_img.
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    This function modifies the input arrays components_img and label_img in place by setting the pixels
+    corresponding to the specified component indices to zero.
+    """
     
     id_selection = np.argwhere(np.isin(components_img, component_ids_to_remove))
     
@@ -168,13 +215,31 @@ def get_label_intersection(
 
 
 def filter_components_by_geometric_property(label_img:np.ndarray, low_limit:float, high_limit:float, property = "area"):
-    """Filter components by geometric properties
-    Using some property about the compoment, this function select the components between the
-    low_limit and the high_limit.
+    """
+    Filter components in a labeled image based on geometric properties.
+
+    This function selects components whose geometric property (such as area) falls outside the specified
+    range defined by the low_limit and high_limit parameters.
 
     Parameters
     ----------
+    label_img : np.ndarray
+        Labeled image containing connected components.
+    low_limit : float
+        Lower limit for the geometric property. Components with property values below this limit will be removed.
+    high_limit : float
+        Upper limit for the geometric property. Components with property values above this limit will be removed.
+    property : str, optional
+        The geometric property to use for filtering (default is "area").
 
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    This function modifies the input labeled image in place by removing components that do not meet
+    the specified geometric property criteria.
     """
 
     components_img = label(label_img)
@@ -312,22 +377,23 @@ def select_good_samples(old_pred_map:np.ndarray,
                         new_depth_map:np.ndarray,
                         ) -> np.ndarray:
     """
-    This function defines the rules to select good samples based on model outputs.
+    Selects high-quality samples based on model outputs.
 
     Parameters
     ----------
     old_pred_map : np.ndarray
-        Segmentation map from the last iteration with tree two labels
+        Segmentation map from the previous iteration with tree type labels.
     new_pred_map : np.ndarray
-        New segmentation map with tree type labels
+        New segmentation map with tree type labels.
     new_prob_map : np.ndarray
-        New segmentation map with confidence/probability at each pixel
+        Confidence/probability map corresponding to the new segmentation.
     new_depth_map : np.ndarray
-        New depth map predicted by the auxiliar task of the model
+        Depth map predicted by the auxiliary task of the model.
+
     Returns
     -------
     np.ndarray
-        new_pred_map with the selected samples
+        New segmentation map with the selected high-quality samples.
     """
 
     new_pred_map = new_pred_map.copy()
