@@ -283,6 +283,11 @@ def plot_figures(img_mult:np.ndarray, ref:np.ndarray, pred:np.ndarray, depth:np.
         img_mult = img_mult[:batch, :, :, :]
 
     img_mult = np.moveaxis(img_mult, 1, 3)
+    
+    if img_mult.shape[1] > 5:
+        img_mult = img_mult[:batch,[5,3,2],:,:]
+
+    img_mult = np.moveaxis(img_mult,1,3)
 
     ref = ref[:batch,:,:]
     pred_cl = np.argmax(pred[:batch,:,:,:],axis=1)+1
@@ -290,8 +295,7 @@ def plot_figures(img_mult:np.ndarray, ref:np.ndarray, pred:np.ndarray, depth:np.
 
     depth = depth[:batch,:,:]
     dist = dist[:batch,0,:,:]
-    
-    # pred_cl[ref==0] = 0
+
 
     nrows = 6
     ncols = batch
@@ -412,36 +416,6 @@ def init_distributed_mode(args):
     torch.cuda.set_device(args.gpu_to_work_on)
     return
 
-
-# def initialize_exp(params, *args, dump_params=True):
-#     """
-#     Initialize the experience:
-#     - dump parameters
-#     - create checkpoint repo
-#     - create a logger
-#     - create a panda object to keep track of the training statistics
-#     """
-
-#     # dump parameters
-#     if dump_params:
-#         pickle.dump(params, open(os.path.join(params.model_dir, "params.pkl"), "wb"))
-
-#     # create a panda object to log loss and acc
-#     training_stats = PD_Stats(
-#         os.path.join(params.model_dir, "stats" + str(params.rank) + ".pkl"), args
-#     )
-
-#     # create a logger
-#     logger = create_logger(
-#         os.path.join(params.model_dir, "train.log"), rank=params.rank
-#     )
-#     logger.info("============ Initialized logger ============")
-#     logger.info(
-#         "\n".join("%s: %s" % (k, str(v)) for k, v in sorted(dict(vars(params)).items()))
-#     )
-#     logger.info("The experiment will be stored in %s\n" % params.model_dir)
-#     logger.info("")
-#     return logger, training_stats
 
 
 def restart_from_checkpoint(ckp_paths:str, logger, run_variables:dict=None, **kwargs):
@@ -878,19 +852,6 @@ def save_yaml(data_dict:dict, yaml_path:str):
             yaml.dump(data_to_save, file)
 
 
-
-def print_sucess(message:str):
-    """Print success message in green color
-    
-    Parameters:
-    ----------
-    message: str
-        Message to print
-    """
-    print("\033[92m {}\033[00m" .format(message))
-
-
-
 def fix_relative_paths(args:dict):
     """Add Root Path to relative paths
 
@@ -908,6 +869,44 @@ def fix_relative_paths(args:dict):
             if isfile(absolute_path) or isdir(absolute_path):
 
                 args[key] = absolute_path
+
+
+
+
+def load_args(yaml_path:str)->dict:
+    """
+    1. Load arguments saved on yaml file.
+    2. Convert path inside the args to absolute path
+    
+    Parameters
+    ----------
+    yaml_path : str
+        Path to yaml with args
+    
+    Returns:
+    ----------
+    dict:
+        Arguments as dict
+    """
+    
+    args = read_yaml(yaml_path)
+    
+    fix_relative_paths(args)    
+    
+    return args
+
+
+def print_sucess(message:str):
+    """Print success message in green color
+    
+    Parameters:
+    ----------
+    message: str
+        Message to print
+    """
+    print("\033[92m {}\033[00m" .format(message))
+
+
 
 
 class ParquetUpdater:

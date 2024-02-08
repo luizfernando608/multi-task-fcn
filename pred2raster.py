@@ -13,34 +13,34 @@ def pred2raster(current_iter_folder, args):
 
     prediction_file = os.path.join(
         output_folder,
-        f'join_class_itc{args.test_itc}_{np.sum(args.overlap)}.TIF'
+        f'join_class_{np.sum(args.overlap)}.TIF'
         )
     
     prob_file = os.path.join(
         output_folder,
-        f'join_prob_itc{args.test_itc}_{np.sum(args.overlap)}.TIF')
+        f'join_prob_{np.sum(args.overlap)}.TIF')
     
     
     depth_file = os.path.join(
         output_folder,
-        f'depth_itc{args.test_itc}_{np.sum(args.overlap)}.TIF')
+        f'depth_{np.sum(args.overlap)}.TIF')
                
     
     if not (isfile(prediction_file) and isfile(prob_file) and isfile(depth_file)):
     
         for ov in args.overlap:
             try:
-                prediction_path = os.path.join(current_iter_folder,'prediction',f'prob_map_itc{args.test_itc}_{ov}.npy')
+                prediction_path = os.path.join(current_iter_folder,'prediction',f'prob_map_{ov}.npy')
                 prediction_test = np.add(prediction_test, np.load(prediction_path))
                 
-                depth_path = os.path.join(current_iter_folder,'prediction',f'depth_map_itc{args.test_itc}_{ov}.npy')
+                depth_path = os.path.join(current_iter_folder,'prediction',f'depth_map_{ov}.npy')
                 depth_test = np.add(depth_test,np.load(depth_path))
                 
             except:
-                prediction_path = os.path.join(current_iter_folder,'prediction',f'prob_map_itc{args.test_itc}_{ov}.npy')
+                prediction_path = os.path.join(current_iter_folder,'prediction',f'prob_map_{ov}.npy')
                 prediction_test = np.load(prediction_path)
                 
-                depth_path = os.path.join(current_iter_folder,'prediction',f'depth_map_itc{args.test_itc}_{ov}.npy')
+                depth_path = os.path.join(current_iter_folder,'prediction',f'depth_map_{ov}.npy')
                 depth_test = np.load(depth_path)
                 
         

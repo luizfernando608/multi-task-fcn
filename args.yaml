@@ -4,34 +4,24 @@
 # experiment directory
 model_dir: exp_deeplab_v4
 
-data_path: 19.2_version_data
+data_path: 0.0_test_data
 
 # Input data for the model
-ortho_image: input_data/orthoimage/fixed_ortoA1_25tiff.tif
-train_segmentation_path: "input_data/segmentation/samples_A1_train2tif.tif"
-test_segmentation_path: "input_data/segmentation/samples_A1_test2tif.tif"
+ortho_image: amazon_mc_input_data/orthoimage/NOV_2017_FINAL_004.tif
+train_segmentation_path: "amazon_mc_input_data/segmentation/train_set.tif"
+test_segmentation_path: "amazon_mc_input_data/segmentation/test_set.tif"
 
-mask_path: "input_data/mask.tif"
+mask_path: "amazon_mc_input_data/mask.tif"
 
 
 checkpoint_file: checkpoint.pth.tar
 
-# Num of iter
-num_iter : 20
 
-# pred2raster parameters
-# samples per epoch
-overlap: [0.1, 0.3, 0.5]
-# 1: Random selection, 2: 4 region, 3: chessboard
-train_protocol: 1
-# True for training with 1 fold and testing with 3. False otherwise
-small_train_set: False
-# True for predicting only the test ITCs
-test_itc: False
-
+#################################
+###### TRAINING parameters ######
 
 # num samples per epoch
-samples: 5000
+samples: 100
 # True for data augmentation during training
 augment: True
 
@@ -40,16 +30,20 @@ arch: deeplabv3_resnet50
 # True for load pretrained weights from Imagenet
 is_pretrained: True
 
-# True for frozen the resnet backbone
-frozen: False
+# Dropout rate for deepvlab clasisfication traning
+dropout_rate: 0.01
+
 # Filter for the ResUnet for trained from scratch
 filters: [32, 32, 32, 32]
 
+# regularization weight of distance map
+lambda_weight: 1
+
 ### optim parameters ###
 # number of total epochs to run
-epochs: 30
+epochs: 2
 # batch size per gpu, i.e. how many unique instances per gpu
-batch_size: 32
+batch_size: 16
 # base learning rate
 base_lr: 0.01
 # final learning rate
@@ -62,21 +56,12 @@ start_warmup: 0.0
 # weight decay
 weight_decay: 1e-06
 
-### dist parameters ###
-# url used to set up distributed training; see https://pytorch.org/docs/stable/distributed.html
-dist_url: env://
-# number of processes: it is set automatically and should not be passed as argument
-world_size: -1
-# rank of this process: it is set automatically and should not be passed as argument
-rank: 0
-# this argument is not used and should be ignored
-local_rank: 0
 
 ### others parameters ###
 # number of data loading workers
 workers: 0
-# seeds
-seed: [31, 10, 75, 102, 40]
+# random seed
+seed: 31
 
 
 ###############################
@@ -86,18 +71,18 @@ seed: [31, 10, 75, 102, 40]
 # True for training 4 disjoint regions
 size_crops: 128
 # Número de classes
-nb_class: 14
+nb_class: 17
+# samples per epoch
+overlap: [0.1, 0.3, 0.5]
 
-# True for patch wise classification
-patch_wise: False
-# True for load model from path
-load_model_from_path: True
 
-# Save the model periodically
-checkpoint_freq: 1
-# whether to train with mixed precision or not
-use_fp16: True
-# synchronize bn
-sync_bn: pytorch
-# see
-syncbn_process_group_size: 8
+################################
+## Active Learning parameters ##
+################################
+
+# probability and distance map thershold to filter new components
+prob_thr: 0.7
+depth_thr: 0.2
+
+# Num of iter
+num_iter : 1

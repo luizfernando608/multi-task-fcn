@@ -34,6 +34,32 @@ def set_same_class_at_component(label_img:np.ndarray):
 
 
 def get_components_stats(components_img: np.ndarray, label_img: np.ndarray):
+    """
+    Calculate various geometric and intensity statistics for connected components in an image.
+
+    This function computes statistics such as area, convex area, bounding box area, extent, solidity, eccentricity,
+    orientation, centroid, bounding box, label, and mean intensity (tree_type) for each connected component in the
+    input image.
+
+    Parameters
+    ----------
+    components_img : np.ndarray
+        Image containing connected components represented by unique integer labels.
+    label_img : np.ndarray
+        Labeled image corresponding to the connected components in components_img.
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame containing computed statistics for each connected component. The component labels are set as
+        the index, and the "intensity_mean" column is renamed to "tree_type".
+
+    Notes
+    -----
+    The input images are expected to have components labeled with unique integers. The resulting DataFrame
+    includes geometric and intensity statistics for each labeled component.
+    """
+
     properties = [
         "area",
         "convex_area",
@@ -68,9 +94,30 @@ def remove_components_by_index(
     components_img: np.ndarray,
     label_img: np.ndarray,
 ):
-    # for idx in component_ids_to_remove:
-    #     label_img[components_img == idx] = 0
-    #     components_img[components_img == idx] = 0
+    """
+    Remove components from labeled and component images by their indices.
+
+    Given an array of component indices to be removed, this function sets the corresponding pixels in both the
+    components_img and label_img arrays to zero, effectively removing the specified components.
+
+    Parameters
+    ----------
+    component_ids_to_remove : np.ndarray
+        Array of component indices to be removed.
+    components_img : np.ndarray
+        Image containing connected components represented by unique integer labels.
+    label_img : np.ndarray
+        Labeled image corresponding to the connected components in components_img.
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    This function modifies the input arrays components_img and label_img in place by setting the pixels
+    corresponding to the specified component indices to zero.
+    """
     
     id_selection = np.argwhere(np.isin(components_img, component_ids_to_remove))
     
@@ -168,13 +215,31 @@ def get_label_intersection(
 
 
 def filter_components_by_geometric_property(label_img:np.ndarray, low_limit:float, high_limit:float, property = "area"):
-    """Filter components by geometric properties
-    Using some property about the compoment, this function select the components between the
-    low_limit and the high_limit.
+    """
+    Filter components in a labeled image based on geometric properties.
+
+    This function selects components whose geometric property (such as area) falls outside the specified
+    range defined by the low_limit and high_limit parameters.
 
     Parameters
     ----------
+    label_img : np.ndarray
+        Labeled image containing connected components.
+    low_limit : float
+        Lower limit for the geometric property. Components with property values below this limit will be removed.
+    high_limit : float
+        Upper limit for the geometric property. Components with property values above this limit will be removed.
+    property : str, optional
+        The geometric property to use for filtering (default is "area").
 
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    This function modifies the input labeled image in place by removing components that do not meet
+    the specified geometric property criteria.
     """
 
     components_img = label(label_img)
@@ -306,40 +371,71 @@ def join_labels_set(high_priority_labels:np.ndarray, low_priority_labels:np.ndar
     return labels_union
 
 
+def filter_map_by_depth_prob(pred_map:np.ndarray, prob_map:np.ndarray, depth_map:np.ndarray,  prob_thr:str, depth_thr:float,)->np.ndarray:
+    """
+    Filter a prediction map by the probability map.
+
+    Parameters
+    ----------
+    pred_map:np.ndarray
+        A 2D matrix with the class prediction, based on the class with highest confidence.
+    prob_map : np.ndarray
+        A 2D Probability map with the probability of the class with the highest model confidence
+    depth_map : np.ndarray
+        A 2D distance map with model the prediction
+    prob_thr : str
+        Prob threshold to select high confidence objects
+    depth_thr : float
+        Depth threshold to define the tree contours
+
+    Returns
+    -------
+    np.ndarray
+        Filtered image
+    """
+    # create a local copy for array
+    pred_map = pred_map.copy()
+    
+    # Smothing the contours of depth_map
+    depth_gauss = gaussian_filter(depth_map, sigma = 9)
+
+    # Smothing the contours of prob_map
+    prob_gauss = gaussian_filter(prob_map, sigma = 9)
+
+    # Selection the image
+    pred_map = np.where((depth_gauss > depth_thr) & (prob_gauss > prob_thr), pred_map, 0)
+
+    return pred_map
+
+
+
 def select_good_samples(old_pred_map:np.ndarray,
                         new_pred_map:np.ndarray, 
                         new_prob_map:np.ndarray, 
                         new_depth_map:np.ndarray,
                         ) -> np.ndarray:
     """
-    This function defines the rules to select good samples based on model outputs.
+    Selects high-quality samples based on model outputs.
 
     Parameters
     ----------
     old_pred_map : np.ndarray
-        Segmentation map from the last iteration with tree two labels
+        Segmentation map from the previous iteration with tree type labels.
     new_pred_map : np.ndarray
-        New segmentation map with tree type labels
+        New segmentation map with tree type labels.
     new_prob_map : np.ndarray
-        New segmentation map with confidence/probability at each pixel
+        Confidence/probability map corresponding to the new segmentation.
     new_depth_map : np.ndarray
-        New depth map predicted by the auxiliar task of the model
+        Depth map predicted by the auxiliary task of the model.
+
     Returns
     -------
     np.ndarray
-        new_pred_map with the selected samples
+        New segmentation map with the selected high-quality samples.
     """
 
     new_pred_map = new_pred_map.copy()
     
-    # depth map
-    depth_gauss = gaussian_filter(new_depth_map, sigma = 9)
-
-    # prob map
-    prob_gauss = gaussian_filter(new_prob_map, sigma = 9)
-
-    new_pred_map = np.where((depth_gauss > 0.2) & (prob_gauss > 0.9), new_pred_map, 0)
-
     # filter components too small or too large
     filter_components_by_geometric_property(new_pred_map, 
                                             low_limit = 1000, 
@@ -380,7 +476,9 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
                                 old_all_labels:np.ndarray,
                                 new_pred_map:np.ndarray, 
                                 new_prob_map:np.ndarray, 
-                                new_depth_map:np.ndarray)->Tuple[np.ndarray, np.ndarray, np.ndarray]:
+                                new_depth_map:np.ndarray, 
+                                prob_thr:float,
+                                depth_thr:float)->Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """ Get the new segmentation sample based on the segmentation from the last iteration and the new segmentation prediction set
     
     Parameters
@@ -405,6 +503,12 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
     # set labels at the same scale as ground truth labels
     new_pred_map += 1
 
+    new_pred_map = filter_map_by_depth_prob(new_pred_map, 
+                                            new_prob_map, 
+                                            new_depth_map, 
+                                            prob_thr,
+                                            depth_thr)
+    
     new_pred_map = select_good_samples(
         old_all_labels,
         new_pred_map,
@@ -469,11 +573,11 @@ if __name__ == "__main__":
 
     old_selected_labels = read_tiff(f"{version_folder}/iter_001/new_labels/selected_labels_set.tif")
                                
-    new_pred_map = read_tiff(f"{version_folder}/iter_002/raster_prediction/join_class_itcFalse_1.1.TIF")
+    new_pred_map = read_tiff(f"{version_folder}/iter_002/raster_prediction/join_class_1.1.TIF")
 
-    new_prob_map = read_tiff(f"{version_folder}/iter_002/raster_prediction/join_prob_itcFalse_1.1.TIF")
+    new_prob_map = read_tiff(f"{version_folder}/iter_002/raster_prediction/join_prob_1.1.TIF")
 
-    depth_predicted = read_tiff(f"{version_folder}/iter_001/raster_prediction/depth_itcFalse_1.1.TIF")
+    depth_predicted = read_tiff(f"{version_folder}/iter_001/raster_prediction/depth_1.1.TIF")
     
     all_labels_set, selected_labels_set =  get_new_segmentation_sample(old_selected_labels = old_selected_labels,
                                                                        old_all_labels = old_all_labels,
