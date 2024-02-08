@@ -284,10 +284,6 @@ def plot_figures(img_mult:np.ndarray, ref:np.ndarray, pred:np.ndarray, depth:np.
 
     img_mult = np.moveaxis(img_mult, 1, 3)
     
-    if img_mult.shape[1] > 5:
-        img_mult = img_mult[:batch,[5,3,2],:,:]
-
-    img_mult = np.moveaxis(img_mult,1,3)
 
     ref = ref[:batch,:,:]
     pred_cl = np.argmax(pred[:batch,:,:,:],axis=1)+1
