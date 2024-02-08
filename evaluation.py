@@ -141,7 +141,7 @@ def predict_network(ortho_image_shape:Tuple,
         for i, inputs in enumerate(tqdm(dataloader)):      
             # ============ multi-res forward passes ... ============
             # compute model loss and output
-            input_batch = inputs.to(DEVICE, non_blocking=True)
+            input_batch = inputs.to(DEVICE, non_blocking=True, dtype = torch.float)
             
             out_pred = model(input_batch) 
                
