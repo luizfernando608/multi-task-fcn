@@ -52,7 +52,7 @@ def pred2raster(current_iter_folder, args):
         image_metadata = get_image_metadata(RASTER_PATH)
         
         # Save the file
-        array2raster(prediction_file, np.argmax(prediction_test, axis = -1), image_metadata, "byte")    
+        array2raster(prediction_file, np.argmax(prediction_test, axis = -1), image_metadata, "uint8")    
         array2raster(prob_file, np.amax(prediction_test, axis = -1), image_metadata, "float32")  
         array2raster(depth_file, depth_test, image_metadata, "float32")   
 
