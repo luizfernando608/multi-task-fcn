@@ -16,12 +16,9 @@ mask_path: "amazon_mc_input_data/mask.tif"
 
 checkpoint_file: checkpoint.pth.tar
 
-# Num of iter
-num_iter : 1
 
-# pred2raster parameters
-# samples per epoch
-overlap: [0.1, 0.3, 0.5]
+#################################
+###### TRAINING parameters ######
 
 # num samples per epoch
 samples: 100
@@ -33,10 +30,14 @@ arch: deeplabv3_resnet50
 # True for load pretrained weights from Imagenet
 is_pretrained: True
 
-# True for frozen the resnet backbone
-# frozen: False
+# Dropout rate for deepvlab clasisfication traning
+dropout_rate: 0.01
+
 # Filter for the ResUnet for trained from scratch
 filters: [32, 32, 32, 32]
+
+# regularization weight of distance map
+lambda_weight: 1
 
 ### optim parameters ###
 # number of total epochs to run
@@ -70,4 +71,18 @@ seed: 31
 # True for training 4 disjoint regions
 size_crops: 128
 # Número de classes
-nb_class: 14
+nb_class: 17
+# samples per epoch
+overlap: [0.1, 0.3, 0.5]
+
+
+################################
+## Active Learning parameters ##
+################################
+
+# probability and distance map thershold to filter new components
+prob_thr: 0.7
+depth_thr: 0.2
+
+# Num of iter
+num_iter : 1

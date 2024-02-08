@@ -3,6 +3,7 @@ import os
 from logging import Logger
 from os.path import dirname, join
 from typing import Literal, Tuple
+import logging
 
 import numpy as np
 import torch
@@ -72,7 +73,8 @@ def build_model(image_shape:list,
                 arch:Literal["resunet", "deeplabv3_resnet50", "deeplabv3+", "deeplabv3+_resnet9"], 
                 filters:list, 
                 pretrained:bool, 
-                psize:int)->nn.Module:
+                psize:int,
+                dropout_rate:float)->nn.Module:
     """Build model according to architecture
     The architecture can be 'resunet' or 'deeplabv3_resnet50'
     The model can be either pretrained or randomly initialized
@@ -92,6 +94,9 @@ def build_model(image_shape:list,
         If True, the model is loaded from pretrained weights available in pytorch hub
     psize : int
         Patch size
+    dropout_rate : float
+        Dropout rate for classification task
+
     Returns
     -------
     nn.Module
@@ -164,7 +169,7 @@ def build_model(image_shape:list,
         
         # modify classifier to the num of classes
         model.classifier[4] = nn.Sequential(
-            nn.Dropout(p = 0.65),
+            nn.Dropout(p = dropout_rate),
             nn.Conv2d(
                 in_channels = 256, 
                 out_channels = num_classes, 
@@ -195,7 +200,7 @@ def build_model(image_shape:list,
     return model
 
 
-def load_weights(model: nn.Module, checkpoint_file_path:str, logger: Logger)-> nn.Module:
+def load_weights(model: nn.Module, checkpoint_file_path:str)-> nn.Module:
     """Load weights for model from checkpoint file
     If the checkpoint file doesnt exist, the model is loaded with random weights
 
@@ -205,9 +210,6 @@ def load_weights(model: nn.Module, checkpoint_file_path:str, logger: Logger)-> n
         Pytorch builded model
     checkpoint_file_path : str
         Path to checkpoint file
-    logger : Logger
-        Logger to log information
-
     Returns
     -------
     nn.Module
@@ -231,20 +233,20 @@ def load_weights(model: nn.Module, checkpoint_file_path:str, logger: Logger)-> n
         for k, v in model.state_dict().items():
             
             if k not in list(state_dict):
-                logger.info(f'key "{k}" could not be found in provided state dict')
-            
+                logging.info(f'key "{k}" could not be found in provided state dict')
+
             elif state_dict[k].shape != v.shape:
-                logger.info(f'key "{k}" is of different shape in model and provided state dict')
+                logging.info(f'key "{k}" is of different shape in model and provided state dict')
                 state_dict[k] = v
         
 
         # Set the model weights
         msg = model.load_state_dict(state_dict, strict=False)
-        logger.info(f"Load pretrained model with msg: {msg}")
+        logging.info(f"Load pretrained model with msg: {msg}")
 
     
     else:
-        logger.info("No pretrained weights found => training with random weights")
+        logging.info("No pretrained weights found => training with random weights")
     
     return model
 
@@ -292,8 +294,8 @@ def train(train_loader:torch.utils.data.DataLoader,
           optimizer:torch.optim.Optimizer, 
           epoch:int, 
           lr_schedule:np.ndarray, 
-          figures_path:str, 
-          logger: Logger):
+          lambda_weight:float, 
+          figures_path:str):
     """Train model for one epoch
 
     Parameters
@@ -356,7 +358,7 @@ def train(train_loader:torch.utils.data.DataLoader,
 
         loss2 = mask*aux_criterion(sig(out_batch['aux'])[:,0,:,:], depth)
         
-        loss = (loss1 + loss2)/2 
+        loss = (loss1 + lambda_weight*loss2)/2 
         loss = torch.sum(loss)/torch.sum(ref>0)
 
         # clear previous gradients, compute gradients of all variables wrt loss
@@ -376,7 +378,7 @@ def train(train_loader:torch.utils.data.DataLoader,
             with torch.no_grad():
                 summary_batch = evaluate_metrics(soft(out_batch['out']), ref)
             
-            logger.info(
+            logging.info(
                 "Epoch: [{0}][{1}]\t"
                 "Loss {loss.val:.4f} ({loss.avg:.4f})\t"
                 "Lr: {lr:.4f}".format(
@@ -386,7 +388,7 @@ def train(train_loader:torch.utils.data.DataLoader,
                     lr=optimizer.param_groups[0]["lr"],
                 )
             )
-            logger.info(f"Accuracy:{summary_batch['Accuracy']}, avgF1:{summary_batch['avgF1']}")
+            logging.info(f"Accuracy:{summary_batch['Accuracy']}, avgF1:{summary_batch['avgF1']}")
             
         if it == 0:
             # plot samples results for visual inspection
@@ -396,7 +398,9 @@ def train(train_loader:torch.utils.data.DataLoader,
                             soft(out_batch['out']),
                             depth,
                             sig(out_batch['aux']),
-                            figures_path,epoch,'train')
+                            figures_path,
+                            epoch,
+                            'train')
 
             
     return (epoch, float(loss_avg.avg))

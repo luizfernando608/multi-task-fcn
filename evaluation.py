@@ -262,18 +262,19 @@ def evaluate_overlap(overlap:float,
     logger.info("Building data done with {} patches loaded.".format(coords.shape[0]))
     
 
-    model = model = build_model(
+    model = build_model(
         image.shape, 
         args.nb_class,
         args.arch, 
         args.filters, 
         args.is_pretrained,
-        psize = args.size_crops
+        psize = args.size_crops,
+        dropout_rate = args.dropout_rate
     )
 
 
     last_checkpoint = os.path.join(current_model_folder, checkpoint_file)
-    model = load_weights(model, last_checkpoint, logger)
+    model = load_weights(model, last_checkpoint)
     logger.info("Model loaded from {}".format(last_checkpoint))
 
     # Load model to GPU

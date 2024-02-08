@@ -337,7 +337,13 @@ def train_epochs(last_checkpoint:str,
         logger.info("============ Starting epoch %i ... ============" % epoch)
 
         # train the network
-        epoch, scores_tr = train(train_loader, model, optimizer, epoch, lr_schedule, figures_path, logger)
+        epoch, scores_tr = train(train_loader=train_loader, 
+                                 model=model, 
+                                 optimizer=optimizer, 
+                                 epoch=epoch, 
+                                 lr_schedule=lr_schedule, 
+                                 figures_path=figures_path, 
+                                 lambda_weight=args.lambda_weight)
         
         f1_avg, f1_by_class_avg = eval(val_loader, model)
         
@@ -467,7 +473,8 @@ def train_iteration(current_iter_folder:str, args:dict):
         args.arch, 
         args.filters, 
         args.is_pretrained,
-        psize = args.size_crops
+        psize = args.size_crops,
+        dropout_rate = args.dropout_rate
     )
 
     ########## LOAD MODEL WEIGHTS FROM THE LAST CHECKPOINT ##########
@@ -492,7 +499,7 @@ def train_iteration(current_iter_folder:str, args:dict):
             pass
 
 
-    model = load_weights(model, last_checkpoint, logger)
+    model = load_weights(model, last_checkpoint)
     ###################################################################
     
     # Load model to GPU
@@ -568,7 +575,7 @@ def train_iteration(current_iter_folder:str, args:dict):
 
     #### CHANGE MODEL STATUS TO FINISHED ####
     # load models weights again to change status to is_iter_finished=True
-    model = load_weights(model, current_checkpoint, logger)
+    model = load_weights(model, current_checkpoint)
 
     to_restore = {"epoch": 0, "count_early": 0, "is_iter_finished":False, "best_val":(0.)}
     restart_from_checkpoint(
@@ -634,7 +641,9 @@ def generate_labels_for_next_iteration(current_iter_folder:str, args:dict):
         old_selected_labels = old_selected_labels,
         new_pred_map = new_pred_map, 
         new_prob_map = new_prob_map, 
-        new_depth_map = new_depth_map
+        new_depth_map = new_depth_map,
+        prob_thr = args.prob_thr,
+        depth_thr = args.depth_thr
     )
 
     ##### SAVE NEW LABELS ####

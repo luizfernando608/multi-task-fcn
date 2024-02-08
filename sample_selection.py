@@ -371,6 +371,44 @@ def join_labels_set(high_priority_labels:np.ndarray, low_priority_labels:np.ndar
     return labels_union
 
 
+def filter_map_by_depth_prob(pred_map:np.ndarray, prob_map:np.ndarray, depth_map:np.ndarray,  prob_thr:str, depth_thr:float,)->np.ndarray:
+    """
+    Filter a prediction map by the probability map.
+
+    Parameters
+    ----------
+    pred_map:np.ndarray
+        A 2D matrix with the class prediction, based on the class with highest confidence.
+    prob_map : np.ndarray
+        A 2D Probability map with the probability of the class with the highest model confidence
+    depth_map : np.ndarray
+        A 2D distance map with model the prediction
+    prob_thr : str
+        Prob threshold to select high confidence objects
+    depth_thr : float
+        Depth threshold to define the tree contours
+
+    Returns
+    -------
+    np.ndarray
+        Filtered image
+    """
+    # create a local copy for array
+    pred_map = pred_map.copy()
+    
+    # Smothing the contours of depth_map
+    depth_gauss = gaussian_filter(depth_map, sigma = 9)
+
+    # Smothing the contours of prob_map
+    prob_gauss = gaussian_filter(prob_map, sigma = 9)
+
+    # Selection the image
+    pred_map = np.where((depth_gauss > depth_thr) & (prob_gauss > prob_thr), pred_map, 0)
+
+    return pred_map
+
+
+
 def select_good_samples(old_pred_map:np.ndarray,
                         new_pred_map:np.ndarray, 
                         new_prob_map:np.ndarray, 
@@ -398,14 +436,6 @@ def select_good_samples(old_pred_map:np.ndarray,
 
     new_pred_map = new_pred_map.copy()
     
-    # depth map
-    depth_gauss = gaussian_filter(new_depth_map, sigma = 9)
-
-    # prob map
-    prob_gauss = gaussian_filter(new_prob_map, sigma = 9)
-
-    new_pred_map = np.where((depth_gauss > 0.2) & (prob_gauss > 0.9), new_pred_map, 0)
-
     # filter components too small or too large
     filter_components_by_geometric_property(new_pred_map, 
                                             low_limit = 1000, 
@@ -446,7 +476,9 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
                                 old_all_labels:np.ndarray,
                                 new_pred_map:np.ndarray, 
                                 new_prob_map:np.ndarray, 
-                                new_depth_map:np.ndarray)->Tuple[np.ndarray, np.ndarray, np.ndarray]:
+                                new_depth_map:np.ndarray, 
+                                prob_thr:float,
+                                depth_thr:float)->Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """ Get the new segmentation sample based on the segmentation from the last iteration and the new segmentation prediction set
     
     Parameters
@@ -471,6 +503,12 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
     # set labels at the same scale as ground truth labels
     new_pred_map += 1
 
+    new_pred_map = filter_map_by_depth_prob(new_pred_map, 
+                                            new_prob_map, 
+                                            new_depth_map, 
+                                            prob_thr,
+                                            depth_thr)
+    
     new_pred_map = select_good_samples(
         old_all_labels,
         new_pred_map,
