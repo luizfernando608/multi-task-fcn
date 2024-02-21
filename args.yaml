@@ -4,24 +4,23 @@
 # experiment directory
 model_dir: exp_deeplab_v4
 
-data_path: 0.0_test_data
+data_path: 2.5_version_data
 
 # Input data for the model
-ortho_image: amazon_mc_input_data/orthoimage/NOV_2017_FINAL_004.tif
-train_segmentation_path: "amazon_mc_input_data/segmentation/train_set.tif"
-test_segmentation_path: "amazon_mc_input_data/segmentation/test_set.tif"
-
-mask_path: "amazon_mc_input_data/mask.tif"
+ortho_image: amazon_md_input_data/orthoimage/NOV_2017_FINAL_004.tif
+train_segmentation_path: "amazon_md_input_data/segmentation/train_set.tif"
+test_segmentation_path: "amazon_md_input_data/segmentation/test_set.tif"
+mask_path: "amazon_md_input_data/mask.tif"
 
 
 checkpoint_file: checkpoint.pth.tar
 
 
-#################################
+################################# 
 ###### TRAINING parameters ######
 
 # num samples per epoch
-samples: 100
+samples: 2500
 # True for data augmentation during training
 augment: True
 
@@ -31,7 +30,7 @@ arch: deeplabv3_resnet50
 is_pretrained: True
 
 # Dropout rate for deepvlab clasisfication traning
-dropout_rate: 0.01
+dropout_rate: 0.5
 
 # Filter for the ResUnet for trained from scratch
 filters: [32, 32, 32, 32]
@@ -41,7 +40,7 @@ lambda_weight: 1
 
 ### optim parameters ###
 # number of total epochs to run
-epochs: 2
+epochs: 30
 # batch size per gpu, i.e. how many unique instances per gpu
 batch_size: 16
 # base learning rate
@@ -69,7 +68,7 @@ seed: 31
 ###############################
 
 # True for training 4 disjoint regions
-size_crops: 128
+size_crops: 512
 # Número de classes
 nb_class: 17
 # samples per epoch
@@ -82,7 +81,7 @@ overlap: [0.1, 0.3, 0.5]
 
 # probability and distance map thershold to filter new components
 prob_thr: 0.7
-depth_thr: 0.2
+depth_thr: 0.1
 
 # Num of iter
 num_iter : 1
