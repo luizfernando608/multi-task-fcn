@@ -710,7 +710,7 @@ def compile_metrics(current_iter_folder, args):
     
     all_labels = read_tiff(join(current_iter_folder, "new_labels", "all_labels_set.tif"))
 
-    all_labels_metrics = evaluate_component_metrics(ground_truth_test, all_labels, 14)
+    all_labels_metrics = evaluate_component_metrics(ground_truth_test, all_labels, args.nb_class)
 
     save_yaml(all_labels_metrics, HIGH_PROB_COMPONENTS_PATH)
 
