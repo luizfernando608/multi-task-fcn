@@ -16,7 +16,7 @@ from src.model import build_model, load_weights
 from src.multicropdataset import DatasetFromCoord
 from src.utils import (add_padding_new, check_folder,
                        extract_patches_coord, get_device, get_image_metadata,
-                       normalize, read_tiff, read_yaml)
+                       normalize, read_tiff, read_yaml, load_norm)
 
 ROOT_PATH = os.path.dirname(__file__)
 args = read_yaml(os.path.join(ROOT_PATH, "args.yaml"))
@@ -53,20 +53,12 @@ def define_test_loader(ortho_image:str, size_crops:int, overlap_rate:float)->Tup
             The real overlap in pixels
     """
 
-    image = read_tiff(ortho_image)
-
+    
+    
+    image = load_norm(ortho_image)
 
     lab = np.ones(image.shape[1:])
     lab[np.sum(image, axis=0) == (11*image.shape[0]) ] = 0
-
-    # image = load_norm(ortho_image)
-    # image = normalize(image)
-    print("Before normalize, Min value: ", image.min(), " Max value: ", image.max())
-    
-    normalize(image)
-
-    print("Normalize, Min value: ", image.min(), " Max value: ", image.max())
-
     
     image, stride, step_row, step_col, overlap, _, _ = add_padding_new(image, size_crops, overlap_rate)
     
