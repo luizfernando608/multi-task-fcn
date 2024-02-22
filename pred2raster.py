@@ -1,12 +1,14 @@
 import os
 from os.path import isfile
-
+from logging import getLogger
 import numpy as np
 
 from src.utils import array2raster, check_folder, get_image_metadata, read_yaml
-
+logger = getLogger("__main__")
 
 def pred2raster(current_iter_folder, args):
+    
+    logger.info("Computing the mean between the 3 slices")
 
     output_folder = os.path.join(current_iter_folder, 'raster_prediction')
     check_folder(output_folder)
@@ -50,6 +52,8 @@ def pred2raster(current_iter_folder, args):
         # Get the metadata from segmentation file to save with the output with the same conf
         RASTER_PATH = args.train_segmentation_path
         image_metadata = get_image_metadata(RASTER_PATH)
+        
+        logger.info("Saving the raster prediction")
         
         # Save the file
         array2raster(prediction_file, np.argmax(prediction_test, axis = -1), image_metadata, "uint8")    

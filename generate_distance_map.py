@@ -6,7 +6,9 @@ from skimage.measure import label
 
 from src.utils import (array2raster, check_folder, get_image_metadata,
                        print_sucess, read_tiff, read_yaml)
+from logging import getLogger
 
+logger = getLogger("__main__")
 
 def apply_gaussian_distance_map(input_img:np.ndarray, sigma=5)->np.ndarray:
     """Apply euclidean distance transform and gaussian filter to the input image

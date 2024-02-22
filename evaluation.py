@@ -1,6 +1,7 @@
 import gc
 import os
 from logging import Logger
+from logging import getLogger
 from typing import Tuple
 
 import numpy as np
@@ -21,7 +22,7 @@ from src.utils import (add_padding_new, check_folder,
 ROOT_PATH = os.path.dirname(__file__)
 args = read_yaml(os.path.join(ROOT_PATH, "args.yaml"))
 
-
+logger = getLogger("__main__")
         
 def define_test_loader(ortho_image:str, size_crops:int, overlap_rate:float)->Tuple:
     """Define the PyTorch loader for evaluation.\\
@@ -178,7 +179,6 @@ def evaluate_overlap(overlap:float,
                      current_iter_folder:str,
                      current_model_folder:str, 
                      ortho_image_shape:tuple,
-                     logger:Logger, 
                      size_crops:int = args.size_crops, 
                      num_classes:int = args.nb_class,
                      ortho_image:str = args.ortho_image, 
@@ -329,14 +329,7 @@ def evaluate_iteration(current_iter_folder:str, args:dict):
         Dictionary of arguments.
     """
 
-    logger = create_logger(os.path.join(current_iter_folder, "inference.log"))
     logger.info("============ Initialized Evaluation ============")
-
-    ## show each args
-    # logger.info("\n".join("%s: %s" % (k, str(v)) for k, v in sorted(dict(vars(args)).items())))
-    
-    overlaps = args.overlap
-
 
     current_model_folder = os.path.join(current_iter_folder, args.model_dir)
 
@@ -346,7 +339,7 @@ def evaluate_iteration(current_iter_folder:str, args:dict):
     
 
     # Iterate over the different overlap values
-    for overlap in overlaps:
+    for overlap in  args.overlap:
 
         # Verify if the prediction is already done
         is_depth_done = os.path.exists(os.path.join(current_iter_folder, 'prediction', f'depth_map_{overlap}.npy'))
@@ -363,8 +356,7 @@ def evaluate_iteration(current_iter_folder:str, args:dict):
         evaluate_overlap(overlap, 
                          current_iter_folder, 
                          current_model_folder,
-                         ortho_image_shape, 
-                         logger)
+                         ortho_image_shape)
         
         logger.info(f"Overlap {overlap} done.")
 
