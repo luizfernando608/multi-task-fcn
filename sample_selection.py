@@ -337,7 +337,7 @@ def filter_components_by_mask(pred_map:np.ndarray):
 
 def join_labels_set(high_priority_labels:np.ndarray, low_priority_labels:np.ndarray, overlap_limit:int=0.05) -> np.ndarray:
     """Join the high priority labels with the low priority labels based on the components area
-    The join doesnt overlap the component or cut any component by the other
+    The join doesnt overlap the component or cut any component by the other\n
     If there is an overlap, the component from the high priority labels is kept
 
     Parameters
@@ -363,12 +363,25 @@ def join_labels_set(high_priority_labels:np.ndarray, low_priority_labels:np.ndar
     
     # get low priority components
     low_priority_comp = label(low_priority_labels)
+    
+    low_components_in_high = np.unique(low_priority_comp[(low_priority_comp>0) & (high_priority_labels>0) ])
+    
+    low_components_not_in_high = np.unique(low_priority_comp[~np.isin(low_priority_comp,low_components_in_high)])
+    low_components_not_in_high = low_components_not_in_high[np.nonzero(low_components_not_in_high)]
+    
+    # Joining the components that doesnt have intersection
+    labels_union = np.where(
+        np.isin(low_priority_comp, low_components_not_in_high), 
+        low_priority_labels, 
+        high_priority_labels
+    )
 
-    for component in np.unique(low_priority_comp[np.nonzero(low_priority_comp)]):
+    # Adding the components with intersection
+    for component in np.unique(low_components_in_high):
         
-        overlap = np.mean(labels_union[low_priority_comp==component]>0)
+        overlap = np.mean(high_priority_labels[low_priority_comp==component]>0)
 
-        # If the overlap is lower than the limit, add the component to the high priority labels
+        # If the overlap is lower than the limit, add the component to the labels union
         if overlap < overlap_limit:
             low_id = low_priority_labels[(low_priority_comp==component)]
             
@@ -452,7 +465,7 @@ def select_good_samples(old_pred_map:np.ndarray,
     
     # filter components too small or too large
     filter_components_by_geometric_property(new_pred_map, 
-                                            low_limit = 20_000, 
+                                            low_limit = 1_000, 
                                             high_limit = np.inf, # high limit area
                                             property = "area")
     
@@ -584,24 +597,26 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
 
 
 if __name__ == "__main__":
+    import matplotlib.pyplot as plt
     args = read_yaml("args.yaml")
     ROOT_PATH = dirname(__file__)
     
-    version_folder = join(ROOT_PATH, "11.0_version_data")
-    
-    gt_map = read_tiff(f"{version_folder}/segmentation/samples_A1_train2tif.tif")
+    version_folder = join(ROOT_PATH, "19.2_version_data")
+    input_data_folder = join(ROOT_PATH, "input_data")
 
-    test_gt_map = read_tiff(f"{version_folder}/segmentation/samples_A1_train2tif.tif")
+    gt_map = read_tiff(f"{input_data_folder}/segmentation/samples_A1_train2tif.tif")
+
+    test_gt_map = read_tiff(f"{input_data_folder}/segmentation/samples_A1_train2tif.tif")
     
     old_all_labels = read_tiff(f"{version_folder}/iter_001/new_labels/all_labels_set.tif")
 
     old_selected_labels = read_tiff(f"{version_folder}/iter_001/new_labels/selected_labels_set.tif")
                                
-    new_pred_map = read_tiff(f"{version_folder}/iter_002/raster_prediction/join_class_1.1.TIF")
+    new_pred_map = read_tiff(f"{version_folder}/iter_002/raster_prediction/join_class_itcFalse_0.9.TIF")
 
-    new_prob_map = read_tiff(f"{version_folder}/iter_002/raster_prediction/join_prob_1.1.TIF")
+    new_prob_map = read_tiff(f"{version_folder}/iter_002/raster_prediction/join_prob_itcFalse_0.9.TIF")
 
-    depth_predicted = read_tiff(f"{version_folder}/iter_001/raster_prediction/depth_1.1.TIF")
+    depth_predicted = read_tiff(f"{version_folder}/iter_001/raster_prediction/depth_itcFalse_0.9.TIF")
     
     all_labels_set, selected_labels_set =  get_new_segmentation_sample(old_selected_labels = old_selected_labels,
                                                                        old_all_labels = old_all_labels,
@@ -610,72 +625,10 @@ if __name__ == "__main__":
                                                                        new_prob_map = new_prob_map,
                                                                        new_depth_map = depth_predicted,
                                                                        
-                                                                       ground_truth_map = gt_map
+                                                                       ground_truth_map = gt_map,
+                                                                       
+                                                                       prob_thr=0.9,
+                                                                       depth_thr=0.3
                                                                        )
     
     print("Ok")
-    # old_pred_map = np.load("debug_arrays/old_pred_map.npy")
-    # new_pred = np.load("debug_arrays/new_pred.npy")
-    # ground_truth_map = np.load("debug_arrays/ground_truth_map.npy")
-    # new_prob_map = np.load("debug_arrays/new_prob_map.npy")
-
-
-    # all_labels_set, selected_labels_set = get_new_segmentation_sample(ground_truth_map, old_pred_map, new_pred, new_prob_map, args.data_path)
-
-
-
-
-    # get_new_segmentation_sample
-    # # data parameters
-    # itc = False
-    # sum_overlap = 1.1
-
-    # # paths to the files from one iteration
-    # current_iter_folder = "/home/luiz/multi-task-fcn/MyData/iter_001"
-    # depth_path = os.path.join(
-    #     current_iter_folder, "raster_prediction", f"depth_itc{itc}_{sum_overlap}.TIF"
-    # )
-    # prob_path = os.path.join(
-    #     current_iter_folder,
-    #     "raster_prediction",
-    #     f"join_prob_itc{itc}_{sum_overlap}.TIF",
-    # )
-    # pred_path = os.path.join(
-    #     current_iter_folder,
-    #     "raster_prediction",
-    #     f"join_class_itc{itc}_{sum_overlap}.TIF",
-    # )
-
-    # depth = read_tiff(depth_path)
-    # prob = read_tiff(prob_path)
-    # pred = read_tiff(pred_path)
-
-    # ground_truth_path = os.path.join(args.data_path, args.train_segmentation_path)
-    # ground_truth_img = read_tiff(ground_truth_path)
-
-    # # at the first iteration old prediction is the same of ground truth segmentation
-    # old_pred_map = ground_truth_img.copy()
-    # all_labels, new_labels =  get_new_segmentation_sample(
-    #     ground_truth_map=ground_truth_img, 
-    #     old_pred_map = old_pred_map,
-    #     new_pred_map = pred,
-    #     new_prob_map = prob, 
-    #     data_path=args.data_path)
-    
-    # print("All labels", np.unique(all_labels))
-    # print("Selected labels", np.unique(new_labels))
-    # print("Ground Truth labels", np.unique(ground_truth_img))
-
-    # fig, ax = plt.subplots(1, 3, figsize=(15, 5))
-    # ax[0].imshow(all_labels)
-    # ax[1].imshow(new_labels)
-    # ax[2].imshow(ground_truth_img)
-    # # set title
-    # ax[0].set_title("All labels")
-    # ax[1].set_title("Selected labels")
-    # ax[2].set_title("ground truth")
-
-    # # # save figure
-    # plt.savefig("debug_images/sample_selection_test.png", dpi=600)
-
-
