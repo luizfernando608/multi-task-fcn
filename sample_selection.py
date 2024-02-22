@@ -297,7 +297,13 @@ def filter_components_by_mask(pred_map:np.ndarray):
     """
     
     mask = read_tiff(args["mask_path"])
-    mask = np.where(mask == 99, False, True)
+    
+    if not mask.dtype == "bool":
+        mask = np.where(mask > 0, False, True)
+
+    # Skip the mask filter if the mask array is entirely False
+    if np.sum(mask) == 0:
+        return
 
     components_pred_map = label(pred_map)
     
