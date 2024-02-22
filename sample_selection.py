@@ -140,17 +140,26 @@ def get_labels_delta(
         New image map with the label classes (tree type)
 
     """
+    
+    # Give numbers to each individual component on image
     new_components_img = label(new_label_img)
-
     old_components_img = label(old_label_img)
 
-    label_delta = np.zeros_like(new_components_img)
+    # Select the components in new_img that have some shared pixel with the old_label_img
+    new_components_in_old  = np.unique( 
+        new_components_img[(old_components_img > 0)]
+    )
+    new_components_in_old = new_components_in_old[np.nonzero(new_components_in_old)]
+    # Select the components in new_img that doesnt have any share pixel with old_label
+    new_components_only_in_new = np.unique(
+        new_components_img[~np.isin(new_components_img, new_components_in_old) & (new_components_img!=0)]
+    )
 
-    components_to_iter = np.unique(new_components_img)
-    components_to_iter = components_to_iter[np.nonzero(components_to_iter)]
-
-    print("Selecting the new components that are not in old segmentation")
-    for idx in tqdm(components_to_iter):
+    # Create a label delta img with components that doenst have any pixel in old_segmentation
+    label_delta = np.where(np.isin(new_components_img, new_components_only_in_new), new_label_img, 0)
+    
+    # Select the components in new_label_img that share only 10% of the pixels with the old_segmentation
+    for idx in tqdm(new_components_in_old):
         # if more than 90% of the area is empty it will be added to the new predicted sample
         if np.mean(old_components_img[new_components_img == idx] == 0) > 0.9:
             
@@ -323,8 +332,6 @@ def filter_components_by_mask(pred_map:np.ndarray):
             pred_map[component_filter] = 0
             components_pred_map[component_filter] = 0
 
-    # cut out anything out of the area
-    pred_map[mask] = 0
 
 
 def join_labels_set(high_priority_labels:np.ndarray, low_priority_labels:np.ndarray, overlap_limit:int=0.05) -> np.ndarray:
@@ -444,7 +451,7 @@ def select_good_samples(old_pred_map:np.ndarray,
     
     # filter components too small or too large
     filter_components_by_geometric_property(new_pred_map, 
-                                            low_limit = 1000, 
+                                            low_limit = 20_000, 
                                             high_limit = np.inf, # high limit area
                                             property = "area")
     
@@ -465,9 +472,9 @@ def select_good_samples(old_pred_map:np.ndarray,
     comp_new_stats["dist_area"] =  np.abs(comp_new_stats["area"] - comp_new_stats["ref_area"])/comp_new_stats["ref_area"]
 
     comp_new_stats["diff_soli"] =  (comp_new_stats["solidity"] - comp_new_stats["ref_solidity"])
+    
     # Select componentes based on some metrics
-    selected_comp = comp_new_stats[(comp_new_stats["area"] > 500) # higher than 500
-                                   & (comp_new_stats["dist_area"] < 0.7) # area between 70% less or higher
+    selected_comp = comp_new_stats[(comp_new_stats["dist_area"] < 0.7) # area between 70% less or higher
                                    & (comp_new_stats["diff_soli"] >= -0.05) # solidity
                                    ].copy()
 

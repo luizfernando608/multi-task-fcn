@@ -84,4 +84,4 @@ prob_thr: 0.7
 depth_thr: 0.1
 
 # Num of iter
-num_iter : 1
+num_iter : 30
