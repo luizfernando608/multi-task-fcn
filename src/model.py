@@ -4,6 +4,7 @@ from logging import Logger
 from os.path import dirname, join
 from typing import Literal, Tuple
 import logging
+from logging import getLogger
 
 import numpy as np
 import torch
@@ -21,6 +22,8 @@ from .utils import (AverageMeter, check_folder, get_device, load_norm,
 ROOT_PATH = dirname(dirname(__file__))
 
 args = read_yaml(join(ROOT_PATH, "args.yaml"))
+
+logger = getLogger("__main__")
 
 
 def define_loader(orto_img:str, gt_lab:np.ndarray, size_crops:int, test=False) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:

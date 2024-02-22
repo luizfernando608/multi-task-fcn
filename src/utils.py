@@ -2,6 +2,7 @@ import argparse
 import ast
 import errno
 import gc
+import logging
 import os
 import random
 import warnings
@@ -9,6 +10,7 @@ from collections.abc import Iterable
 from logging import CRITICAL, getLogger
 from os.path import dirname, isdir, isfile, join
 from typing import Tuple
+
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -24,6 +26,8 @@ FALSY_STRINGS = {"off", "false", "0"}
 TRUTHY_STRINGS = {"on", "true", "1"}
 
 ROOT_PATH = dirname(dirname(__file__))
+
+logger = getLogger("__main__")
 
 def get_device():
     return torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -414,7 +418,7 @@ def init_distributed_mode(args):
 
 
 
-def restart_from_checkpoint(ckp_paths:str, logger, run_variables:dict=None, **kwargs):
+def restart_from_checkpoint(ckp_paths:str, run_variables:dict=None, **kwargs):
     """Load weights and hyperparameters from a checkpoint file in ckp_paths.
     If the checkpoint is not found, the model dont change run_variables and model state_dict
 
@@ -422,8 +426,6 @@ def restart_from_checkpoint(ckp_paths:str, logger, run_variables:dict=None, **kw
     ----------
     ckp_paths : str
         Path to the checkpoint file.
-    logger : logging.Logger
-        Logger to log the loading process.
     run_variables : dict, optional
         Hypertparameters to load from the checkpoint file, by default None
 
@@ -925,6 +927,10 @@ class ParquetUpdater:
 
         # Write the updated data back to the Parquet file
         updated_data.to_parquet(self.file_path, index=False, engine='pyarrow', compression='snappy', partition_cols=None)
+
+
+
+
 
 
 

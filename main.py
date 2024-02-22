@@ -16,9 +16,6 @@ from skimage.color import label2rgb
 from tqdm import tqdm
 
 from generate_distance_map import generate_distance_map
-
-plt.set_loglevel(level = 'info')
-
 import gc
 
 from evaluation import evaluate_iteration
@@ -36,16 +33,8 @@ from src.utils import (ParquetUpdater, array2raster, check_folder,
 
 gc.set_threshold(0)
 
+plt.set_loglevel(level = 'info')
 
-def clear_ram_cache():
-    """Execute some command in Unix kernel the free up garbage from the cache
-    """
-    clear_command = 'sync && echo 3 | sudo tee /proc/sys/vm/drop_caches'
-    p = subprocess.Popen(clear_command, shell=True).wait()
-    
-    # alias freecachemem='sync && echo 3 | sudo tee /proc/sys/vm/drop_caches > /dev/null'
-    clear_command_alias = "alias freecachemem='sync && echo 3 | sudo tee /proc/sys/vm/drop_caches > /dev/null'"
-    p = subprocess.Popen(clear_command_alias, shell=True).wait()
 
 
 def delete_useless_files(current_iter_folder:str):
@@ -283,7 +272,6 @@ def train_epochs(last_checkpoint:str,
                  optimizer:torch.optim.Optimizer, 
                  lr_schedule:np.ndarray, 
                  count_early:int,
-                 logger,
                  val_loader:torch.utils.data.DataLoader,
                  current_iter_folder:str,
                  patience:int=5,
@@ -358,6 +346,7 @@ def train_epochs(last_checkpoint:str,
         gc.collect()
         
         print_sucess("scores_tr: {}".format(f1_avg))
+        logger.info("scores_tr: {}".format(f1_avg))
 
         is_best = (f1_avg - best_val) > 0.0009
 
@@ -397,7 +386,6 @@ def train_iteration(current_iter_folder:str, args:dict):
 
     current_iter = int(current_iter_folder.split("_")[-1])
 
-    logger = create_logger(join(current_iter_folder, "train.log"))
     logger.info("============ Initialized Training ============")
     
     ######### Define Loader ############
@@ -536,7 +524,6 @@ def train_iteration(current_iter_folder:str, args:dict):
         run_variables = to_restore,
         state_dict = model,
         optimizer = optimizer,
-        logger = logger
     )
 
 
@@ -567,7 +554,6 @@ def train_iteration(current_iter_folder:str, args:dict):
                      optimizer, 
                      lr_schedule, 
                      to_restore["count_early"],
-                     logger = logger,
                      val_loader = val_loader,
                      current_iter_folder = current_iter_folder)
     gc.collect()
@@ -583,7 +569,6 @@ def train_iteration(current_iter_folder:str, args:dict):
         run_variables=to_restore,
         state_dict=model,
         optimizer=optimizer,
-        logger=logger
     )
     
     
@@ -607,6 +592,8 @@ def generate_labels_for_next_iteration(current_iter_folder:str, args:dict):
     """
     Generate labels and distance map for the next iteration
     """
+    
+    logger.info("============ Generating New Samples ============")
 
     current_iter = int(current_iter_folder.split("iter_")[-1])
 
@@ -772,7 +759,11 @@ def generate_labels_view(current_iter_folder):
 ROOT_PATH = dirname(__file__)
 args = load_args(join(ROOT_PATH, "args.yaml"))
 
+version_name = os.path.split(args.data_path)[-1]
 
+logger = create_logger(module_name=__name__, filename=version_name)
+
+logger.info(f"################### {version_name.upper()} ###################")
 # create output path
 check_folder(args.data_path)
 
@@ -796,25 +787,31 @@ while True:
     if current_iter > args.num_iter:
         break
     
-    print("Current iteration folder: ", current_iter_folder)
+    logger.info(f"##################### ITERATION {current_iter} ##################### ")
+    logger.info(f"Current iteration folder: {current_iter_folder}")
     
     # if the iteration 0 applies distance map to ground truth segmentation
     if current_iter == 0:
         
+        logger.info(f"Generating test distance map")
+
         TEST_SEGMENTATION_PATH = args.test_segmentation_path
         TEST_DISTANCE_MAP_OUTPUT = join(current_iter_folder, "distance_map", "test_distance_map.tif")
         
         check_folder(dirname(TEST_DISTANCE_MAP_OUTPUT))
-
         generate_distance_map(TEST_SEGMENTATION_PATH, TEST_DISTANCE_MAP_OUTPUT)
 
+        logger.info("Done!")
 
+        logger.info(f"Generating train distance map")
         TRAIN_SEGMENTATION_PATH  = args.train_segmentation_path
         TRAIN_DISTANCE_MAP_OUTPUT = join(current_iter_folder, "distance_map", "train_distance_map.tif")
 
         check_folder(dirname(TRAIN_DISTANCE_MAP_OUTPUT))
 
         generate_distance_map(TRAIN_SEGMENTATION_PATH, TRAIN_DISTANCE_MAP_OUTPUT)
+        
+        logger.info("Done!")
         continue
     
     with torch.no_grad():
@@ -823,7 +820,6 @@ while True:
     # Get current model folder
     current_model_folder = join(current_iter_folder, args.model_dir)
     check_folder(current_model_folder)
-
 
     train_iteration(current_iter_folder, args)
 
