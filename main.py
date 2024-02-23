@@ -345,7 +345,6 @@ def train_epochs(last_checkpoint:str,
 
         gc.collect()
         
-        print_sucess("scores_tr: {}".format(f1_avg))
         logger.info("scores_tr: {}".format(f1_avg))
 
         is_best = (f1_avg - best_val) > 0.0009
