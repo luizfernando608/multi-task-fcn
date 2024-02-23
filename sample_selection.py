@@ -10,8 +10,7 @@ from tqdm import tqdm
 
 from src.utils import fix_relative_paths, read_tiff, read_yaml
 
-args = read_yaml(join(dirname(__file__), "args.yaml"))
-fix_relative_paths(args)
+args = load_args(join(dirname(__file__), "args.yaml"))
 
 logger = getLogger("__main__")
 
