@@ -1,5 +1,6 @@
 import gc
 import os
+from os.path import join, exists
 from logging import Logger
 from logging import getLogger
 from typing import Tuple
@@ -337,9 +338,16 @@ def evaluate_iteration(current_iter_folder:str, args:dict):
     
     ortho_image_shape = (ortho_image_metadata["height"], ortho_image_metadata["width"])
     
+    # check if raster_prediction is done
+    raster_depth = join(current_iter_folder, 'raster_prediction', f'depth_{sum(args.overlap)}.TIF') 
+    raster_class_pred = join(current_iter_folder, 'raster_prediction', f'join_class_{sum(args.overlap)}.TIF') 
+    raster_prob = join(current_iter_folder, 'raster_prediction', f'join_prob_{sum(args.overlap)}.TIF') 
 
+    if exists(raster_depth) and exists(raster_class_pred) and exists(raster_prob):
+        return
+    
     # Iterate over the different overlap values
-    for overlap in  args.overlap:
+    for overlap in args.overlap:
 
         # Verify if the prediction is already done
         is_depth_done = os.path.exists(os.path.join(current_iter_folder, 'prediction', f'depth_map_{overlap}.npy'))
