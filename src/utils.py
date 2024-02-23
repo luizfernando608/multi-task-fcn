@@ -84,7 +84,8 @@ def array2raster(path_to_save:str, array:np.ndarray, image_metadata:dict, dtype:
         count = BAND_NUM,
         dtype = RASTER_DTYPE,
         crs = image_metadata['crs'],
-        transform = image_metadata['transform']
+        transform = image_metadata['transform'],
+        compress="packbits"
     ) as writer:
         
         if BAND_NUM > 1:
@@ -97,8 +98,6 @@ def array2raster(path_to_save:str, array:np.ndarray, image_metadata:dict, dtype:
             writer.write(array, 1)
         
     
-
-
 def add_padding_new(img:np.ndarray, psize:int, overl:float, const:int = 0) -> Tuple:
     """Add padding to the image based on overlap and psize(patches size)
 
@@ -817,6 +816,7 @@ def read_yaml(yaml_path:str)->dict:
             yaml_attrdict.update(yaml_dict)
         except yaml.YAMLError as exc:
             print(exc)
+            
         
     # for each value try to convert to float
     for key in yaml_attrdict.keys():
