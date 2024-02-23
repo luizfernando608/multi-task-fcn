@@ -44,7 +44,9 @@ def pred2raster(current_iter_folder, args):
                 
                 depth_path = os.path.join(current_iter_folder,'prediction',f'depth_map_{ov}.npy')
                 depth_test = np.load(depth_path)
-                
+            
+            os.remove(prediction_path)
+            os.remove(depth_path)
         
         prediction_test/=len(args.overlap)
         depth_test/=len(args.overlap)
