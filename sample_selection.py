@@ -8,10 +8,9 @@ from scipy.ndimage import gaussian_filter
 from skimage.measure import label, regionprops_table
 from tqdm import tqdm
 
-from src.utils import fix_relative_paths, read_tiff, read_yaml
+from src.utils import fix_relative_paths, read_tiff, read_yaml, load_args
 
-args = read_yaml(join(dirname(__file__), "args.yaml"))
-fix_relative_paths(args)
+args = load_args(join(dirname(__file__), "args.yaml"))
 
 logger = getLogger("__main__")
 
@@ -377,7 +376,7 @@ def join_labels_set(high_priority_labels:np.ndarray, low_priority_labels:np.ndar
     )
 
     # Adding the components with intersection
-    for component in np.unique(low_components_in_high):
+    for component in tqdm(np.unique(low_components_in_high)):
         
         overlap = np.mean(high_priority_labels[low_priority_comp==component]>0)
 
@@ -465,7 +464,7 @@ def select_good_samples(old_pred_map:np.ndarray,
     
     # filter components too small or too large
     filter_components_by_geometric_property(new_pred_map, 
-                                            low_limit = 1_000, 
+                                            low_limit = 25_000, 
                                             high_limit = np.inf, # high limit area
                                             property = "area")
     
@@ -484,11 +483,12 @@ def select_good_samples(old_pred_map:np.ndarray,
     comp_new_stats = comp_new_stats.merge(comp_old_stats, on = "tree_type", how = "left")
     
     comp_new_stats["dist_area"] =  np.abs(comp_new_stats["area"] - comp_new_stats["ref_area"])/comp_new_stats["ref_area"]
+    comp_new_stats["diff_area"] =  (comp_new_stats["area"] - comp_new_stats["ref_area"])/comp_new_stats["ref_area"]
 
     comp_new_stats["diff_soli"] =  (comp_new_stats["solidity"] - comp_new_stats["ref_solidity"])
     
     # Select componentes based on some metrics
-    selected_comp = comp_new_stats[(comp_new_stats["dist_area"] < 0.7) # area between 70% less or higher
+    selected_comp = comp_new_stats[((comp_new_stats["diff_area"] < 1.0) | (comp_new_stats["diff_area"] > -0.3))
                                    & (comp_new_stats["diff_soli"] >= -0.05) # solidity
                                    ].copy()
 
