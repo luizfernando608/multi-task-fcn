@@ -46,8 +46,8 @@ def pred2raster(current_iter_folder, args):
                 depth_test = np.load(depth_path)
                 
         
-        prediction_test/=3
-        depth_test/=3
+        prediction_test/=len(args.overlap)
+        depth_test/=len(args.overlap)
 
         # Get the metadata from segmentation file to save with the output with the same conf
         RASTER_PATH = args.train_segmentation_path
