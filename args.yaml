@@ -4,7 +4,7 @@
 # experiment directory
 model_dir: exp_deeplab_v4
 
-data_path: 2.5_version_data
+data_path: 2.7_version_data
 
 # Input data for the model
 ortho_image: amazon_md_input_data/orthoimage/NOV_2017_FINAL_004.tif
@@ -20,7 +20,7 @@ checkpoint_file: checkpoint.pth.tar
 ###### TRAINING parameters ######
 
 # num samples per epoch
-samples: 2500
+samples: 5000
 # True for data augmentation during training
 augment: True
 
@@ -42,7 +42,7 @@ lambda_weight: 1
 # number of total epochs to run
 epochs: 30
 # batch size per gpu, i.e. how many unique instances per gpu
-batch_size: 16
+batch_size: 64
 # base learning rate
 base_lr: 0.01
 # final learning rate
@@ -60,7 +60,7 @@ weight_decay: 1e-06
 # number of data loading workers
 workers: 0
 # random seed
-seed: 31
+seed: 3115
 
 
 ###############################
@@ -68,11 +68,11 @@ seed: 31
 ###############################
 
 # True for training 4 disjoint regions
-size_crops: 512
+size_crops: 256
 # Número de classes
 nb_class: 17
 # samples per epoch
-overlap: [0.1, 0.3, 0.5]
+overlap: [0.1, 0.5]
 
 
 ################################
@@ -82,6 +82,5 @@ overlap: [0.1, 0.3, 0.5]
 # probability and distance map thershold to filter new components
 prob_thr: 0.7
 depth_thr: 0.1
-
 # Num of iter
-num_iter : 30
+num_iter : 15
