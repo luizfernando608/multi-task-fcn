@@ -473,24 +473,33 @@ def select_good_samples(old_pred_map:np.ndarray,
     # Calculate main metrics of each tree
     comp_old_pred = label(old_pred_map)
     comp_old_stats = get_components_stats(comp_old_pred, old_pred_map).reset_index()
-    comp_old_stats = comp_old_stats.groupby("tree_type")[["extent", "solidity", "eccentricity", "area"]].median()
+
+    comp_old_stats = comp_old_stats.groupby("tree_type").agg(
+        {"extent":"median", 
+        "solidity":"median", 
+        "eccentricity":"median", 
+        "area":"median"
+        }
+    )
+
     comp_old_stats.columns  = "ref_" + comp_old_stats.columns 
 
     # Get metrics about the new labels
     comp_new_pred = label(new_pred_map)
     comp_new_stats =  get_components_stats(comp_new_pred, new_pred_map).reset_index()
+    
     # Join data from the last with the new one
     comp_new_stats = comp_new_stats.merge(comp_old_stats, on = "tree_type", how = "left")
-    
+
     comp_new_stats["dist_area"] =  np.abs(comp_new_stats["area"] - comp_new_stats["ref_area"])/comp_new_stats["ref_area"]
     comp_new_stats["diff_area"] =  (comp_new_stats["area"] - comp_new_stats["ref_area"])/comp_new_stats["ref_area"]
 
     comp_new_stats["diff_soli"] =  (comp_new_stats["solidity"] - comp_new_stats["ref_solidity"])
     
+    median_filter = (((comp_new_stats["diff_area"] <= 0.7) & (comp_new_stats["diff_area"] >= -0.3)) & (comp_new_stats["diff_soli"] >= -0.05))
+
     # Select componentes based on some metrics
-    selected_comp = comp_new_stats[((comp_new_stats["diff_area"] < 1.0) | (comp_new_stats["diff_area"] > -0.3))
-                                   & (comp_new_stats["diff_soli"] >= -0.05) # solidity
-                                   ].copy()
+    selected_comp = comp_new_stats[median_filter].copy()
 
     new_pred_map =  np.where(np.isin(comp_new_pred, selected_comp["label"].unique()), new_pred_map, 0)
 
@@ -601,22 +610,22 @@ if __name__ == "__main__":
     args = read_yaml("args.yaml")
     ROOT_PATH = dirname(__file__)
     
-    version_folder = join(ROOT_PATH, "19.2_version_data")
-    input_data_folder = join(ROOT_PATH, "input_data")
+    version_folder = join(ROOT_PATH, "2.6_version_data")
+    input_data_folder = join(ROOT_PATH, "amazon_md_input_data")
 
-    gt_map = read_tiff(f"{input_data_folder}/segmentation/samples_A1_train2tif.tif")
+    gt_map = read_tiff(f"{input_data_folder}/segmentation/train_set.tif")
 
-    test_gt_map = read_tiff(f"{input_data_folder}/segmentation/samples_A1_train2tif.tif")
+    test_gt_map = read_tiff(f"{input_data_folder}/segmentation/train_set.tif")
     
     old_all_labels = read_tiff(f"{version_folder}/iter_001/new_labels/all_labels_set.tif")
 
     old_selected_labels = read_tiff(f"{version_folder}/iter_001/new_labels/selected_labels_set.tif")
                                
-    new_pred_map = read_tiff(f"{version_folder}/iter_002/raster_prediction/join_class_itcFalse_0.9.TIF")
+    new_pred_map = read_tiff(f"{version_folder}/iter_002/raster_prediction/join_class_0.6.TIF")
 
-    new_prob_map = read_tiff(f"{version_folder}/iter_002/raster_prediction/join_prob_itcFalse_0.9.TIF")
+    new_prob_map = read_tiff(f"{version_folder}/iter_002/raster_prediction/join_prob_0.6.TIF")
 
-    depth_predicted = read_tiff(f"{version_folder}/iter_001/raster_prediction/depth_itcFalse_0.9.TIF")
+    depth_predicted = read_tiff(f"{version_folder}/iter_001/raster_prediction/depth_0.6.TIF")
     
     all_labels_set, selected_labels_set =  get_new_segmentation_sample(old_selected_labels = old_selected_labels,
                                                                        old_all_labels = old_all_labels,
@@ -627,8 +636,8 @@ if __name__ == "__main__":
                                                                        
                                                                        ground_truth_map = gt_map,
                                                                        
-                                                                       prob_thr=0.9,
-                                                                       depth_thr=0.3
+                                                                       prob_thr=0.7,
+                                                                       depth_thr=0.1
                                                                        )
     
     print("Ok")
