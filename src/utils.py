@@ -85,7 +85,8 @@ def array2raster(path_to_save:str, array:np.ndarray, image_metadata:dict, dtype:
         dtype = RASTER_DTYPE,
         crs = image_metadata['crs'],
         transform = image_metadata['transform'],
-        compress="packbits"
+        compress="packbits",
+        num_threads='all_cpus'
     ) as writer:
         
         if BAND_NUM > 1:
@@ -543,7 +544,7 @@ def read_tiff(tiff_file:str) -> np.ndarray:
     if not os.path.isfile(tiff_file):
         raise FileNotFoundError("File not found: {}".format(tiff_file))
     
-    with rasterio.open(tiff_file) as src:
+    with rasterio.open(tiff_file, num_threads='all_cpus') as src:
         image_tensor = src.read()
 
     # if the band num is 1, reshape to (height, width)
