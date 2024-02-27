@@ -6,10 +6,9 @@ import numpy as np
 from skimage.color import label2rgb
 from skimage.measure import find_contours
 
-from src.utils import check_folder, read_tiff, run_in_thread
+from src.utils import check_folder, read_tiff, run_in_thread, run_in_process
 
-
-@run_in_thread
+@run_in_process
 def generate_labels_view(current_iter_folder:str, orthoimage_path:str):
     """Function to generate images for qualitative evaluation.
     These images are not used for any kind of numeric evaluation.
@@ -32,7 +31,7 @@ def generate_labels_view(current_iter_folder:str, orthoimage_path:str):
 
     ALL_LABELS_MAP = read_tiff(ALL_LABELS_PATH)
     SELECTED_LABELS_MAP = read_tiff(SELECTED_LABELS_PATH)
-    ORTHOIMAGE = read_tiff(ORTHO_IMAGE_PATH)
+    
 
     num_classes = np.unique(ALL_LABELS_MAP[ALL_LABELS_MAP != 0]).shape[0]
 
@@ -68,6 +67,7 @@ def generate_labels_view(current_iter_folder:str, orthoimage_path:str):
 
     plt.figure(dpi = 300)
     plt.imshow(label2rgb(SELECTED_LABELS_MAP, colors = DEFAULT_COLORS))
+    del SELECTED_LABELS_MAP
     plt.axis('off')
     plt.savefig(join(SELECTED_LABELS_OUT_FOLDER, f"{current_iter:03d}_segmentation.png"), bbox_inches='tight', pad_inches=0)
     plt.close()
@@ -76,11 +76,16 @@ def generate_labels_view(current_iter_folder:str, orthoimage_path:str):
     CONTOUR_ALL_LABELS_OUT_FOLDER = join(OUTPUT_MAP_FOLDER, "all_labels_contour")
     check_folder(CONTOUR_ALL_LABELS_OUT_FOLDER)
 
-    plt.figure(dpi = 300)
+    plt.figure(dpi = 1200)
+
+    ORTHOIMAGE = read_tiff(ORTHO_IMAGE_PATH)
     plt.imshow(np.moveaxis(ORTHOIMAGE, 0, 2))
+    del ORTHOIMAGE
+
     # plot contours
     for contour in find_contours(ALL_LABELS_MAP):
-        plt.plot(contour[:, 1], contour[:, 0], linewidth=1, color = "yellow", label = "Predição")
+        plt.plot(contour[:, 1], contour[:, 0], linewidth=0.1, color = "red", label = "Predição")
+
     plt.axis('off')
     plt.savefig(join(CONTOUR_ALL_LABELS_OUT_FOLDER, f"{current_iter:03d}_segmentation.png"), bbox_inches='tight', pad_inches=0)
     plt.close()
