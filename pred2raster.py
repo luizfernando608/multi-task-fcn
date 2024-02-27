@@ -8,7 +8,7 @@ logger = getLogger("__main__")
 
 def pred2raster(current_iter_folder, args):
     
-    logger.info("Computing the mean between the 3 slices")
+    logger.info(f"Computing the mean between the {len(args.overlap)} slices")
 
     output_folder = os.path.join(current_iter_folder, 'raster_prediction')
     check_folder(output_folder)

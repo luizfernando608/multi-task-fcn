@@ -7,6 +7,7 @@ import logging
 import os
 import random
 import threading
+import multiprocessing
 import warnings
 from collections.abc import Iterable
 from logging import CRITICAL, getLogger
@@ -33,6 +34,31 @@ logger = getLogger("__main__")
 def get_device():
     return torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
+
+def run_in_thread(func):
+    """
+    Decorator to run a function in a separate thread.
+    """
+    @functools.wraps(func)  # Preserve original function metadata
+    def wrapper(*args, **kwargs):
+        thread = threading.Thread(target=func, args=args, kwargs=kwargs)
+        thread.start()
+        return thread
+
+    return wrapper
+
+
+
+def run_in_process(func):
+    """
+    Decorator to run a function in a separate process.
+    """
+    @functools.wraps(func)  # Preserve original function metadata
+    def wrapper(*args, **kwargs):
+        process = multiprocessing.Process(target=func, args=args, kwargs=kwargs)
+        process.start()
+        return process
+    return wrapper
 
 
 def array2raster(path_to_save:str, array:np.ndarray, image_metadata:dict, dtype:str):
@@ -238,7 +264,7 @@ def extract_patches_coord(img_gt:np.ndarray,
     return coords
 
 
-
+@run_in_thread
 def plot_figures(img_mult:np.ndarray, ref:np.ndarray, pred:np.ndarray, depth:np.ndarray, dist, model_dir:str, epoch:int, set_name:str):
     """Plot a comparison between the reference, prediction and depth images.
 
@@ -933,17 +959,6 @@ class ParquetUpdater:
 
 
 
-def run_in_thread(func):
-    """
-    Decorator to run a function in a separate thread.
-    """
-    @functools.wraps(func)  # Preserve original function metadata
-    def wrapper(*args, **kwargs):
-        thread = threading.Thread(target=func, args=args, kwargs=kwargs)
-        thread.start()
-        return thread
-
-    return wrapper
 
 
 

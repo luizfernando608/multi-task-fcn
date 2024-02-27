@@ -236,20 +236,20 @@ def load_weights(model: nn.Module, checkpoint_file_path:str)-> nn.Module:
         for k, v in model.state_dict().items():
             
             if k not in list(state_dict):
-                logging.info(f'key "{k}" could not be found in provided state dict')
+                logger.info(f'key "{k}" could not be found in provided state dict')
 
             elif state_dict[k].shape != v.shape:
-                logging.info(f'key "{k}" is of different shape in model and provided state dict')
+                logger.info(f'key "{k}" is of different shape in model and provided state dict')
                 state_dict[k] = v
         
 
         # Set the model weights
         msg = model.load_state_dict(state_dict, strict=False)
-        logging.info(f"Load pretrained model with msg: {msg}")
+        logger.info(f"Load pretrained model with msg: {msg}")
 
     
     else:
-        logging.info("No pretrained weights found => training with random weights")
+        logger.info("No pretrained weights found => training with random weights")
     
     return model
 
@@ -381,7 +381,7 @@ def train(train_loader:torch.utils.data.DataLoader,
             with torch.no_grad():
                 summary_batch = evaluate_metrics(soft(out_batch['out']), ref)
             
-            logging.info(
+            logger.info(
                 "Epoch: [{0}][{1}]\t"
                 "Loss {loss.val:.4f} ({loss.avg:.4f})\t"
                 "Lr: {lr:.4f}".format(
@@ -391,7 +391,7 @@ def train(train_loader:torch.utils.data.DataLoader,
                     lr=optimizer.param_groups[0]["lr"],
                 )
             )
-            logging.info(f"Accuracy:{summary_batch['Accuracy']}, avgF1:{summary_batch['avgF1']}")
+            logger.info(f"Accuracy:{summary_batch['Accuracy']}, avgF1:{summary_batch['avgF1']}")
             
         if it == 0:
             # plot samples results for visual inspection
