@@ -475,31 +475,43 @@ def select_good_samples(old_pred_map:np.ndarray,
     comp_old_stats = get_components_stats(comp_old_pred, old_pred_map).reset_index()
 
     comp_old_stats = comp_old_stats.groupby("tree_type").agg(
-        {"extent":"median", 
-        "solidity":"median", 
-        "eccentricity":"median", 
-        "area":"median"
-        }
+        ref_extent = ("extent","median"), 
+        ref_solidity =("solidity","median"), 
+        ref_eccentricity = ("eccentricity","median"), 
+        ref_area = ("area","median"),
+        q1_area = ("area", lambda x: x.quantile(0.25)),
+        q3_area = ("area", lambda x: x.quantile(0.25))
     )
-
-    comp_old_stats.columns  = "ref_" + comp_old_stats.columns 
 
     # Get metrics about the new labels
     comp_new_pred = label(new_pred_map)
     comp_new_stats =  get_components_stats(comp_new_pred, new_pred_map).reset_index()
     
-    # Join data from the last with the new one
+    # Join data from the last iterarion with the new one
     comp_new_stats = comp_new_stats.merge(comp_old_stats, on = "tree_type", how = "left")
-
+    
+    # dist between median and area
     comp_new_stats["dist_area"] =  np.abs(comp_new_stats["area"] - comp_new_stats["ref_area"])/comp_new_stats["ref_area"]
     comp_new_stats["diff_area"] =  (comp_new_stats["area"] - comp_new_stats["ref_area"])/comp_new_stats["ref_area"]
 
     comp_new_stats["diff_soli"] =  (comp_new_stats["solidity"] - comp_new_stats["ref_solidity"])
     
-    median_filter = (((comp_new_stats["diff_area"] <= 0.7) & (comp_new_stats["diff_area"] >= -0.3)) & (comp_new_stats["diff_soli"] >= -0.05))
+    # dist between q1 and q2 area
+    comp_new_stats["diff_area_q1"] = (comp_new_stats["area"] - comp_new_stats["q1_area"])/comp_new_stats["q1_area"]
+    comp_new_stats["diff_area_q3"] = (comp_new_stats["area"] - comp_new_stats["q3_area"])/comp_new_stats["q3_area"]
+    
+    # solidty
+    solidity_filter = (comp_new_stats["diff_soli"] >= -0.10)
 
+    # filter based on median
+    median_filter = ((comp_new_stats["diff_area"] <= 0.7) & (comp_new_stats["diff_area"] >= -0.3))
+
+    # filter based on quantile.
+    # if 10% bigger than q3 or 10% minor than the q1, is accepted
+    quantile_filter = (comp_new_stats["diff_area_q1"] >= -0.10) & (comp_new_stats["diff_area_q3"] <= 0.10)
+    
     # Select componentes based on some metrics
-    selected_comp = comp_new_stats[median_filter].copy()
+    selected_comp = comp_new_stats[(median_filter | quantile_filter) & solidity_filter].copy()
 
     new_pred_map =  np.where(np.isin(comp_new_pred, selected_comp["label"].unique()), new_pred_map, 0)
 
@@ -606,12 +618,13 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
 
 
 if __name__ == "__main__":
+    import os
     import matplotlib.pyplot as plt
     args = read_yaml("args.yaml")
     ROOT_PATH = dirname(__file__)
     
-    version_folder = join(ROOT_PATH, "2.6_version_data")
-    input_data_folder = join(ROOT_PATH, "amazon_md_input_data")
+    version_folder = join(ROOT_PATH, "0.0_test_data")
+    input_data_folder = join(ROOT_PATH, "amazon_mc_input_data")
 
     gt_map = read_tiff(f"{input_data_folder}/segmentation/train_set.tif")
 
@@ -621,11 +634,11 @@ if __name__ == "__main__":
 
     old_selected_labels = read_tiff(f"{version_folder}/iter_001/new_labels/selected_labels_set.tif")
                                
-    new_pred_map = read_tiff(f"{version_folder}/iter_002/raster_prediction/join_class_0.6.TIF")
+    new_pred_map = read_tiff(f"{version_folder}/iter_002/raster_prediction/join_class_0.9.TIF")
 
-    new_prob_map = read_tiff(f"{version_folder}/iter_002/raster_prediction/join_prob_0.6.TIF")
+    new_prob_map = read_tiff(f"{version_folder}/iter_002/raster_prediction/join_prob_0.9.TIF")
 
-    depth_predicted = read_tiff(f"{version_folder}/iter_001/raster_prediction/depth_0.6.TIF")
+    depth_predicted = read_tiff(f"{version_folder}/iter_001/raster_prediction/depth_0.9.TIF")
     
     all_labels_set, selected_labels_set =  get_new_segmentation_sample(old_selected_labels = old_selected_labels,
                                                                        old_all_labels = old_all_labels,
