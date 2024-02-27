@@ -12,12 +12,12 @@ import torch.backends.cudnn as cudnn
 import torch.nn as nn
 import torch.nn.parallel
 import torch.optim
-from skimage.color import label2rgb
 from tqdm import tqdm
 
 from generate_distance_map import generate_distance_map
 import gc
 
+from visualization import generate_labels_view
 from evaluation import evaluate_iteration
 from pred2raster import pred2raster
 from sample_selection import get_new_segmentation_sample
@@ -27,7 +27,7 @@ from src.model import (build_model, define_loader, eval, load_weights,
                        save_checkpoint, train)
 from src.multicropdataset import DatasetFromCoord
 from src.utils import (ParquetUpdater, array2raster, check_folder,
-                       fix_random_seeds, fix_relative_paths, get_device,
+                       fix_random_seeds, get_device,
                        get_image_metadata, oversamp, print_sucess, read_tiff,
                        read_yaml, restart_from_checkpoint, save_yaml, load_args)
 
@@ -307,7 +307,7 @@ def train_epochs(last_checkpoint:str,
 
     training_stats = ParquetUpdater(join(args.data_path, "training_stats.parquet"))
 
-    # Create figures folder to save training figures every epoch
+    # Create figures folder to save training figures every epochsaved.
     figures_path = join(dirname(last_checkpoint), 'figures')
     check_folder(figures_path)
 
@@ -701,55 +701,6 @@ def compile_metrics(current_iter_folder, args):
     save_yaml(all_labels_metrics, HIGH_PROB_COMPONENTS_PATH)
 
 
-def generate_labels_view(current_iter_folder):
-    """Function to generate images for qualitative evaluation.
-    These images are not used for any kind of numeric evaluation.
-
-    Parameters
-    ----------
-    current_iter_folder : str
-    """
-    DEFAULT_COLORS = ('silver', 'blue', 'yellow', 'magenta', 'green', 
-                     'indigo', 'darkorange', 'cyan', 'pink', 'yellowgreen', 
-                     'red', 'darkgreen', 'gold', 'teal')
-    
-    ALL_LABELS_PATH = join(current_iter_folder, "new_labels", "all_labels_set.tif")
-    SELECTED_LABELS_PATH = join(current_iter_folder, "new_labels", "selected_labels_set.tif")
-    
-    current_iter = int(current_iter_folder.split("iter_")[-1])
-
-    ALL_LABELS_MAP = read_tiff(ALL_LABELS_PATH)
-    SELECTED_LABELS_MAP = read_tiff(SELECTED_LABELS_PATH)
-
-    # DEPTH_MAP = read_tiff(DEPTH_MAP_PATH)
-
-    OUTPUT_MAP_FOLDER = join(dirname(current_iter_folder), "visualization")
-    # create output folder
-    check_folder(OUTPUT_MAP_FOLDER)
-
-    # PLOT ALL LABELS
-    ALL_LABELS_OUT_FOLDER = join(OUTPUT_MAP_FOLDER, "all_labels",)
-    check_folder(ALL_LABELS_OUT_FOLDER)
-    
-    plt.figure(dpi = 300)
-    plt.imshow(label2rgb(ALL_LABELS_MAP, colors = DEFAULT_COLORS))
-    plt.axis('off')
-    plt.savefig(join(ALL_LABELS_OUT_FOLDER, f"{current_iter:03d}_segmentation.png"), bbox_inches='tight', pad_inches=0)
-    plt.close()
-
-
-    # PLOT SELECTED LABELS
-    SELECTED_LABELS_OUT_FOLDER = join(OUTPUT_MAP_FOLDER, "selected_labels")
-    check_folder(SELECTED_LABELS_OUT_FOLDER)
-
-    plt.figure(dpi = 300)
-    plt.imshow(label2rgb(SELECTED_LABELS_MAP, colors = DEFAULT_COLORS))
-    plt.axis('off')
-    plt.savefig(join(SELECTED_LABELS_OUT_FOLDER, f"{current_iter:03d}_segmentation.png"), bbox_inches='tight', pad_inches=0)
-    plt.close()
-    
-
-
 
 #############
 ### SETUP ###
@@ -834,7 +785,7 @@ while True:
     
     compile_metrics(current_iter_folder, args)
 
-    generate_labels_view(current_iter_folder)
+    generate_labels_view(current_iter_folder, args.ortho_image)
 
     print_sucess("Distance map generated")
  
