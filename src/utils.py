@@ -1,16 +1,17 @@
 import argparse
 import ast
 import errno
+import functools
 import gc
 import logging
 import os
 import random
+import threading
 import warnings
 from collections.abc import Iterable
 from logging import CRITICAL, getLogger
 from os.path import dirname, isdir, isfile, join
 from typing import Tuple
-
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -931,6 +932,18 @@ class ParquetUpdater:
 
 
 
+
+def run_in_thread(func):
+    """
+    Decorator to run a function in a separate thread.
+    """
+    @functools.wraps(func)  # Preserve original function metadata
+    def wrapper(*args, **kwargs):
+        thread = threading.Thread(target=func, args=args, kwargs=kwargs)
+        thread.start()
+        return thread
+
+    return wrapper
 
 
 
