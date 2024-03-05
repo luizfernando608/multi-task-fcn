@@ -8,7 +8,40 @@ from skimage.measure import find_contours
 
 from src.utils import check_folder, read_tiff, run_in_thread, run_in_process
 
-@run_in_process
+# generate view only for sythentic labels
+def generate_view_for_sythentic_label(current_iter_folder:str, train_segmentation_path:str, orthoimage_path:str):
+
+    current_iter = int(current_iter_folder.split("iter_")[-1])
+
+    ALL_LABELS_PATH = join(current_iter_folder, "new_labels", "all_labels_set.tif")
+    ALL_LABELS_MAP = read_tiff(ALL_LABELS_PATH)
+
+    TRAIN_GT_MAP = read_tiff(train_segmentation_path)
+
+    synthetic_labels = np.where(TRAIN_GT_MAP > 0, 0, ALL_LABELS_MAP)
+    
+    # folder to save view
+    OUTPUT_MAP_FOLDER = join(dirname(current_iter_folder), "visualization", "synthetic_all_labels")
+    # create folder if it doesnt exists
+    check_folder(OUTPUT_MAP_FOLDER)
+
+
+    plt.figure(dpi = 1200)
+
+    ORTHOIMAGE = read_tiff(orthoimage_path)
+    plt.imshow(np.moveaxis(ORTHOIMAGE, 0, 2))
+    del ORTHOIMAGE
+
+    # plot contours
+    for contour in find_contours(synthetic_labels):
+        plt.plot(contour[:, 1], contour[:, 0], linewidth=0.5, color = "red", label = "Predição")
+
+    plt.axis('off')
+    plt.savefig(join(OUTPUT_MAP_FOLDER, f"{current_iter:03d}_segmentation.png"), bbox_inches='tight', pad_inches=0)
+    plt.close()
+
+
+
 def generate_labels_view(current_iter_folder:str, orthoimage_path:str):
     """Function to generate images for qualitative evaluation.
     These images are not used for any kind of numeric evaluation.
@@ -84,7 +117,7 @@ def generate_labels_view(current_iter_folder:str, orthoimage_path:str):
 
     # plot contours
     for contour in find_contours(ALL_LABELS_MAP):
-        plt.plot(contour[:, 1], contour[:, 0], linewidth=0.1, color = "red", label = "Predição")
+        plt.plot(contour[:, 1], contour[:, 0], linewidth=0.3, color = "red", label = "Predição")
 
     plt.axis('off')
     plt.savefig(join(CONTOUR_ALL_LABELS_OUT_FOLDER, f"{current_iter:03d}_segmentation.png"), bbox_inches='tight', pad_inches=0)
@@ -93,17 +126,19 @@ def generate_labels_view(current_iter_folder:str, orthoimage_path:str):
     
 
 if __name__ == "__main__":
+    from src.utils import load_args
     
-    VERSION_FOLDER = "2.7_version_data"
-    ORTHOIMAGE_PATH = join(dirname(__file__), "amazon_md_input_data", "orthoimage", "NOV_2017_FINAL_004.tif")
-    ITER_NUM = 2
-    
-    DATA_PATH = join(dirname(__file__), VERSION_FOLDER)
-    
-    
+    # parameters
+    VERSION_FOLDER = "2.8_version_data"
+    ITER_NUM = 9
 
-    current_iter_folder = join(DATA_PATH, f"iter_{ITER_NUM:03d}")
 
-    
-    generate_labels_view(current_iter_folder, ORTHOIMAGE_PATH)
+    args = load_args(join(dirname(__file__), VERSION_FOLDER, "args.yaml"))
+    current_iter_folder = join(args.data_path, f"iter_{ITER_NUM:03d}")
+
+    generate_view_for_sythentic_label(
+        current_iter_folder=current_iter_folder,
+        orthoimage_path=args.ortho_image, 
+        train_segmentation_path=args.train_segmentation_path
+    )
     

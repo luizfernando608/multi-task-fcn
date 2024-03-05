@@ -423,10 +423,10 @@ def filter_map_by_depth_prob(pred_map:np.ndarray, prob_map:np.ndarray, depth_map
     pred_map = pred_map.copy()
     
     # Smothing the contours of depth_map
-    depth_gauss = gaussian_filter(depth_map, sigma = 9)
+    depth_gauss = gaussian_filter(depth_map, sigma = 18)
 
     # Smothing the contours of prob_map
-    prob_gauss = gaussian_filter(prob_map, sigma = 9)
+    prob_gauss = gaussian_filter(prob_map, sigma = 18)
 
     # Selection the image
     pred_map = np.where((depth_gauss > depth_thr) & (prob_gauss > prob_thr), pred_map, 0)
@@ -623,8 +623,9 @@ if __name__ == "__main__":
     args = read_yaml("args.yaml")
     ROOT_PATH = dirname(__file__)
     
-    version_folder = join(ROOT_PATH, "0.0_test_data")
-    input_data_folder = join(ROOT_PATH, "amazon_mc_input_data")
+    version_folder = join(ROOT_PATH, "2.7.1_version_data")
+
+    input_data_folder = join(ROOT_PATH, "amazon_md_input_data")
 
     gt_map = read_tiff(f"{input_data_folder}/segmentation/train_set.tif")
 
@@ -634,11 +635,11 @@ if __name__ == "__main__":
 
     old_selected_labels = read_tiff(f"{version_folder}/iter_001/new_labels/selected_labels_set.tif")
                                
-    new_pred_map = read_tiff(f"{version_folder}/iter_002/raster_prediction/join_class_0.9.TIF")
+    new_pred_map = read_tiff(f"{version_folder}/iter_002/raster_prediction/join_class_0.6.TIF")
 
-    new_prob_map = read_tiff(f"{version_folder}/iter_002/raster_prediction/join_prob_0.9.TIF")
+    new_prob_map = read_tiff(f"{version_folder}/iter_002/raster_prediction/join_prob_0.6.TIF")
 
-    depth_predicted = read_tiff(f"{version_folder}/iter_001/raster_prediction/depth_0.9.TIF")
+    depth_predicted = read_tiff(f"{version_folder}/iter_001/raster_prediction/depth_0.6.TIF")
     
     all_labels_set, selected_labels_set =  get_new_segmentation_sample(old_selected_labels = old_selected_labels,
                                                                        old_all_labels = old_all_labels,

@@ -396,7 +396,7 @@ def train_iteration(current_iter_folder:str, args:dict):
                                                                          args.size_crops)
     
     ######## do oversampling in minor classes
-    coords_train = oversamp(coords_train, labs_coords_train, under=False)
+    coords_train = oversamp(coords_train, labs_coords_train, under=True)
 
     if args.samples > coords_train.shape[0]:
         args.samples = None
@@ -665,7 +665,7 @@ def generate_labels_for_next_iteration(current_iter_folder:str, args:dict):
     generate_distance_map(SELECTED_LABELS_PATH, SELECTED_LABELS_DISTANCE_MAP_PATH)
     
 
-@run_in_process
+
 def compile_metrics(current_iter_folder, args):
     # read test segmentation 
     DATA_PATH = dirname(current_iter_folder)
@@ -725,69 +725,69 @@ save_yaml(args, join(args.data_path, "args.yaml"))
 
 # Set random seed
 fix_random_seeds(args.seed)
-
-while True:
-    print_sucess("Working ON:")
-    print_sucess(get_device()) 
-    
-    # get current iteration folder
-    current_iter_folder = get_current_iter_folder(args.data_path, args.overlap)
-    current_iter = int(current_iter_folder.split("_")[-1])
-
-    if current_iter > args.num_iter:
-        break
-    
-    logger.info(f"##################### ITERATION {current_iter} ##################### ")
-    logger.info(f"Current iteration folder: {current_iter_folder}")
-    
-    # if the iteration 0 applies distance map to ground truth segmentation
-    if current_iter == 0:
+if __name__ == "__main__":
+    while True:
+        print_sucess("Working ON:")
+        print_sucess(get_device()) 
         
-        logger.info(f"Generating test distance map")
+        # get current iteration folder
+        current_iter_folder = get_current_iter_folder(args.data_path, args.overlap)
+        current_iter = int(current_iter_folder.split("_")[-1])
 
-        TEST_SEGMENTATION_PATH = args.test_segmentation_path
-        TEST_DISTANCE_MAP_OUTPUT = join(current_iter_folder, "distance_map", "test_distance_map.tif")
+        if current_iter > args.num_iter:
+            break
         
-        check_folder(dirname(TEST_DISTANCE_MAP_OUTPUT))
-        generate_distance_map(TEST_SEGMENTATION_PATH, TEST_DISTANCE_MAP_OUTPUT)
-
-        logger.info("Done!")
-
-        logger.info(f"Generating train distance map")
-        TRAIN_SEGMENTATION_PATH  = args.train_segmentation_path
-        TRAIN_DISTANCE_MAP_OUTPUT = join(current_iter_folder, "distance_map", "train_distance_map.tif")
-
-        check_folder(dirname(TRAIN_DISTANCE_MAP_OUTPUT))
-
-        generate_distance_map(TRAIN_SEGMENTATION_PATH, TRAIN_DISTANCE_MAP_OUTPUT)
+        logger.info(f"##################### ITERATION {current_iter} ##################### ")
+        logger.info(f"Current iteration folder: {current_iter_folder}")
         
-        logger.info("Done!")
-        continue
+        # if the iteration 0 applies distance map to ground truth segmentation
+        if current_iter == 0:
+            
+            logger.info(f"Generating test distance map")
+
+            TEST_SEGMENTATION_PATH = args.test_segmentation_path
+            TEST_DISTANCE_MAP_OUTPUT = join(current_iter_folder, "distance_map", "test_distance_map.tif")
+            
+            check_folder(dirname(TEST_DISTANCE_MAP_OUTPUT))
+            generate_distance_map(TEST_SEGMENTATION_PATH, TEST_DISTANCE_MAP_OUTPUT)
+
+            logger.info("Done!")
+
+            logger.info(f"Generating train distance map")
+            TRAIN_SEGMENTATION_PATH  = args.train_segmentation_path
+            TRAIN_DISTANCE_MAP_OUTPUT = join(current_iter_folder, "distance_map", "train_distance_map.tif")
+
+            check_folder(dirname(TRAIN_DISTANCE_MAP_OUTPUT))
+
+            generate_distance_map(TRAIN_SEGMENTATION_PATH, TRAIN_DISTANCE_MAP_OUTPUT)
+            
+            logger.info("Done!")
+            continue
+        
+        with torch.no_grad():
+            torch.cuda.empty_cache()
+        
+        # Get current model folder
+        current_model_folder = join(current_iter_folder, args.model_dir)
+        check_folder(current_model_folder)
+
+        train_iteration(current_iter_folder, args)
+
+        evaluate_iteration(current_iter_folder, args)
+
+        pred2raster(current_iter_folder, args)
+
+        generate_labels_for_next_iteration(current_iter_folder, args)
+
+        #############################################
+
+        delete_useless_files(current_iter_folder = current_iter_folder)
+        
+        compile_metrics(current_iter_folder, args)
+
+        generate_labels_view(current_iter_folder, args.ortho_image)
+
+        print_sucess("Distance map generated")
     
-    with torch.no_grad():
-        torch.cuda.empty_cache()
-    
-    # Get current model folder
-    current_model_folder = join(current_iter_folder, args.model_dir)
-    check_folder(current_model_folder)
-
-    train_iteration(current_iter_folder, args)
-
-    evaluate_iteration(current_iter_folder, args)
-
-    pred2raster(current_iter_folder, args)
-
-    generate_labels_for_next_iteration(current_iter_folder, args)
-
-    #############################################
-
-    delete_useless_files(current_iter_folder = current_iter_folder)
-    
-    compile_metrics(current_iter_folder, args)
-
-    generate_labels_view(current_iter_folder, args.ortho_image)
-
-    print_sucess("Distance map generated")
- 
 
 
