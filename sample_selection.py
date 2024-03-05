@@ -504,7 +504,7 @@ def select_good_samples(old_pred_map:np.ndarray,
     solidity_filter = (comp_new_stats["diff_soli"] >= -0.10)
 
     # filter based on median
-    median_filter = ((comp_new_stats["diff_area"] <= 0.7) & (comp_new_stats["diff_area"] >= -0.3))
+    median_filter = ((comp_new_stats["diff_area"] <= 0.7) & (comp_new_stats["diff_area"] >= -0.7))
 
     # filter based on quantile.
     # if 10% bigger than q3 or 10% minor than the q1, is accepted

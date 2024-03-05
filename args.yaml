@@ -4,7 +4,7 @@
 # experiment directory
 model_dir: exp_deeplab_v4
 
-data_path: 2.9_version_data
+data_path: 2.10_version_data
 
 # Input data for the model
 ortho_image: amazon_md_input_data/orthoimage/NOV_2017_FINAL_004.tif
@@ -83,4 +83,4 @@ overlap: [0.1, 0.3, 0.5]
 prob_thr: 0.9
 depth_thr: 0.1
 # Num of iter
-num_iter : 15
+num_iter : 10
