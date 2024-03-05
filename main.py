@@ -29,7 +29,7 @@ from src.multicropdataset import DatasetFromCoord
 from src.utils import (ParquetUpdater, array2raster, check_folder,
                        fix_random_seeds, get_device,
                        get_image_metadata, oversamp, print_sucess, read_tiff,
-                       read_yaml, restart_from_checkpoint, save_yaml, load_args, run_in_thread, run_in_process)
+                       read_yaml, restart_from_checkpoint, save_yaml, load_args)
 
 gc.set_threshold(0)
 
@@ -665,7 +665,7 @@ def generate_labels_for_next_iteration(current_iter_folder:str, args:dict):
     generate_distance_map(SELECTED_LABELS_PATH, SELECTED_LABELS_DISTANCE_MAP_PATH)
     
 
-@run_in_process
+
 def compile_metrics(current_iter_folder, args):
     # read test segmentation 
     DATA_PATH = dirname(current_iter_folder)
