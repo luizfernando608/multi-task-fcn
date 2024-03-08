@@ -785,7 +785,7 @@ if __name__ == "__main__":
         
         compile_metrics(current_iter_folder, args)
 
-        generate_labels_view(current_iter_folder, args.ortho_image)
+        generate_labels_view(current_iter_folder, args.ortho_image, args.train_segmentation_path)
 
         print_sucess("Distance map generated")
     

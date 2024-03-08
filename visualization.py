@@ -42,7 +42,7 @@ def generate_view_for_sythentic_label(current_iter_folder:str, train_segmentatio
 
 
 
-def generate_labels_view(current_iter_folder:str, orthoimage_path:str):
+def generate_labels_view(current_iter_folder:str, orthoimage_path:str, train_segmentation_path:str):
     """Function to generate images for qualitative evaluation.
     These images are not used for any kind of numeric evaluation.
 
@@ -53,12 +53,14 @@ def generate_labels_view(current_iter_folder:str, orthoimage_path:str):
     
     orthoimage_path : str
         Path to remote sensing orthoimage
+    
+    train_segmentation_path : str
+        Path to ground_truth segmentation used for train
     """
 
     
     ALL_LABELS_PATH = join(current_iter_folder, "new_labels", "all_labels_set.tif")
     SELECTED_LABELS_PATH = join(current_iter_folder, "new_labels", "selected_labels_set.tif")
-    ORTHO_IMAGE_PATH = orthoimage_path
 
     current_iter = int(current_iter_folder.split("iter_")[-1])
 
@@ -105,23 +107,13 @@ def generate_labels_view(current_iter_folder:str, orthoimage_path:str):
     plt.savefig(join(SELECTED_LABELS_OUT_FOLDER, f"{current_iter:03d}_segmentation.png"), bbox_inches='tight', pad_inches=0)
     plt.close()
 
-    # Plot all labels contour
-    CONTOUR_ALL_LABELS_OUT_FOLDER = join(OUTPUT_MAP_FOLDER, "all_labels_contour")
-    check_folder(CONTOUR_ALL_LABELS_OUT_FOLDER)
 
-    plt.figure(dpi = 1200)
+    generate_view_for_sythentic_label(
+        current_iter_folder=current_iter_folder,
+        train_segmentation_path=train_segmentation_path,
+        orthoimage_path=orthoimage_path
+    )
 
-    ORTHOIMAGE = read_tiff(ORTHO_IMAGE_PATH)
-    plt.imshow(np.moveaxis(ORTHOIMAGE, 0, 2))
-    del ORTHOIMAGE
-
-    # plot contours
-    for contour in find_contours(ALL_LABELS_MAP):
-        plt.plot(contour[:, 1], contour[:, 0], linewidth=0.3, color = "red", label = "Predição")
-
-    plt.axis('off')
-    plt.savefig(join(CONTOUR_ALL_LABELS_OUT_FOLDER, f"{current_iter:03d}_segmentation.png"), bbox_inches='tight', pad_inches=0)
-    plt.close()
 
     
 
@@ -129,16 +121,16 @@ if __name__ == "__main__":
     from src.utils import load_args
     
     # parameters
-    VERSION_FOLDER = "2.8_version_data"
-    ITER_NUM = 9
+    VERSION_FOLDER = "2.10_version_data"
+    ITER_NUM = 1
 
 
     args = load_args(join(dirname(__file__), VERSION_FOLDER, "args.yaml"))
     current_iter_folder = join(args.data_path, f"iter_{ITER_NUM:03d}")
 
-    generate_view_for_sythentic_label(
-        current_iter_folder=current_iter_folder,
-        orthoimage_path=args.ortho_image, 
-        train_segmentation_path=args.train_segmentation_path
+
+    generate_labels_view(
+        current_iter_folder = current_iter_folder,
+        orthoimage_path = args.ortho_image,
+        train_segmentation_path = args.train_segmentation_path
     )
-    
