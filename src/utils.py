@@ -4,10 +4,10 @@ import errno
 import functools
 import gc
 import logging
+import multiprocessing
 import os
 import random
 import threading
-import multiprocessing
 import warnings
 from collections.abc import Iterable
 from logging import CRITICAL, getLogger
@@ -264,7 +264,7 @@ def extract_patches_coord(img_gt:np.ndarray,
     return coords
 
 
-@run_in_thread
+
 def plot_figures(img_mult:np.ndarray, ref:np.ndarray, pred:np.ndarray, depth:np.ndarray, dist, model_dir:str, epoch:int, set_name:str):
     """Plot a comparison between the reference, prediction and depth images.
 
