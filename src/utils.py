@@ -4,10 +4,10 @@ import errno
 import functools
 import gc
 import logging
+import multiprocessing
 import os
 import random
 import threading
-import multiprocessing
 import warnings
 from collections.abc import Iterable
 from logging import CRITICAL, getLogger
