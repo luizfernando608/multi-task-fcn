@@ -8,7 +8,7 @@ from skimage.measure import find_contours
 
 from src.utils import check_folder, read_tiff, run_in_thread, run_in_process
 
-@run_in_process
+
 def generate_labels_view(current_iter_folder:str, orthoimage_path:str):
     """Function to generate images for qualitative evaluation.
     These images are not used for any kind of numeric evaluation.
