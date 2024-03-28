@@ -592,6 +592,12 @@ def generate_labels_for_next_iteration(current_iter_folder:str, args:dict):
     Generate labels and distance map for the next iteration
     """
     
+    ALL_LABELS_OUPUT_PATH = join(current_iter_folder, "new_labels", f'all_labels_set.tif')
+    SELECTED_LABELS_OUTPUT_PATH = join(current_iter_folder, "new_labels", f'selected_labels_set.tif')
+
+    if exists(ALL_LABELS_OUPUT_PATH) and exists(SELECTED_LABELS_OUTPUT_PATH):
+        return
+    
     logger.info("============ Generating New Samples ============")
 
     current_iter = int(current_iter_folder.split("iter_")[-1])
@@ -634,35 +640,44 @@ def generate_labels_for_next_iteration(current_iter_folder:str, args:dict):
 
     ##### SAVE NEW LABELS ####
     image_metadata = get_image_metadata(OLD_SELECTED_LABELS_FILE)
+    
+    check_folder(dirname(ALL_LABELS_OUPUT_PATH))
+
+    array2raster(ALL_LABELS_OUPUT_PATH, all_labels_set, image_metadata, "Byte")
+
+
+    check_folder(dirname(SELECTED_LABELS_OUTPUT_PATH))
+
+    array2raster(SELECTED_LABELS_OUTPUT_PATH, selected_labels_set, image_metadata, "Byte")
+    
+
+
+def generate_distance_map_for_next_iteration(current_iter_folder):
 
     ALL_LABELS_PATH = join(current_iter_folder, "new_labels", f'all_labels_set.tif')
-    
-    check_folder(dirname(ALL_LABELS_PATH))
-
-    array2raster(ALL_LABELS_PATH, all_labels_set, image_metadata, "Byte")
-
-
     SELECTED_LABELS_PATH = join(current_iter_folder, "new_labels", f'selected_labels_set.tif')
-
-    check_folder(dirname(SELECTED_LABELS_PATH))
-
-    array2raster(SELECTED_LABELS_PATH, selected_labels_set, image_metadata, "Byte")
     
     
+    ALL_LABELS_DISTANCE_MAP_OUTPUT_PATH = join(current_iter_folder, "distance_map", f'all_labels_distance_map.tif')
+    
+    SELECTED_LABELS_DISTANCE_MAP_OUPTPUT_PATH  = join(current_iter_folder, "distance_map", f'selected_distance_map.tif')
+
     #######################################
     ######## GENERATE DISTANCE MAP ########
-    ALL_LABELS_DISTANCE_MAP_PATH = join(current_iter_folder, "distance_map", f'all_labels_distance_map.tif')
+    if not exists(ALL_LABELS_DISTANCE_MAP_OUTPUT_PATH):
+        logger.info(f"Generating distance map and saving at {ALL_LABELS_DISTANCE_MAP_OUTPUT_PATH}")
 
-    check_folder(dirname(ALL_LABELS_DISTANCE_MAP_PATH))
+        check_folder(dirname(ALL_LABELS_DISTANCE_MAP_OUTPUT_PATH))
 
-    generate_distance_map(ALL_LABELS_PATH, ALL_LABELS_DISTANCE_MAP_PATH)
+        generate_distance_map(ALL_LABELS_PATH, ALL_LABELS_DISTANCE_MAP_OUTPUT_PATH)
     
 
-    SELECTED_LABELS_DISTANCE_MAP_PATH  = join(current_iter_folder, "distance_map", f'selected_distance_map.tif')
-    
-    check_folder(dirname(SELECTED_LABELS_DISTANCE_MAP_PATH))
+    if not exists(SELECTED_LABELS_DISTANCE_MAP_OUPTPUT_PATH):
+        logger.info(f"Generating distance map and saving at {SELECTED_LABELS_DISTANCE_MAP_OUPTPUT_PATH}")
 
-    generate_distance_map(SELECTED_LABELS_PATH, SELECTED_LABELS_DISTANCE_MAP_PATH)
+        check_folder(dirname(SELECTED_LABELS_DISTANCE_MAP_OUPTPUT_PATH))
+
+        generate_distance_map(SELECTED_LABELS_PATH, SELECTED_LABELS_DISTANCE_MAP_OUPTPUT_PATH)
     
 
 
@@ -714,6 +729,7 @@ version_name = os.path.split(args.data_path)[-1]
 logger = create_logger(module_name=__name__, filename=version_name)
 
 logger.info(f"################### {version_name.upper()} ###################")
+
 # create output path
 check_folder(args.data_path)
 
@@ -726,68 +742,73 @@ save_yaml(args, join(args.data_path, "args.yaml"))
 # Set random seed
 fix_random_seeds(args.seed)
 
-while True:
-    print_sucess("Working ON:")
-    print_sucess(get_device()) 
+if __name__ == "__main__":
     
-    # get current iteration folder
-    current_iter_folder = get_current_iter_folder(args.data_path, args.overlap)
-    current_iter = int(current_iter_folder.split("_")[-1])
+    while True:
 
-    if current_iter > args.num_iter:
-        break
-    
-    logger.info(f"##################### ITERATION {current_iter} ##################### ")
-    logger.info(f"Current iteration folder: {current_iter_folder}")
-    
-    # if the iteration 0 applies distance map to ground truth segmentation
-    if current_iter == 0:
+        print_sucess("Working ON:")
+        print_sucess(get_device()) 
         
-        logger.info(f"Generating test distance map")
+        # get current iteration folder
+        current_iter_folder = get_current_iter_folder(args.data_path, args.overlap)
+        current_iter = int(current_iter_folder.split("_")[-1])
 
-        TEST_SEGMENTATION_PATH = args.test_segmentation_path
-        TEST_DISTANCE_MAP_OUTPUT = join(current_iter_folder, "distance_map", "test_distance_map.tif")
+        if current_iter > args.num_iter:
+            break
         
-        check_folder(dirname(TEST_DISTANCE_MAP_OUTPUT))
-        generate_distance_map(TEST_SEGMENTATION_PATH, TEST_DISTANCE_MAP_OUTPUT)
-
-        logger.info("Done!")
-
-        logger.info(f"Generating train distance map")
-        TRAIN_SEGMENTATION_PATH  = args.train_segmentation_path
-        TRAIN_DISTANCE_MAP_OUTPUT = join(current_iter_folder, "distance_map", "train_distance_map.tif")
-
-        check_folder(dirname(TRAIN_DISTANCE_MAP_OUTPUT))
-
-        generate_distance_map(TRAIN_SEGMENTATION_PATH, TRAIN_DISTANCE_MAP_OUTPUT)
+        logger.info(f"##################### ITERATION {current_iter} ##################### ")
+        logger.info(f"Current iteration folder: {current_iter_folder}")
         
-        logger.info("Done!")
-        continue
-    
-    with torch.no_grad():
-        torch.cuda.empty_cache()
-    
-    # Get current model folder
-    current_model_folder = join(current_iter_folder, args.model_dir)
-    check_folder(current_model_folder)
+        # if the iteration 0 applies distance map to ground truth segmentation
+        if current_iter == 0:
+            
+            logger.info(f"Generating test distance map")
 
-    train_iteration(current_iter_folder, args)
+            TEST_SEGMENTATION_PATH = args.test_segmentation_path
+            TEST_DISTANCE_MAP_OUTPUT = join(current_iter_folder, "distance_map", "test_distance_map.tif")
+            
+            check_folder(dirname(TEST_DISTANCE_MAP_OUTPUT))
+            generate_distance_map(TEST_SEGMENTATION_PATH, TEST_DISTANCE_MAP_OUTPUT)
 
-    evaluate_iteration(current_iter_folder, args)
+            logger.info("Done!")
 
-    pred2raster(current_iter_folder, args)
+            logger.info(f"Generating train distance map")
+            TRAIN_SEGMENTATION_PATH  = args.train_segmentation_path
+            TRAIN_DISTANCE_MAP_OUTPUT = join(current_iter_folder, "distance_map", "train_distance_map.tif")
 
-    generate_labels_for_next_iteration(current_iter_folder, args)
+            check_folder(dirname(TRAIN_DISTANCE_MAP_OUTPUT))
 
-    #############################################
+            generate_distance_map(TRAIN_SEGMENTATION_PATH, TRAIN_DISTANCE_MAP_OUTPUT)
+            
+            logger.info("Done!")
+            continue
+        
+        with torch.no_grad():
+            torch.cuda.empty_cache()
+        
+        # Get current model folder
+        current_model_folder = join(current_iter_folder, args.model_dir)
+        check_folder(current_model_folder)
 
-    delete_useless_files(current_iter_folder = current_iter_folder)
-    
-    compile_metrics(current_iter_folder, args)
+        train_iteration(current_iter_folder, args)
 
-    generate_labels_view(current_iter_folder, args.ortho_image, args.train_segmentation_path)
+        evaluate_iteration(current_iter_folder, args)
 
-    print_sucess("Distance map generated")
+        pred2raster(current_iter_folder, args)
+
+        generate_labels_for_next_iteration(current_iter_folder, args)
+        
+        generate_distance_map_for_next_iteration(current_iter_folder)
+
+        #############################################
+
+        delete_useless_files(current_iter_folder = current_iter_folder)
+        
+        compile_metrics(current_iter_folder, args)
+
+        generate_labels_view(current_iter_folder, args.ortho_image, args.train_segmentation_path)
+
+        print_sucess("Distance map generated")
  
 
 
