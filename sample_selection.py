@@ -8,7 +8,7 @@ from scipy.ndimage import gaussian_filter
 from skimage.measure import label, regionprops_table
 from tqdm import tqdm
 
-from src.utils import fix_relative_paths, read_tiff, read_yaml, load_args
+from src.utils import (convert_to_minor_numeric_type, load_args, read_tiff, read_yaml)
 
 args = load_args(join(dirname(__file__), "args.yaml"))
 
@@ -554,52 +554,63 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
         new_prob_map,
         new_depth_map
     )
-
+    new_pred_map = convert_to_minor_numeric_type(new_pred_map)
     
     # Join all labels set with new prediction
     logger.info("Joining the old and new components")
     new_labels_set = join_labels_set(new_pred_map, old_all_labels)
+    new_labels_set = convert_to_minor_numeric_type(new_labels_set)
+
 
     logger.info("Getting the new components")
     # Select components that are in new but not in old
     delta_label_map = get_labels_delta(old_label_img = old_selected_labels, 
                                        new_label_img = new_labels_set)
-    
+    delta_label_map = convert_to_minor_numeric_type(delta_label_map)
+
 
     unbalanced_delta = delta_label_map.copy()
+    unbalanced_delta = convert_to_minor_numeric_type(unbalanced_delta)
 
     logger.info("Selecting 5 components by tree_type")
     select_n_labels_by_class(
         delta_label_map,
         samples_by_class = 5
     )
-    
+
+
     logger.info("Getting the components that are in the old and new segmentation")
     # get the new predicted shapes for components from old segmentation
     intersection_label_map = get_label_intersection(old_label_img = old_selected_labels, 
                                                     new_label_img = new_labels_set)
-    
+    intersection_label_map = convert_to_minor_numeric_type(intersection_label_map)
+
+
     logger.info("Getting the old components but with the updated shape")
     # join updated shapes with the old ones that were not updated
     old_selected_labels_updated = join_labels_set(intersection_label_map, old_selected_labels, 0.10 )
+    old_selected_labels_updated = convert_to_minor_numeric_type(old_selected_labels_updated)
 
     logger.info("Joining the old components updated shape with the new selected components")
     # join the old labels set with the new labels. balanced sample addition
     selected_labels_set = join_labels_set(delta_label_map, old_selected_labels_updated, 0.10 )
+    selected_labels_set = convert_to_minor_numeric_type(selected_labels_set)
     
-    logger.info('Joining the selected components with the original groud_truth train set')    
+    logger.info('Joining the selected components with the original groud_truth train set')
     # Adding the ground truth segmentation
     selected_labels_set = join_labels_set(ground_truth_map, selected_labels_set, 0.01 )
+    selected_labels_set = convert_to_minor_numeric_type(selected_labels_set)
 
 
     logger.info("Joining the old components updated shape with the new components")
     # join the old labels set with the new labels. unbalanced sample addition
     all_labels_set = join_labels_set(unbalanced_delta, old_selected_labels_updated, 0.10)
+    all_labels_set = convert_to_minor_numeric_type(all_labels_set)
 
-    logger.info('Joining the new components with the original groud_truth train set')    
+    logger.info('Joining the new components with the original groud_truth train set')
     # Adding the ground truth segmentation
     all_labels_set = join_labels_set(ground_truth_map, all_labels_set, 0.01)
-
+    all_labels_set = convert_to_minor_numeric_type(all_labels_set)
 
     return all_labels_set, selected_labels_set
 

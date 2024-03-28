@@ -958,8 +958,28 @@ class ParquetUpdater:
 
 
 
+def convert_to_minor_numeric_type(array:np.ndarray)->np.ndarray:
+    
+    # check if all values are integers
+    if np.all(np.mod(array, 1) == 0):
+        is_integer = True
+    
+    if not is_integer:
+        return array
+    
+    min_value_array = np.min(array)
+    max_value_array = np.max(array)
+    
+    if min_value_array >= 0:
+        if max_value_array < 255:
+            return array.astype("uint8")
+        
+        elif max_value_array < 65_000:
+            return array.astype("uint16")
 
-
+    else:
+        return array.astype("int")
+        
 
 
 
