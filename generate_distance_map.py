@@ -3,6 +3,7 @@ import os
 import numpy as np
 from scipy.ndimage import distance_transform_edt, gaussian_filter
 from skimage.measure import label
+from tqdm import tqdm
 
 from src.utils import (array2raster, check_folder, get_image_metadata,
                        print_sucess, read_tiff, read_yaml)
@@ -25,7 +26,7 @@ def apply_gaussian_distance_map(input_img:np.ndarray, sigma=5)->np.ndarray:
     """
 
     ref = input_img.copy()
-    ref[ref>0] = 1
+    # ref[ref>0] = 1
 
     # label the image as components
     label_ref = label(ref)
@@ -39,9 +40,12 @@ def apply_gaussian_distance_map(input_img:np.ndarray, sigma=5)->np.ndarray:
     # create the new image with the distance map
     save_lab = np.zeros(label_ref.shape)
 
-    for obj in np.unique(label_ref)[1:]:
-        # normalize the distance map
-        save_lab[label_ref==obj] = new_lab[label_ref==obj]/np.max(new_lab[label_ref==obj])
+    for component in tqdm(np.unique(label_ref[label_ref>0])):
+
+        component_mask = label_ref==component
+
+        save_lab[component_mask] = new_lab[component_mask]/np.max(new_lab[component_mask])
+        
         
     return save_lab
     

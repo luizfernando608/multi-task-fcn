@@ -160,19 +160,20 @@ def get_labels_delta(
     
     # Select the components in new_label_img that share only 10% of the pixels with the old_segmentation
     for idx in tqdm(new_components_in_old):
+        component_mask = new_components_img == idx
         # if more than 90% of the area is empty it will be added to the new predicted sample
-        if np.mean(old_components_img[new_components_img == idx] == 0) > 0.9:
+        if np.mean(old_components_img[component_mask] == 0) > 0.9:
             
             # count labels
             unique_labels, count_labels = np.unique(
-                new_label_img[(new_components_img == idx) &  (new_label_img != 0)], return_counts=True
+                new_label_img[component_mask &  (new_label_img > 0)], return_counts=True
             )
 
             # get value of class with higher count
             class_common_idx = np.argmax(count_labels)
             class_common = unique_labels[class_common_idx]
 
-            label_delta[new_components_img == idx] = class_common
+            label_delta[component_mask] = class_common
 
     return label_delta
 
@@ -205,19 +206,21 @@ def get_label_intersection(
 
     print("Getting the intersection between the old and new segmentation")
     for idx in tqdm(components_to_iter):
+        component_mask = new_components_img == idx
+        
         # if more than 90% of the area is filled it will be added to the intersection sample
-        if np.mean(old_components_img[new_components_img == idx] == 0) < 0.9:
+        if np.mean(old_components_img[component_mask] == 0) < 0.9:
             
             # count labels
             unique_labels, count_labels = np.unique(
-                new_label_img[(new_components_img == idx) &  (new_label_img != 0)], return_counts=True
+                new_label_img[(component_mask) & (new_label_img > 0)], 
+                return_counts=True
             )
 
             # get value of class with higher count
-            class_common_idx = np.argmax(count_labels)
-            class_common = unique_labels[class_common_idx]
+            class_common = unique_labels[np.argmax(count_labels)]
 
-            label_intersection[new_components_img == idx] = class_common
+            label_intersection[component_mask] = class_common
 
     return label_intersection
 
@@ -378,22 +381,19 @@ def join_labels_set(high_priority_labels:np.ndarray, low_priority_labels:np.ndar
     # Adding the components with intersection
     for component in tqdm(np.unique(low_components_in_high)):
         
-        overlap = np.mean(high_priority_labels[low_priority_comp==component]>0)
+        component_mask = low_priority_comp==component
+
+        overlap = np.mean(high_priority_labels[component_mask]>0)
 
         # If the overlap is lower than the limit, add the component to the labels union
         if overlap < overlap_limit:
-            low_id = low_priority_labels[(low_priority_comp==component)]
+            low_id = low_priority_labels[component_mask]
             
             low_id = np.unique(low_id[np.nonzero(low_id)])[0]
             
-            labels_union[low_priority_comp==component] = low_id
+            labels_union[component_mask] = low_id
 
-        
-        else:
-            # if has overlap, keep the high priority labels
-            pass
-            
-            
+    
     return labels_union
 
 
@@ -621,8 +621,8 @@ if __name__ == "__main__":
     args = read_yaml("args.yaml")
     ROOT_PATH = dirname(__file__)
     
-    version_folder = join(ROOT_PATH, "2.6_version_data")
-    input_data_folder = join(ROOT_PATH, "amazon_md_input_data")
+    version_folder = join(ROOT_PATH, "2.8.2_version_data")
+    input_data_folder = join(ROOT_PATH, "amazon_input_data")
 
     gt_map = read_tiff(f"{input_data_folder}/segmentation/train_set.tif")
 
