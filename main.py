@@ -1,7 +1,7 @@
+import gc
 import math
 import os
 import shutil
-import subprocess
 from os.path import dirname, exists, isfile, join
 
 import matplotlib.pyplot as plt
@@ -14,18 +14,20 @@ import torch.nn.parallel
 import torch.optim
 from tqdm import tqdm
 
-from generate_distance_map import generate_distance_map
-import gc
-
-from visualization import generate_labels_view
 from evaluation import evaluate_iteration
+from generate_distance_map import generate_distance_map
 from pred2raster import pred2raster
 from sample_selection import get_new_segmentation_sample
+from src.io_operations import (ParquetUpdater, array2raster,
+                               convert_tiff_to_npy, get_image_metadata,
+                               get_npy_filepath_from_tiff, load_args,
+                               read_tiff, save_yaml)
+from src.lazy_dataset import LazyDatasetFromCoord
 from src.logger import create_logger
 from src.metrics import evaluate_component_metrics, evaluate_metrics
 from src.model import (build_model, define_loader, eval, load_weights,
                        save_checkpoint, train)
-from src.multicropdataset import DatasetFromCoord
+from src.dataset import DatasetFromCoord
 from src.utils import (check_folder, fix_random_seeds, get_device, oversamp,
                        print_sucess, restart_from_checkpoint)
 from visualization import generate_labels_view
@@ -133,6 +135,21 @@ def get_current_iter_folder(data_path, overlap):
     return iter_0_path
     
 
+def get_last_segmentation_path(train_segmentation_path, current_iter_folder):
+    current_iter = int(current_iter_folder.split("_")[-1])
+
+    data_path = dirname(current_iter_folder)
+
+    if current_iter == 1:
+        image_path = train_segmentation_path
+        
+
+    else:
+        image_path = join(data_path, f"iter_{current_iter-1:03d}", "new_labels", "selected_labels_set.tif")
+
+    return image_path
+
+
 def read_last_segmentation(current_iter_folder:str, train_segmentation_path:str)-> np.ndarray:
     """Read the segmentation labels from the last iteration.
     If is the first iteration, the function reads the ground_truth_segmentation
@@ -151,27 +168,28 @@ def read_last_segmentation(current_iter_folder:str, train_segmentation_path:str)
         A image array with the segmentation set
     """
 
-    
-    current_iter = int(current_iter_folder.split("_")[-1])
-
-    data_path = dirname(current_iter_folder)
-
-    if current_iter == 1:
-        image_path = train_segmentation_path
-        
-
-    else:
-        image_path = join(data_path, f"iter_{current_iter-1:03d}", "new_labels", "selected_labels_set.tif")
-
-
+    image_path = get_last_segmentation_path(train_segmentation_path, current_iter_folder)
     image = read_tiff(image_path)
-
 
     return image
 
 
+
 def read_val_segmentation():
     return read_tiff(args.train_segmentation_path)
+
+def get_last_distance_map_path(current_iter_folder:str):
+    current_iter = int(current_iter_folder.split("_")[-1])
+    data_path = dirname(current_iter_folder)
+
+    if current_iter == 1:
+        distance_map_filename = "train_distance_map.tif"
+    else:
+        distance_map_filename = "selected_distance_map.tif"
+
+    image_path = join(data_path, f"iter_{current_iter-1:03d}", "distance_map", distance_map_filename)
+    
+    return image_path
 
 
 def read_last_distance_map(current_iter_folder:str)->np.ndarray:
@@ -188,17 +206,11 @@ def read_last_distance_map(current_iter_folder:str)->np.ndarray:
     np.ndarray
         Image with the application of distance map.
     """
-    current_iter = int(current_iter_folder.split("_")[-1])
-    data_path = dirname(current_iter_folder)
-
-    if current_iter == 1:
-        distance_map_filename = "train_distance_map.tif"
-    else:
-        distance_map_filename = "selected_distance_map.tif"
-
-    image_path = join(data_path, f"iter_{current_iter-1:03d}", "distance_map", distance_map_filename)
+    
+    image_path = get_last_distance_map_path(current_iter_folder)
         
     image = read_tiff(image_path)
+
     return image
 
 
@@ -317,8 +329,8 @@ def train_epochs(last_checkpoint:str,
             logger.info("============ Early Stop at epoch %i ... ============" % epoch)
             break
         
-        np.random.shuffle(train_loader.dataset.coord)
-        np.random.shuffle(val_loader.dataset.coord)
+        np.random.shuffle(train_loader.dataset.coords)
+        np.random.shuffle(val_loader.dataset.coords)
 
         # train the network for one epoch
         logger.info("============ Starting epoch %i ... ============" % epoch)
@@ -386,31 +398,29 @@ def train_iteration(current_iter_folder:str, args:dict):
 
     logger.info("============ Initialized Training ============")
     
-    ######### Define Loader ############
-    raster_train = read_last_segmentation(current_iter_folder, args.train_segmentation_path)
-    depth_img = read_last_distance_map(current_iter_folder)
+    # Define Loader
+    segmentation_path = get_last_segmentation_path(args.train_segmentation_path, current_iter_folder)
+    distance_map_path = get_last_distance_map_path(current_iter_folder)
 
-    image, coords_train, raster_train, labs_coords_train = define_loader(args.ortho_image, 
-                                                                         raster_train, 
-                                                                         args.size_crops)
-    
-    ######## do oversampling in minor classes
-    coords_train = oversamp(coords_train, labs_coords_train, under=False)
+    convert_tiff_to_npy(args.ortho_image)
+    convert_tiff_to_npy(segmentation_path)
+    convert_tiff_to_npy(distance_map_path)
 
-    if args.samples > coords_train.shape[0]:
-        args.samples = None
+    orthoimage_npy_path = get_npy_filepath_from_tiff(args.ortho_image)
+    segmentation_npy_path = get_npy_filepath_from_tiff(segmentation_path)
+    distance_npy_path = get_npy_filepath_from_tiff(distance_map_path)
 
-    # build data for training
     train_dataset = DatasetFromCoord(
-        image,
-        raster_train,
-        depth_img,
-        coords_train,
-        args.size_crops,
-        args.samples,
-        augment = args.augment
+        image_path=orthoimage_npy_path,
+        segmentation_path=segmentation_npy_path,
+        distance_map_path=distance_npy_path,
+        dataset_type="train",
+        samples=args.samples,
+        augment=args.augment,
+        crop_size=args.size_crops
     )
-
+    
+    
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=args.batch_size,
@@ -420,27 +430,18 @@ def train_iteration(current_iter_folder:str, args:dict):
         shuffle=True,
     )
 
-    raster_val = raster_train.copy()
-    depth_val = depth_img.copy()
 
-    ########### LOAD VALIDATION SET ##################
-    _, coords_val, raster_val, labs_coords_val = define_loader(args.ortho_image, 
-                                                    raster_val, 
-                                                    args.size_crops,
-                                                    test = True)
-
-    coords_val = oversamp(coords_val, labs_coords_val, under = True)
-
-
+    # LOAD VALIDATION SET
     val_dataset = DatasetFromCoord(
-        image,
-        raster_val,
-        depth_val,
-        coords_val,
-        args.size_crops,
-        args.samples // 5,
-        augment = True
+        image_path=orthoimage_npy_path,
+        segmentation_path=segmentation_npy_path,
+        distance_map_path=distance_npy_path,
+        dataset_type="val",
+        samples=args.samples//5,
+        augment=args.augment,
+        crop_size=args.size_crops
     )
+    
 
     val_loader = torch.utils.data.DataLoader(
         val_dataset,
@@ -453,8 +454,10 @@ def train_iteration(current_iter_folder:str, args:dict):
 
     logger.info("Building data done with {} images loaded.".format(len(train_loader)))
 
+    orthoimage_meta = get_image_metadata(args.ortho_image)
+
     model  = build_model(
-        image.shape, 
+        (orthoimage_meta["count"], orthoimage_meta["height"], orthoimage_meta["width"]),
         args.nb_class,  
         args.arch, 
         args.filters, 

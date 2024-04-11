@@ -12,7 +12,7 @@ import warnings
 from collections.abc import Iterable
 from logging import CRITICAL, getLogger
 from os.path import dirname, isdir, isfile, join
-from typing import Tuple
+from typing import Literal, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -694,6 +694,150 @@ def print_sucess(message:str):
     """
     print("\033[92m {}\033[00m" .format(message))
 
+
+def get_pad_width(crop_size:int, coord:np.ndarray, image_shape:tuple):
+    
+    image_height = image_shape[-2]
+    image_width = image_shape[-1]
+    
+    pad_width = [[0,0], [0,0]]
+    
+    start_row = coord[0] - crop_size // 2
+    if start_row < 0:
+        
+        start_row = 0
+        
+        pad_width[0][0] = abs(coord[0] - crop_size // 2)
+        
+
+
+    end_row = coord[0] + crop_size // 2
+    if end_row > image_height:
+        
+        end_row = image_height
+        
+        # if end row is after the image height, add pad to the crop
+        pad_width[0][1] = abs(coord[0] + crop_size//2 - end_row)
+    
+
+    # check image width
+    start_column = coord[1] - crop_size // 2
+
+    if start_column < 0:
+        
+        start_column = 0
+        
+        # if start column is before the image index 0, add pad
+        pad_width[1][0] = abs(coord[1] - crop_size // 2)
+
+    
+    end_column = coord[1] + crop_size // 2
+    
+    if end_column > image_width:
+        
+        end_column = image_width
+        
+        # if end column is after the image width, add pad
+        pad_width[1][1] = abs(coord[1] + (crop_size // 2) - end_column)
+
+    if len(image_shape) == 3:
+        pad_width = [[0,0]] + pad_width
+
+    return pad_width
+
+
+def get_crop_image(image, image_shape, coord, crop_size):
+
+    IMAGE_HEIGHT, IMAGE_WIDTH = image_shape[-2], image_shape[-1]
+    
+    start_row = np.maximum(0, coord[0] - crop_size // 2)
+    end_row = np.minimum(IMAGE_HEIGHT, coord[0] + crop_size // 2)    
+    
+
+    start_column = np.maximum(0, coord[1] - crop_size // 2)    
+    end_column = np.minimum(IMAGE_WIDTH, coord[1] + crop_size // 2)
+
+
+    if len(image.shape) == 3:
+        image_crop = np.array(
+            image[:, 
+                 start_row:end_row, 
+                 start_column:end_column]
+        )
+    
+
+    else:
+        image_crop = np.array(
+            image[start_row:end_row, 
+                  start_column:end_column]
+        )
+    
+    return image_crop
+
+
+
+def oversample(coords: np.ndarray, 
+               coords_label: np.ndarray, 
+               method: Literal["max", "median"]) -> np.ndarray:
+    """Oversamples data to balance classes based on segmentation samples.
+
+    Parameters
+    ----------
+    coords : np.ndarray
+        Coordinates of the segmentation samples where non-zero values exist.
+    coords_label : np.ndarray
+        Segmentation labels corresponding to non-zero values. Each value relates to the pixel label at the `coords` position.
+    method : Literal["max", "median"]
+        The oversampling method to balance the tree-type classes.
+        - "max" for maximizing class counts.
+        - "median" for achieving class counts closer to the median.
+
+    Returns
+    -------
+    np.ndarray
+        Balanced segmentation sample coordinates with non-zero values.
+        The coordinates are adjusted to balance tree-type classes based on the chosen oversampling method.
+    """
+
+    
+    uniq, count = np.unique(coords_label, return_counts=True)
+    
+    if method == "max":
+        upper_samp_limit = np.max(count)
+    
+    elif method == "median":
+        upper_samp_limit = int(np.median(count))
+    
+    else:
+        raise NotImplementedError(f"Method ``{method}`` were not implemented yet.")
+
+    out_coords = np.zeros( (upper_samp_limit*len(uniq), 2), dtype='int64')
+    
+
+    for j in range(len(uniq)):
+
+        lab_ind = np.where(coords_label == uniq[j]) 
+
+        # If num of samples where the class is present is less than max_samp
+        # then we need to oversample
+        if len(lab_ind[0]) < upper_samp_limit:
+            # Randomly select samples with replacement to match max_samp
+            index = np.random.choice(lab_ind[0], upper_samp_limit, replace=True)
+            # Add to output array
+            out_coords[j*upper_samp_limit:(j+1)*upper_samp_limit,:] = coords[index]
+            
+        # If the number of samples where the class is present is the same as max_samp
+        # then we don't need to oversample, just add the samples randomly to the output array
+        else:
+            # Randomly select samples without replacement
+            index = np.random.choice(lab_ind[0], upper_samp_limit, replace=False)
+            # Add to output array
+            out_coords[j*upper_samp_limit:(j+1)*upper_samp_limit,:] = coords[index]
+    
+    # shuffle out_coords order
+    np.random.shuffle(out_coords)
+
+    return out_coords
 
 
 

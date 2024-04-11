@@ -13,7 +13,7 @@ import yaml
 ROOT_PATH = dirname(dirname(__file__))
 sys.path.append(ROOT_PATH)
 
-from src.utils import AttrDict, fix_relative_paths, normalize
+from src.utils import AttrDict, fix_relative_paths, get_crop_image, get_pad_width, normalize
 
 
 class ParquetUpdater:
@@ -365,74 +365,14 @@ def read_window_around_coord(coord:np.ndarray, crop_size:int, image_npy_path:str
     
     image_shape = get_npy_shape(image_npy_path)
     
-    IMAGE_HEIGHT, IMAGE_WIDTH = image_shape[-2], image_shape[-1]
-    
-    
-    pad_width = [[0,0], [0,0]]
-    
-    # check image height
-    start_row = coord[0] - crop_size // 2
-    if start_row < 0:
-        
-        start_row = 0
-        
-        # if start row is before the image start, add pad to the crop
-        pad_width[0][0] = abs(coord[0] - crop_size // 2)
-        
+    image_crop = get_crop_image(lazy_image, image_shape, coord, crop_size)
 
-
-    end_row = coord[0] + crop_size // 2
-    if end_row > IMAGE_HEIGHT:
-        
-        end_row = IMAGE_HEIGHT
-        
-        # if end row is after the image height, add pad to the crop
-        pad_width[0][1] = abs(coord[0] + crop_size//2 - end_row)
-    
-
-    # check image width
-    start_column = coord[1] - crop_size // 2
-
-    if start_column < 0:
-        
-        start_column = 0
-        
-        # if start column is before the image index 0, add pad
-        pad_width[1][0] = abs(coord[1] - crop_size // 2)
-
-    
-    end_column = coord[1] + crop_size // 2
-    
-    if end_column > IMAGE_WIDTH:
-        
-        end_column = IMAGE_WIDTH
-        
-        # if end column is after the image width, add pad
-        pad_width[1][1] = abs(coord[1] + (crop_size // 2) - end_column)
-    
-
-    if len(lazy_image.shape) == 3:
-        image_crop = np.array(
-            lazy_image[:, 
-                       start_row:end_row, 
-                       start_column:end_column]
-        )
-    
-
-    else:
-        image_crop = np.array(
-            lazy_image[start_row:end_row, 
-                       start_column:end_column]
-        )
-
-
-    if len(image_crop.shape) == 3:
-        pad_width = [[0,0]] + pad_width
+    pad_width = get_pad_width(crop_size, coord, image_shape)
 
     # apply padding to image
     image_crop = np.pad(
         image_crop, 
-        pad_width =  pad_width,
+        pad_width = pad_width,
         mode = "constant",
         constant_values = 0
     )

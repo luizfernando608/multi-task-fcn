@@ -1,36 +1,35 @@
 import sys
-from typing import Literal, Tuple
+from typing import Literal,Tuple
 
 import numpy as np
-import rasterio
 import torch
+
+from os.path import dirname, join
 from torch.utils.data import Dataset
 from torchvision import transforms
-import os
-from os.path import dirname, join
 
 ROOT_PATH = dirname(dirname(__file__))
 sys.path.append(ROOT_PATH)
 
-from src.io_operations import get_image_metadata, get_image_shape, read_tiff, check_file_extension, convert_tiff_to_npy, get_npy_filepath_from_tiff, get_npy_shape, load_npy_memmap
-from src.utils import get_pad_width, get_crop_image, oversample
+from src.utils import get_crop_image, get_pad_width, oversample
+from src.io_operations import check_file_extension, get_npy_shape
 
 
 
-class LazyDatasetFromCoord(Dataset):
+class DatasetFromCoord(Dataset):
     def __init__(self,
-                 image_path:str,
-                 segmentation_path:str,
-                 distance_map_path:str,
-                 crop_size:int,
-                 dataset_type:Literal["train", "val", "test"],
-                 samples:int = None,
-                 augment:bool = False,
-                 overlap_rate:float = None
-                 ) -> None:
+                image_path:str,
+                segmentation_path:str,
+                distance_map_path:str,
+                crop_size:int,
+                dataset_type:Literal["train", "val", "test"],
+                samples:int = None,
+                augment:bool = False,
+                overlap_rate:float = None
+                ) -> None: 
         
         super().__init__()
-
+        
         if (dataset_type == "test") and (overlap_rate == None):
             raise ValueError("Provide 'overlap_rate' for 'test' dataset_type")
 
@@ -63,15 +62,15 @@ class LazyDatasetFromCoord(Dataset):
         self.overlap_rate = overlap_rate
         
         if dataset_type in ["train", "val"]:
-            self.img_segmentation = load_npy_memmap(segmentation_path)
+            self.img_segmentation = np.load(segmentation_path)
+            self.img_depth = np.load(distance_map_path)
         
+        self.image = np.load(image_path)
         self.image_shape = get_npy_shape(image_path)
-
+        
         self.generate_coords()
 
 
-
-    
     def generate_coords(self):
 
         if self.dataset_type == "train":
@@ -113,13 +112,9 @@ class LazyDatasetFromCoord(Dataset):
         self.coords = np.array(coords)
 
 
-
-    def read_window_around_coord(self, coord:np.ndarray, image_npy_path:str) -> torch.Tensor:
+    def read_window_around_coord(self, coord:np.ndarray, image:np.ndarray) -> torch.Tensor:
         
-        image = load_npy_memmap(image_npy_path)
-        image_shape = get_npy_shape(image_npy_path)
-
-        image_crop = get_crop_image(image, image_shape, coord, self.crop_size)
+        image_crop = get_crop_image(image, image.shape, coord, self.crop_size)
 
         pad_width = get_pad_width(self.crop_size, coord, image.shape)
 
@@ -138,20 +133,6 @@ class LazyDatasetFromCoord(Dataset):
         return torch.tensor(image_crop)
 
 
-
-    def __len__(self):
-
-        if (self.samples is None):
-            return len(self.coords)
-
-        if (self.samples > len(self.coords)):
-            return len(self.coords)
-        
-        
-        return self.samples
-        
-        
-        
     def __getitem__(self, idx) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """Get the data from the dataset
         
@@ -182,8 +163,8 @@ class LazyDatasetFromCoord(Dataset):
 
 
         image = self.read_window_around_coord(
-            coord=current_coord, 
-            image_npy_path=self.image_path
+            coord=current_coord,
+            image=self.image,
         )
         
         # normalize by 255
@@ -194,13 +175,13 @@ class LazyDatasetFromCoord(Dataset):
             return image, current_coord
 
         segmentation = self.read_window_around_coord(
-            coord=current_coord, 
-            image_npy_path=self.segmentation_path
+            coord=current_coord,
+            image=self.img_segmentation
         )
 
         distance_map = self.read_window_around_coord(
-            coord=current_coord, 
-            image_npy_path=self.distance_map_path
+            coord=current_coord,
+            image=self.img_depth
         )
 
 
@@ -227,54 +208,15 @@ class LazyDatasetFromCoord(Dataset):
 
         return image, distance_map, segmentation.long()            
 
-
-if __name__ == "__main__":
     
-    from torch.utils.data import DataLoader
+    def __len__(self):
 
-    orthoimage_path = join(ROOT_PATH,
-    "amazon_mc_input_data/orthoimage/NOV_2017_FINAL_004.tif")
-    
-    segmentation_path = join(ROOT_PATH,"amazon_mc_input_data/segmentation/train_set.tif")
+        if (self.samples is None):
+            return len(self.coords)
 
-    distance_path = join(ROOT_PATH,"0.0_test_data/iter_000/distance_map/train_distance_map.tif")
-
-    orthoimage_npy_path = get_npy_filepath_from_tiff(orthoimage_path)
-
-    segmentation_npy_path = get_npy_filepath_from_tiff(segmentation_path)
-
-    distance_npy_path = get_npy_filepath_from_tiff(
-        distance_path
-    )
-    
-    convert_tiff_to_npy(orthoimage_path)
-    convert_tiff_to_npy(segmentation_path)
-    convert_tiff_to_npy(distance_path)
-
-    dataset = LazyDatasetFromCoord(
-        image_path=orthoimage_npy_path,
-        segmentation_path=segmentation_npy_path,
-        distance_map_path=distance_npy_path,
-        augment=True,
-        dataset_type="train",
-        samples=2000,
-        crop_size=128
-    )
-
-    train_loader = torch.utils.data.DataLoader(
-        dataset,
-        batch_size = 4,
-        num_workers = 0,
-        pin_memory = True,
-        drop_last = True,
-        shuffle = True,
-    )
-    
-    for data in train_loader:
+        if (self.samples > len(self.coords)):
+            return len(self.coords)
         
-        print(type(data))
-
-
-
-
-    pass
+        
+        return self.samples
+    
