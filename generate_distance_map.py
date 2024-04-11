@@ -11,6 +11,21 @@ from logging import getLogger
 
 logger = getLogger("__main__")
 
+
+def normalize_each_component(img_components:np.ndarray, distance_map:np.ndarray)->np.ndarray:
+    
+    # create the new image with the distance map
+    save_lab = np.zeros(img_components.shape)
+
+    for component in tqdm(np.unique(img_components[img_components>0])):
+
+        component_mask = img_components==component
+
+        save_lab[component_mask] = distance_map[component_mask]/np.max(distance_map[component_mask])
+    
+    return save_lab
+
+
 def apply_gaussian_distance_map(input_img:np.ndarray, sigma=5)->np.ndarray:
     """Apply euclidean distance transform and gaussian filter to the input image
 
@@ -26,28 +41,18 @@ def apply_gaussian_distance_map(input_img:np.ndarray, sigma=5)->np.ndarray:
     """
 
     ref = input_img.copy()
-    # ref[ref>0] = 1
 
     # label the image as components
-    label_ref = label(ref)
-
-    # apply distance transform and gaussian filter
-    new_lab = label_ref.copy()
-    new_lab = distance_transform_edt(new_lab)
-    new_lab = gaussian_filter(new_lab, sigma)
+    components = label(ref)
     
-
-    # create the new image with the distance map
-    save_lab = np.zeros(label_ref.shape)
-
-    for component in tqdm(np.unique(label_ref[label_ref>0])):
-
-        component_mask = label_ref==component
-
-        save_lab[component_mask] = new_lab[component_mask]/np.max(new_lab[component_mask])
-        
-        
-    return save_lab
+    # apply distance transform and gaussian filter
+    distance_map = components.copy()
+    distance_map = distance_transform_edt(distance_map)
+    distance_map = gaussian_filter(distance_map, sigma)
+    
+    normalized_distance_map = normalize_each_component(components, distance_map)
+    
+    return normalized_distance_map
     
 
 
@@ -82,12 +87,13 @@ def generate_distance_map(input_image_path:str, output_image_path:str):
 
 
 if __name__ == "__main__":
+    from src.utils import load_args    
     
-    args = read_yaml("args.yaml")
+    args = load_args("args.yaml")
     
-    train_input_path = os.path.join(args.data_path, args.train_segmentation_file)
-
-    train_output_path = os.path.join(args.data_path, "test", "train_distance_map.tif")
+    train_input_path = os.path.join(args.data_path, args.train_segmentation_path)
+    
+    train_output_path = os.path.join(args.data_path, "iter_000" ,"train_distance_map.tif")
     
     check_folder(os.path.dirname(train_output_path))
 
