@@ -781,6 +781,12 @@ if __name__ == "__main__":
             generate_distance_map(TRAIN_SEGMENTATION_PATH, TRAIN_DISTANCE_MAP_OUTPUT)
             
             logger.info("Done!")
+
+            logger.info("Generating labels view for iter 0")
+
+            generate_labels_view(current_iter_folder, args.ortho_image, args.train_segmentation_path)
+            
+            logger.info("Done!")
             continue
         
         with torch.no_grad():
