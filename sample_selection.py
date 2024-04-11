@@ -8,7 +8,10 @@ from scipy.ndimage import gaussian_filter
 from skimage.measure import label, regionprops_table
 from tqdm import tqdm
 
-from src.utils import (convert_to_minor_numeric_type, load_args, read_tiff, read_yaml)
+from src.io_operations import (fix_relative_paths, load_args, read_tiff,
+                               read_yaml)
+
+from src.utils import convert_to_minor_numeric_type
 
 args = load_args(join(dirname(__file__), "args.yaml"))
 

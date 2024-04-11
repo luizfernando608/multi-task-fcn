@@ -1,10 +1,10 @@
 import gc
+import logging
 import os
-from logging import Logger
+import sys
+from logging import Logger, getLogger
 from os.path import dirname, join
 from typing import Literal, Tuple
-import logging
-from logging import getLogger
 
 import numpy as np
 import torch
@@ -12,14 +12,15 @@ import torch.nn as nn
 import torch.nn.functional as F
 from tqdm import tqdm
 
-from .deepvlab3plus import DeepLabv3_plus
-from .deepvlab3plus_resnet9 import DeepLabv3Plus_resnet9
-from .metrics import evaluate_f1, evaluate_metrics
-from .resnet import ResUnet
-from .utils import (AverageMeter, check_folder, get_device, load_norm,
-                    plot_figures, read_yaml)
-
 ROOT_PATH = dirname(dirname(__file__))
+sys.path.append(ROOT_PATH)
+
+from src.deepvlab3plus import DeepLabv3_plus
+from src.deepvlab3plus_resnet9 import DeepLabv3Plus_resnet9
+from src.metrics import evaluate_f1, evaluate_metrics
+from src.resnet import ResUnet
+from src.utils import (AverageMeter, check_folder, get_device, plot_figures)
+from src.io_operations import load_norm, read_yaml
 
 args = read_yaml(join(ROOT_PATH, "args.yaml"))
 

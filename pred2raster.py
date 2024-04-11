@@ -3,7 +3,9 @@ from os.path import isfile
 from logging import getLogger
 import numpy as np
 
-from src.utils import array2raster, check_folder, get_image_metadata, read_yaml
+from src.utils import check_folder
+from src.io_operations import array2raster, get_image_metadata, read_yaml
+
 logger = getLogger("__main__")
 
 def pred2raster(current_iter_folder, args):
