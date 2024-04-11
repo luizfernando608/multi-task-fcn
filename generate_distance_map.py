@@ -4,8 +4,9 @@ import numpy as np
 from scipy.ndimage import distance_transform_edt, gaussian_filter
 from skimage.measure import label
 
-from src.utils import (array2raster, check_folder, get_image_metadata,
-                       print_sucess, read_tiff, read_yaml)
+from src.utils import check_folder,print_sucess
+from src.io_operations import array2raster,get_image_metadata, read_tiff, read_yaml
+
 from logging import getLogger
 
 logger = getLogger("__main__")

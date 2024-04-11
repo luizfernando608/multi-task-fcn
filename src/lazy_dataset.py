@@ -1,3 +1,4 @@
+import sys
 from typing import Literal, Tuple
 
 import numpy as np
@@ -7,9 +8,13 @@ from torch.utils.data import Dataset
 from torchvision import transforms
 import os
 from os.path import dirname, join
-from io_operations import get_image_metadata, get_image_shape, read_tiff, check_file_extension, read_window_around_coord, convert_tiff_to_npy, get_npy_filepath_from_tiff, get_npy_shape, load_npy_memmap
 
 ROOT_PATH = dirname(dirname(__file__))
+sys.path.append(ROOT_PATH)
+
+from src.io_operations import get_image_metadata, get_image_shape, read_tiff, check_file_extension, read_window_around_coord, convert_tiff_to_npy, get_npy_filepath_from_tiff, get_npy_shape, load_npy_memmap
+
+
 
 def oversample(coords: np.ndarray, 
                coords_label: np.ndarray, 
@@ -101,10 +106,14 @@ class dataset_with_lazy_loading_window(Dataset):
             if (overlap_rate >= 1) or (overlap_rate <= 0):
                 raise ValueError("overlap_rate only accept values between (0.0, 1.0) ")
 
+        if segmentation_path is not None:
+            check_file_extension(segmentation_path, ".npy")
         
-        check_file_extension(segmentation_path, ".npy")
-        check_file_extension(image_path, ".npy")
-        check_file_extension(distance_map_path, ".npy")
+        if image_path is not None:
+            check_file_extension(image_path, ".npy")
+        
+        if distance_map_path is not None:
+            check_file_extension(distance_map_path, ".npy")
         
         
         self.image_path = image_path

@@ -17,8 +17,10 @@ from src.logger import create_logger
 from src.model import build_model, load_weights
 from src.multicropdataset import DatasetFromCoord
 from src.utils import (add_padding_new, check_folder,
-                       extract_patches_coord, get_device, get_image_metadata,
-                       normalize, read_tiff, read_yaml, load_norm)
+                       extract_patches_coord, get_device)
+
+from src.io_operations import get_image_metadata, load_norm, read_yaml
+from src.lazy_dataset import dataset_with_lazy_loading_window, convert_tiff_to_npy, check_file_extension, get_npy_filepath_from_tiff
 
 ROOT_PATH = os.path.dirname(__file__)
 args = read_yaml(os.path.join(ROOT_PATH, "args.yaml"))

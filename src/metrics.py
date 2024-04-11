@@ -1,3 +1,4 @@
+import sys
 from os.path import dirname, join
 from typing import Literal, Union
 
@@ -7,9 +8,10 @@ from skimage.measure import label
 from sklearn.metrics import (accuracy_score, cohen_kappa_score, f1_score,
                              jaccard_score, precision_score, recall_score)
 
-from .utils import read_yaml
-
 ROOT_PATH = dirname(dirname(__file__))
+sys.path.append(ROOT_PATH)
+
+from src.io_operations import read_yaml
 
 args = read_yaml(join(ROOT_PATH, "args.yaml"))
 

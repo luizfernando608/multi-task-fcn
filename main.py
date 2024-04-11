@@ -26,10 +26,9 @@ from src.metrics import evaluate_component_metrics, evaluate_metrics
 from src.model import (build_model, define_loader, eval, load_weights,
                        save_checkpoint, train)
 from src.multicropdataset import DatasetFromCoord
-from src.utils import (ParquetUpdater, array2raster, check_folder,
-                       fix_random_seeds, get_device,
-                       get_image_metadata, oversamp, print_sucess, read_tiff,
-                       read_yaml, restart_from_checkpoint, save_yaml, load_args)
+from src.utils import (check_folder, fix_random_seeds, get_device, oversamp,
+                       print_sucess, restart_from_checkpoint)
+from visualization import generate_labels_view
 
 gc.set_threshold(0)
 

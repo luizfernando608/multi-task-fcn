@@ -1,5 +1,6 @@
 import ast
 import os
+import sys
 from os.path import dirname, join
 from typing import Iterable
 
@@ -9,9 +10,10 @@ import rasterio
 import torch
 import yaml
 
-from utils import AttrDict, fix_relative_paths, normalize
-
 ROOT_PATH = dirname(dirname(__file__))
+sys.path.append(ROOT_PATH)
+
+from src.utils import AttrDict, fix_relative_paths, normalize
 
 
 class ParquetUpdater:
