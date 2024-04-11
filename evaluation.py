@@ -21,7 +21,7 @@ from src.utils import (add_padding_new, check_folder,
                        normalize, read_tiff, read_yaml, load_norm)
 
 ROOT_PATH = os.path.dirname(__file__)
-args = read_yaml(os.path.join(ROOT_PATH, "args.yaml"))
+args = read_yaml(join(ROOT_PATH, "args.yaml"))
 
 logger = getLogger("__main__")
         
@@ -173,10 +173,11 @@ def predict_network(ortho_image_shape:Tuple,
         pred_depth = pred_depth[:row,:col]
         
 
-        return pred_prob, np.argmax(pred_prob,axis=-1), pred_depth
+        return pred_prob, np.argmax(pred_prob,axis=-1).astype("uint8"), pred_depth
 
 
-def evaluate_overlap(overlap:float,
+def evaluate_overlap(prediction_path:float,
+                     overlap:float,
                      current_iter_folder:str,
                      current_model_folder:str, 
                      ortho_image_shape:tuple,
@@ -186,15 +187,15 @@ def evaluate_overlap(overlap:float,
                      batch_size:int = args.batch_size, 
                      workers:int = args.workers, 
                      checkpoint_file:str = args.checkpoint_file, 
-                     arch:str = args.arch, 
-                     filters:list = args.filters, 
-                     is_pretrained:bool = args.is_pretrained):
+):
     """This function runs an evaluation on the entire image.\\
     The image is divided into patches, that will be the inputs of the model.\\
     The overlap parameter sets overlap rate between each patch cut.
 
     Parameters
     ----------
+    prediction_path : str
+        Path to save predictions
     overlap : float
         Overlap rate between each patch
     current_iter_folder : str
@@ -217,14 +218,6 @@ def evaluate_overlap(overlap:float,
         Num of parallel workers, by default args.workers
     checkpoint_file : str, optional
         The filename of the checkpoint, by default args.checkpoint_file
-    arch : str, optional
-        Architecture name to build the model
-        The architecture can be 'resunet' or 'deeplabv3_resnet50', by default args.arch
-    filters : list, optional
-        List of number of filters for each block of the model, if the model is resunet, by default args.filters
-    is_pretrained : bool, optional
-        If True, the model is loaded from pretrained weights available in pytorch hub
-        If False, the model is started with random weights, by default args.is_pretrained
     """
     
     DEVICE = get_device()
@@ -266,7 +259,7 @@ def evaluate_overlap(overlap:float,
     )
 
 
-    last_checkpoint = os.path.join(current_model_folder, checkpoint_file)
+    last_checkpoint = join(current_model_folder, checkpoint_file)
     model = load_weights(model, last_checkpoint)
     logger.info("Model loaded from {}".format(last_checkpoint))
 
@@ -274,8 +267,6 @@ def evaluate_overlap(overlap:float,
     model = model.to(DEVICE)
 
     cudnn.benchmark = True
-
-    check_folder(os.path.join(current_iter_folder, 'prediction'))
 
     pred_prob = np.zeros(shape = (image.shape[1], image.shape[2], num_classes), dtype='float16')
     pred_depth = np.zeros(shape = (image.shape[1], image.shape[2]), dtype='float16')
@@ -293,27 +284,15 @@ def evaluate_overlap(overlap:float,
     )
 
     gc.collect()
-
-    prob_map_path = os.path.join(current_iter_folder, 'prediction', f'prob_map_{overlap}.npy')
-    np.save(prob_map_path, prob_map)
-    del prob_map
+    logger.info(f"Saving prediction outputs..")
+    np.savez_compressed(
+        prediction_path,
+        prob_map=prob_map,
+        pred_class=pred_class,
+        depth_map=depth_map
+    )
+    logger.info(f"Predictions saved on {prediction_path}")
     gc.collect()
-    logger.info("Probability map done and saved.")
-    
-
-    pred_class_path = os.path.join(current_iter_folder, 'prediction', f'pred_class_{overlap}.npy')
-    np.save(pred_class_path, pred_class)
-    del pred_class
-    gc.collect()
-    logger.info("Prediction done and saved.")
-    
-    
-    depth_map_path = os.path.join(current_iter_folder, 'prediction', f'depth_map_{overlap}.npy')
-    np.save(depth_map_path, depth_map)
-    del depth_map
-    gc.collect()
-    logger.info("Depth map done and saved.")
-
 
 
 
@@ -332,7 +311,7 @@ def evaluate_iteration(current_iter_folder:str, args:dict):
 
     logger.info("============ Initialized Evaluation ============")
 
-    current_model_folder = os.path.join(current_iter_folder, args.model_dir)
+    current_model_folder = join(current_iter_folder, args.model_dir)
 
     ortho_image_metadata = get_image_metadata(args.ortho_image)
     
@@ -346,25 +325,26 @@ def evaluate_iteration(current_iter_folder:str, args:dict):
     if exists(raster_depth) and exists(raster_class_pred) and exists(raster_prob):
         return
     
-    # Iterate over the different overlap values
+
     for overlap in args.overlap:
-
-        # Verify if the prediction is already done
-        is_depth_done = os.path.exists(os.path.join(current_iter_folder, 'prediction', f'depth_map_{overlap}.npy'))
-        is_prob_done = os.path.exists(os.path.join(current_iter_folder, 'prediction', f'prob_map_{overlap}.npy'))
-        is_pred_done = os.path.exists(os.path.join(current_iter_folder, 'prediction', f'pred_class_{overlap}.npy'))
         
-        if is_depth_done and is_prob_done and is_pred_done:
+        prediction_path = join(current_iter_folder, f'prediction_{overlap}.npz')
+        
+        is_prediction_overlap_done = exists(prediction_path)
 
+        if is_prediction_overlap_done:
+        
             logger.info(f"Overlap {overlap} is already done. Skipping...")
 
             continue
         
         logger.info(f"Overlap {overlap} is not done. Starting...")
-        evaluate_overlap(overlap, 
-                         current_iter_folder, 
-                         current_model_folder,
-                         ortho_image_shape)
+        evaluate_overlap(
+            prediction_path,
+            overlap, 
+            current_iter_folder, 
+            current_model_folder,
+            ortho_image_shape)
         
         logger.info(f"Overlap {overlap} done.")
 
@@ -379,9 +359,9 @@ if __name__ == "__main__":
     ## arguments
     args = read_yaml("args.yaml")
     # external parameters
-    current_iter_folder = os.path.join(args.data_path, "iter_001")
+    current_iter_folder = join(args.data_path, "iter_001")
     current_iter = int(current_iter_folder.split("_")[-1])
-    current_model_folder = os.path.join(current_iter_folder, args.model_dir)
+    current_model_folder = join(current_iter_folder, args.model_dir)
 
     evaluate_iteration(current_iter_folder, args)
 
