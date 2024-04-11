@@ -6,7 +6,8 @@ import numpy as np
 from skimage.color import label2rgb
 from skimage.measure import find_contours
 
-from src.utils import check_folder, read_tiff, run_in_process, run_in_thread
+from src.io_operations import read_tiff
+from src.utils import check_folder, run_in_process, run_in_thread
 
 
 # generate view only for sythentic labels
