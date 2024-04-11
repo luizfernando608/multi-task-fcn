@@ -131,7 +131,7 @@ def predict_network(ortho_image_shape:Tuple,
     
     j = 0
     with torch.no_grad(): 
-        for i, inputs in enumerate(tqdm(dataloader)):      
+        for i, (inputs, coords) in enumerate(tqdm(dataloader)):      
             # ============ multi-res forward passes ... ============
             # compute model loss and output
             input_batch = inputs.to(DEVICE, non_blocking=True, dtype = torch.float)
@@ -145,34 +145,55 @@ def predict_network(ortho_image_shape:Tuple,
             
             depth_out = sig(out_pred['aux']).data.cpu().numpy()
             
-            c, x, y, cl = out_batch.shape
+            batch_size, output_height, output_width, cl = out_batch.shape
 
-            coord_x = coords[j : j+batch_size,0]
-            coord_y = coords[j : j+batch_size,1]
+            for b in range(batch_size):
+                
+                # The slice from image to fill with the prediction
+                row_start = coords[b][0].item() - st
+                row_end = coords[b][0].item() + st + stride % 2
+                # Condition to avoid surpass the image shape
+                row_end = np.minimum(row_end, ortho_image_shape[-2])
+                
+                
+                # the total image height
+                height = row_end - row_start
 
-            # iterate through batches
-            for b in range(c):
+
+                col_start = coords[b][1].item() - st
+                col_end = coords[b][1].item() + st + stride % 2
+                col_end = np.minimum(col_end, ortho_image_shape[-1])
+                
+
+                width = col_end - col_start
+                
+                
+                prob_output = out_batch[b, 
+                                        output_height//2 - st : (output_height//2 - st) + height, 
+                                        output_width//2 - st : (output_width//2 - st) + width]
+                
+                
+
+                depth_output =  depth_out[b,
+                                          :,
+                                          output_height//2 - st : (output_height//2 - st) + height, 
+                                          output_width//2 - st : (output_width//2 - st) + width]
+                
+                
+                bbox = ((row_start, row_end), (col_start,  col_end))
+
+                
                 pred_prob[
-                    coord_x[b] - st : coord_x[b] + st + stride % 2,
-                    coord_y[b] - st : coord_y[b] + st + stride % 2
-                    ] = out_batch[ b , overlap//2 + overlap % 2 : x - ovr , overlap//2 + overlap % 2 : y - ovr ]
+                    bbox[0][0]:bbox[0][1],
+                    bbox[1][0]:bbox[1][1]
+                ] = prob_output
 
+                
                 pred_depth[
-                    coord_x[b] - st : coord_x[b] + st + stride % 2,
-                    coord_y[b] - st : coord_y[b] + st + stride % 2
-                    ] = depth_out[b, 0, overlap//2 + overlap % 2 : x - ovr, overlap//2 + overlap % 2: y - ovr ]
-
-            j += out_batch.shape[0] 
-            
-        
-        row = ortho_image_shape[0]
-        col = ortho_image_shape[1]
-        
-        pred_prob = pred_prob[overlap//2 + overlap % 2 :, overlap//2 + overlap % 2 :]
-        pred_prob = pred_prob[:row,:col]
-        
-        pred_depth = pred_depth[overlap//2 + overlap % 2 :, overlap//2 + overlap % 2 :]
-        pred_depth = pred_depth[:row,:col]
+                    bbox[0][0]:bbox[0][1],
+                    bbox[1][0]:bbox[1][1]
+                ] = depth_output
+                
         
 
         return pred_prob, np.argmax(pred_prob,axis=-1), pred_depth
@@ -231,19 +252,25 @@ def evaluate_overlap(overlap:float,
     
     DEVICE = get_device()
 
-    image, coords, stride, overlap_in_pixels = define_test_loader(ortho_image, 
-                                                                    size_crops, 
-                                                                    overlap,
-                                                                    )
+    
+    test_segmentation_npy_path = get_npy_filepath_from_tiff(args.test_segmentation_path) 
+    if not exists(test_segmentation_npy_path):
+        convert_tiff_to_npy(args.test_segmentation_path)
+    
 
-    test_dataset = DatasetFromCoord(
-            image,
-            labels = None,
-            depth_img = None,
-            coords = coords,
-            psize = size_crops,
-            evaluation = True,
-        )
+    ortho_image_npy_path = get_npy_filepath_from_tiff(ortho_image)
+    if not exists(ortho_image_npy_path):
+        convert_tiff_to_npy(ortho_image)
+    
+    
+    test_dataset = dataset_with_lazy_loading_window(
+        ortho_image_npy_path,
+        dataset_type="test",
+        distance_map_path=None,
+        segmentation_path = test_segmentation_npy_path,
+        overlap_rate=overlap,
+        crop_size=size_crops,
+    )
 
     test_loader = torch.utils.data.DataLoader(
             test_dataset,
@@ -254,11 +281,10 @@ def evaluate_overlap(overlap:float,
             shuffle=False,
     )
 
-    logger.info("Building data done with {} patches loaded.".format(coords.shape[0]))
+    logger.info("Building data done with {} patches loaded.".format(test_dataset.coords.shape[0]))
     
-
     model = build_model(
-        image.shape, 
+        ortho_image_shape,
         args.nb_class,
         args.arch, 
         args.filters, 
@@ -279,19 +305,19 @@ def evaluate_overlap(overlap:float,
 
     check_folder(os.path.join(current_iter_folder, 'prediction'))
 
-    pred_prob = np.zeros(shape = (image.shape[1], image.shape[2], num_classes), dtype='float16')
-    pred_depth = np.zeros(shape = (image.shape[1], image.shape[2]), dtype='float16')
+    pred_prob = np.zeros(shape = (ortho_image_shape[1], ortho_image_shape[2], num_classes), dtype='float16')
+    pred_depth = np.zeros(shape = (ortho_image_shape[1], ortho_image_shape[2]), dtype='float16')
 
     prob_map, pred_class, depth_map = predict_network(
         ortho_image_shape = ortho_image_shape,
         dataloader = test_loader,
         model = model,
         batch_size = batch_size,
-        coords = coords,
+        coords = test_dataset.coords,
         pred_prob = pred_prob,
         pred_depth = pred_depth,
-        stride = stride,
-        overlap = overlap_in_pixels,
+        stride = test_dataset.stride_size,
+        overlap = test_dataset.overlap_size,
     )
 
     gc.collect()
@@ -338,7 +364,7 @@ def evaluate_iteration(current_iter_folder:str, args:dict):
 
     ortho_image_metadata = get_image_metadata(args.ortho_image)
     
-    ortho_image_shape = (ortho_image_metadata["height"], ortho_image_metadata["width"])
+    ortho_image_shape = (ortho_image_metadata["count"], ortho_image_metadata["height"], ortho_image_metadata["width"])
     
     # check if raster_prediction is done
     raster_depth = join(current_iter_folder, 'raster_prediction', f'depth_{sum(args.overlap)}.TIF') 
