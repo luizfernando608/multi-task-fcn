@@ -11,7 +11,7 @@ from torchvision import transforms
 ROOT_PATH = dirname(dirname(__file__))
 sys.path.append(ROOT_PATH)
 
-from src.utils import get_crop_image, get_pad_width, oversample
+from src.utils import get_crop_image, get_pad_width, oversample, normalize
 from src.io_operations import check_file_extension, get_npy_shape
 
 
@@ -175,8 +175,6 @@ class DatasetFromCoord(Dataset):
             image=self.image,
         )
         
-        # normalize by 255
-        image = (image/255)
 
         if self.dataset_type == "test":
             
