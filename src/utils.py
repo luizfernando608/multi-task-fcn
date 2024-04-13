@@ -1,3 +1,4 @@
+import sys
 import argparse
 import ast
 import errno
@@ -22,12 +23,15 @@ import torch
 import torch.distributed as dist
 import yaml
 
+ROOT_PATH = dirname(dirname(__file__))
+sys.path.append(ROOT_PATH)
+
 plt.set_loglevel(level = 'critical')
 
 FALSY_STRINGS = {"off", "false", "0"}
 TRUTHY_STRINGS = {"on", "true", "1"}
 
-ROOT_PATH = dirname(dirname(__file__))
+
 
 logger = getLogger("__main__")
 
@@ -681,31 +685,6 @@ def fix_relative_paths(args:dict):
             if isfile(absolute_path) or isdir(absolute_path):
 
                 args[key] = absolute_path
-
-
-
-
-def load_args(yaml_path:str)->dict:
-    """
-    1. Load arguments saved on yaml file.
-    2. Convert path inside the args to absolute path
-    
-    Parameters
-    ----------
-    yaml_path : str
-        Path to yaml with args
-    
-    Returns:
-    ----------
-    dict:
-        Arguments as dict
-    """
-    
-    args = read_yaml(yaml_path)
-    
-    fix_relative_paths(args)    
-    
-    return args
 
 
 def print_sucess(message:str):
