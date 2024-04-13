@@ -112,6 +112,14 @@ class DatasetFromCoord(Dataset):
         self.coords = np.array(coords)
 
 
+    def standardize_image_channels(self):
+        
+        self.image = self.image.astype("float32")
+
+        normalize(self.image)
+        
+
+
     def read_window_around_coord(self, coord:np.ndarray, image:np.ndarray) -> torch.Tensor:
         
         image_crop = get_crop_image(image, image.shape, coord, self.crop_size)

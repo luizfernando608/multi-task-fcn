@@ -419,7 +419,7 @@ def train_iteration(current_iter_folder:str, args:dict):
         augment=args.augment,
         crop_size=args.size_crops
     )
-    
+    train_dataset.standardize_image_channels()
     
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
@@ -441,7 +441,7 @@ def train_iteration(current_iter_folder:str, args:dict):
         augment=args.augment,
         crop_size=args.size_crops
     )
-    
+    val_dataset.standardize_image_channels()
 
     val_loader = torch.utils.data.DataLoader(
         val_dataset,
