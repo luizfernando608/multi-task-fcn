@@ -212,7 +212,7 @@ class DatasetFromCoord(Dataset):
             distance_map = transforms.functional.rotate(distance_map.unsqueeze(0), angle).squeeze(0)
 
 
-        return image, distance_map, segmentation.long()            
+        return image.float(), distance_map.float(), segmentation.long()          
 
     
     def __len__(self):

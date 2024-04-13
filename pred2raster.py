@@ -25,7 +25,7 @@ def pred2raster(current_iter_folder, args):
         f'join_prob_{np.sum(args.overlap)}.TIF')
     
     
-    depth_file = os.path.joiget_image_metadatan(
+    depth_file = os.path.join(
         output_folder,
         f'depth_{np.sum(args.overlap)}.TIF')
                
