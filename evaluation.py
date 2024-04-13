@@ -265,6 +265,8 @@ def evaluate_overlap(prediction_path:float,
         crop_size=size_crops,
     )
 
+    test_dataset.standardize_image_channels()
+
     test_loader = torch.utils.data.DataLoader(
             test_dataset,
             batch_size=batch_size,
