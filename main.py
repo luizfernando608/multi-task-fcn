@@ -671,7 +671,7 @@ def generate_distance_map_for_next_iteration(current_iter_folder):
 
         check_folder(dirname(ALL_LABELS_DISTANCE_MAP_OUTPUT_PATH))
 
-        generate_distance_map(ALL_LABELS_PATH, ALL_LABELS_DISTANCE_MAP_OUTPUT_PATH)
+        generate_distance_map(ALL_LABELS_PATH, ALL_LABELS_DISTANCE_MAP_OUTPUT_PATH, args.sigma)
     
 
     if not exists(SELECTED_LABELS_DISTANCE_MAP_OUPTPUT_PATH):
@@ -679,7 +679,7 @@ def generate_distance_map_for_next_iteration(current_iter_folder):
 
         check_folder(dirname(SELECTED_LABELS_DISTANCE_MAP_OUPTPUT_PATH))
 
-        generate_distance_map(SELECTED_LABELS_PATH, SELECTED_LABELS_DISTANCE_MAP_OUPTPUT_PATH)
+        generate_distance_map(SELECTED_LABELS_PATH, SELECTED_LABELS_DISTANCE_MAP_OUPTPUT_PATH, args.sigma)
     
 
 
@@ -770,7 +770,7 @@ if __name__ == "__main__":
             TEST_DISTANCE_MAP_OUTPUT = join(current_iter_folder, "distance_map", "test_distance_map.tif")
             
             check_folder(dirname(TEST_DISTANCE_MAP_OUTPUT))
-            generate_distance_map(TEST_SEGMENTATION_PATH, TEST_DISTANCE_MAP_OUTPUT)
+            generate_distance_map(TEST_SEGMENTATION_PATH, TEST_DISTANCE_MAP_OUTPUT, args.sigma)
 
             logger.info("Done!")
 
@@ -780,7 +780,7 @@ if __name__ == "__main__":
 
             check_folder(dirname(TRAIN_DISTANCE_MAP_OUTPUT))
 
-            generate_distance_map(TRAIN_SEGMENTATION_PATH, TRAIN_DISTANCE_MAP_OUTPUT)
+            generate_distance_map(TRAIN_SEGMENTATION_PATH, TRAIN_DISTANCE_MAP_OUTPUT, args.sigma)
             
             logger.info("Done!")
 

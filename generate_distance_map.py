@@ -59,7 +59,7 @@ def apply_gaussian_distance_map(input_img:np.ndarray, sigma=5)->np.ndarray:
 
 
 # %%
-def generate_distance_map(input_image_path:str, output_image_path:str):
+def generate_distance_map(input_image_path:str, output_image_path:str, sigma:int=5):
     """Generate the distance map from the input image and save it in the output path
     
     Parameters
@@ -81,7 +81,7 @@ def generate_distance_map(input_image_path:str, output_image_path:str):
 
     input_img = read_tiff(input_image_path).astype('uint16')
     
-    output_img = apply_gaussian_distance_map(input_img)
+    output_img = apply_gaussian_distance_map(input_img, sigma)
 
     
     array2raster(output_image_path, output_img, img_metadata, "float32")
