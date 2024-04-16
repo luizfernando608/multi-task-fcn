@@ -439,9 +439,7 @@ def filter_map_by_depth_prob(pred_map:np.ndarray, prob_map:np.ndarray, depth_map
 
 
 def select_good_samples(old_pred_map:np.ndarray,
-                        new_pred_map:np.ndarray, 
-                        new_prob_map:np.ndarray, 
-                        new_depth_map:np.ndarray,
+                        new_pred_map:np.ndarray
                         ) -> np.ndarray:
     """
     Selects high-quality samples based on model outputs.
@@ -554,8 +552,6 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
     new_pred_map = select_good_samples(
         old_all_labels,
         new_pred_map,
-        new_prob_map,
-        new_depth_map
     )
     new_pred_map = convert_to_minor_numeric_type(new_pred_map)
     
