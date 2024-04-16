@@ -499,7 +499,7 @@ def select_good_samples(old_pred_map:np.ndarray,
 
     comp_new_stats["diff_soli"] =  (comp_new_stats["solidity"] - comp_new_stats["ref_solidity"])
     
-    median_filter = (((comp_new_stats["diff_area"] <= 0.7) & (comp_new_stats["diff_area"] >= -0.3)) & (comp_new_stats["diff_soli"] >= -0.05))
+    median_filter = (((comp_new_stats["diff_area"] <= 0.8) & (comp_new_stats["diff_area"] >= -0.1)) & (comp_new_stats["diff_soli"] >= -0.05))
 
     # Select componentes based on some metrics
     selected_comp = comp_new_stats[median_filter].copy()
