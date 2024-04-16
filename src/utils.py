@@ -453,6 +453,18 @@ def restart_from_checkpoint(ckp_paths:str, run_variables:dict=None, **kwargs):
                 run_variables[var_name] = checkpoint[var_name]
 
 
+def restore_checkpoint_variables(checkpoint_path:str)->dict:
+    to_restore = {"epoch": 0, 
+                  "best_val":(0.), 
+                  "count_early": 0, 
+                  "is_iter_finished":False}
+    
+    checkpoint = torch.load(checkpoint_path, map_location='cpu')
+    
+    for key in to_restore.keys():
+        to_restore[key] = checkpoint[key]
+    
+    return to_restore.copy()
 
 def fix_random_seeds(seed=31):
     """

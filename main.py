@@ -29,7 +29,7 @@ from src.model import (build_model, define_loader, eval, load_weights,
                        save_checkpoint, train)
 from src.dataset import DatasetFromCoord
 from src.utils import (check_folder, fix_random_seeds, get_device, oversamp,
-                       print_sucess, restart_from_checkpoint)
+                       print_sucess, restart_from_checkpoint, restore_checkpoint_variables)
 from visualization import generate_labels_view
 
 gc.set_threshold(0)
@@ -396,24 +396,35 @@ def train_iteration(current_iter_folder:str, args:dict):
 
     current_iter = int(current_iter_folder.split("_")[-1])
 
+
+    last_checkpoint = join(current_model_folder, args.checkpoint_file)
+    
+    loaded_from_last_iteration = False
+    
+    # If the weights from the current iteration, doenst exist.
+    if not isfile(last_checkpoint):
+        if current_iter > 1:
+            last_checkpoint = join(args.data_path, f"iter_{current_iter-1:03d}", args.model_dir, args.checkpoint_file)
+            loaded_from_last_iteration = True
+            print_sucess("Loaded_from_last_checkpoint")
+    
+
+    to_restore = restore_checkpoint_variables(checkpoint_path=last_checkpoint)
+
+    if to_restore["is_iter_finished"] and not loaded_from_last_iteration:
+        return
+
     logger.info("============ Initialized Training ============")
     
-    # Define Loader
+
     segmentation_path = get_last_segmentation_path(args.train_segmentation_path, current_iter_folder)
     distance_map_path = get_last_distance_map_path(current_iter_folder)
-
-    convert_tiff_to_npy(args.ortho_image)
-    convert_tiff_to_npy(segmentation_path)
-    convert_tiff_to_npy(distance_map_path)
-
-    orthoimage_npy_path = get_npy_filepath_from_tiff(args.ortho_image)
-    segmentation_npy_path = get_npy_filepath_from_tiff(segmentation_path)
-    distance_npy_path = get_npy_filepath_from_tiff(distance_map_path)
+            
 
     train_dataset = DatasetFromCoord(
-        image_path=orthoimage_npy_path,
-        segmentation_path=segmentation_npy_path,
-        distance_map_path=distance_npy_path,
+        image_path=args.ortho_image,
+        segmentation_path=segmentation_path,
+        distance_map_path=distance_map_path,
         dataset_type="train",
         samples=args.samples,
         augment=args.augment,
@@ -433,9 +444,9 @@ def train_iteration(current_iter_folder:str, args:dict):
 
     # LOAD VALIDATION SET
     val_dataset = DatasetFromCoord(
-        image_path=orthoimage_npy_path,
-        segmentation_path=segmentation_npy_path,
-        distance_map_path=distance_npy_path,
+        image_path=args.ortho_image,
+        segmentation_path=segmentation_path,
+        distance_map_path=distance_map_path,
         dataset_type="val",
         samples=args.samples//5,
         augment=args.augment,
@@ -467,30 +478,7 @@ def train_iteration(current_iter_folder:str, args:dict):
     )
 
     ########## LOAD MODEL WEIGHTS FROM THE LAST CHECKPOINT ##########
-    last_checkpoint = join(current_model_folder, args.checkpoint_file)
-    
-    loaded_from_last_iteration = False
-    
-    # If the weights from the current iteration, doenst exist. 
-    # The weigths from the last one is loaded
-    if not isfile(last_checkpoint):
-        if current_iter > 1:
-            
-            last_checkpoint = join(args.data_path, f"iter_{current_iter-1:03d}", args.model_dir, args.checkpoint_file)
-            
-            loaded_from_last_iteration = True
-
-            print_sucess("Loaded_from_last_checkpoint")
-        
-
-        elif current_iter == 1:
-            # The model will start with random weights
-            pass
-
-
     model = load_weights(model, last_checkpoint)
-    ###################################################################
-    
     # Load model to GPU
     model = model.to(DEVICE)
 
