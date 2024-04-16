@@ -450,10 +450,6 @@ def select_good_samples(old_pred_map:np.ndarray,
         Segmentation map from the previous iteration with tree type labels.
     new_pred_map : np.ndarray
         New segmentation map with tree type labels.
-    new_prob_map : np.ndarray
-        Confidence/probability map corresponding to the new segmentation.
-    new_depth_map : np.ndarray
-        Depth map predicted by the auxiliary task of the model.
 
     Returns
     -------
@@ -497,7 +493,7 @@ def select_good_samples(old_pred_map:np.ndarray,
 
     comp_new_stats["diff_soli"] =  (comp_new_stats["solidity"] - comp_new_stats["ref_solidity"])
     
-    median_filter = (((comp_new_stats["diff_area"] <= 0.7) & (comp_new_stats["diff_area"] >= -0.3)) & (comp_new_stats["diff_soli"] >= -0.05))
+    median_filter = (((comp_new_stats["diff_area"] <= 0.8) & (comp_new_stats["diff_area"] >= -0.8)) & (comp_new_stats["diff_soli"] >= -0.05))
 
     # Select componentes based on some metrics
     selected_comp = comp_new_stats[median_filter].copy()
