@@ -202,14 +202,8 @@ def predict_network(ortho_image_shape:Tuple,
 def evaluate_overlap(prediction_path:float,
                      overlap:float,
                      current_iter_folder:str,
-                     current_model_folder:str, 
                      ortho_image_shape:tuple,
-                     size_crops:int = args.size_crops, 
-                     num_classes:int = args.nb_class,
-                     ortho_image:str = args.ortho_image, 
-                     batch_size:int = args.batch_size, 
-                     workers:int = args.workers, 
-                     checkpoint_file:str = args.checkpoint_file, 
+                     save_compressed:bool = True
 ):
     """This function runs an evaluation on the entire image.\\
     The image is divided into patches, that will be the inputs of the model.\\
@@ -223,54 +217,29 @@ def evaluate_overlap(prediction_path:float,
         Overlap rate between each patch
     current_iter_folder : str
         The path to the current iteration folder
-    current_model_folder : str
-        The path to the current model folder
     ortho_image_shape : tuple
         The shape the ortho image - Image from remote sensing
-    logger : Logger
-        The logger that tracks the model evaluation
-    size_crops : int, optional
-        The size of the patches, by default args.size_crops
-    num_classes : int, optional
-        Num of tree_types, by default args.nb_class
-    ortho_image : str, optional
-        The path to the image from remote sensing, by default args.ortho_image
-    batch_size : int, optional
-        The batch size of the stochastic trainnig, by default args.batch_size
-    workers : int, optional
-        Num of parallel workers, by default args.workers
-    checkpoint_file : str, optional
-        The filename of the checkpoint, by default args.checkpoint_file
     """
     
     DEVICE = get_device()
 
-    
-    test_segmentation_npy_path = get_npy_filepath_from_tiff(args.test_segmentation_path) 
-    if not exists(test_segmentation_npy_path):
-        convert_tiff_to_npy(args.test_segmentation_path)
-    
+    current_model_folder = join(current_iter_folder, args.model_dir)
 
-    ortho_image_npy_path = get_npy_filepath_from_tiff(ortho_image)
-    if not exists(ortho_image_npy_path):
-        convert_tiff_to_npy(ortho_image)
-    
-    
     test_dataset = DatasetFromCoord(
-        ortho_image_npy_path,
-        dataset_type="test",
+        args.ortho_image,
         distance_map_path=None,
-        segmentation_path = test_segmentation_npy_path,
+        segmentation_path=args.test_segmentation_path,
+        dataset_type="test",
         overlap_rate=overlap,
-        crop_size=size_crops,
+        crop_size=args.size_crops,
     )
 
     test_dataset.standardize_image_channels()
 
     test_loader = torch.utils.data.DataLoader(
             test_dataset,
-            batch_size=batch_size,
-            num_workers=workers,
+            batch_size=args.batch_size,
+            num_workers=args.workers,
             pin_memory=True,
             drop_last=False,
             shuffle=False,
@@ -289,7 +258,7 @@ def evaluate_overlap(prediction_path:float,
     )
 
 
-    last_checkpoint = join(current_model_folder, checkpoint_file)
+    last_checkpoint = join(current_model_folder, args.checkpoint_file)
     model = load_weights(model, last_checkpoint)
     logger.info("Model loaded from {}".format(last_checkpoint))
 
@@ -299,14 +268,14 @@ def evaluate_overlap(prediction_path:float,
     cudnn.benchmark = True
 
 
-    pred_prob = np.zeros(shape = (ortho_image_shape[1], ortho_image_shape[2], num_classes), dtype='float16')
+    pred_prob = np.zeros(shape = (ortho_image_shape[1], ortho_image_shape[2], args.nb_class), dtype='float16')
     pred_depth = np.zeros(shape = (ortho_image_shape[1], ortho_image_shape[2]), dtype='float16')
 
     prob_map, pred_class, depth_map = predict_network(
         ortho_image_shape = ortho_image_shape,
         dataloader = test_loader,
         model = model,
-        batch_size = batch_size,
+        batch_size = args.batch_size,
         coords = test_dataset.coords,
         pred_prob = pred_prob,
         pred_depth = pred_depth,
@@ -315,13 +284,25 @@ def evaluate_overlap(prediction_path:float,
     )
 
     gc.collect()
+    
     logger.info(f"Saving prediction outputs..")
-    np.savez_compressed(
-        prediction_path,
-        prob_map=prob_map,
-        pred_class=pred_class,
-        depth_map=depth_map
-    )
+
+    if save_compressed:
+        np.savez_compressed(
+            prediction_path,
+            prob_map=prob_map,
+            pred_class=pred_class,
+            depth_map=depth_map
+        )
+
+    else:
+        np.savez(
+            prediction_path,
+            prob_map=prob_map,
+            pred_class=pred_class,
+            depth_map=depth_map
+        )
+    
     logger.info(f"Predictions saved on {prediction_path}")
     gc.collect()
 
@@ -341,8 +322,6 @@ def evaluate_iteration(current_iter_folder:str, args:dict):
     """
 
     logger.info("============ Initialized Evaluation ============")
-
-    current_model_folder = join(current_iter_folder, args.model_dir)
 
     ortho_image_metadata = get_image_metadata(args.ortho_image)
     
@@ -374,8 +353,8 @@ def evaluate_iteration(current_iter_folder:str, args:dict):
             prediction_path,
             overlap, 
             current_iter_folder, 
-            current_model_folder,
-            ortho_image_shape)
+            ortho_image_shape,
+            save_compressed=False)
         
         logger.info(f"Overlap {overlap} done.")
 
