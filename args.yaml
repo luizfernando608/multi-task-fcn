@@ -6,7 +6,7 @@ model_dir: exp_deeplab_v4
 
 data_path: "/media/dariossh/Extreme SSD/Arquivos SSH/2.8.5_version_data/"
 
-note: "Versao mais restritiva dos dados da amazonia"
+note: "Versao mais relaxada dos dados da amazonia"
 
 # Input data for the model
 ortho_image: amazon_input_data/orthoimage/NOV_2017_FINAL_004.tif
