@@ -322,6 +322,20 @@ def check_file_extension(file_path:str, extension:str):
         raise ValueError(f"The file {os.path.split(file_path)[0]} is invalid. The extension hopes for {extension} file")
 
 
+def get_file_extesion(file_path:str):
+        
+        return os.path.splitext(file_path)[1]
+
+
+def load_image(file_path:str):
+    file_extension = get_file_extesion(file_path)
+
+    if file_extension == ".npy":
+        return np.load(file_path)
+
+    if file_extension in (".tif", ".tiff", ".TIF", ".TIFF"):
+        return read_tiff(file_path)
+
 
 def get_npy_shape(npy_path:str):
     
@@ -386,7 +400,14 @@ def read_window_around_coord(coord:np.ndarray, crop_size:int, image_npy_path:str
 
 if __name__ == "__main__":
     
-    convert_tiff_to_npy(
-        join(ROOT_PATH,"amazon_mc_input_data/orthoimage/NOV_2017_FINAL_004.tif"),
-        dtype="uint8"
+    print(
+        get_file_extesion("numpy.npy")
+    )
+
+    print(
+        get_file_extesion("image.tiff")
+    )
+
+    print(
+        get_file_extesion("image.TIF")
     )

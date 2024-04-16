@@ -12,7 +12,7 @@ ROOT_PATH = dirname(dirname(__file__))
 sys.path.append(ROOT_PATH)
 
 from src.utils import get_crop_image, get_pad_width, oversample, normalize
-from src.io_operations import check_file_extension, get_npy_shape
+from src.io_operations import check_file_extension, get_file_extesion, get_npy_shape, load_image
 
 
 
@@ -39,16 +39,6 @@ class DatasetFromCoord(Dataset):
         if overlap_rate is not None:
             if (overlap_rate >= 1) or (overlap_rate <= 0):
                 raise ValueError("overlap_rate only accept values between (0.0, 1.0) ")
-
-        if segmentation_path is not None:
-            check_file_extension(segmentation_path, ".npy")
-        
-        if image_path is not None:
-            check_file_extension(image_path, ".npy")
-        
-        if distance_map_path is not None:
-            check_file_extension(distance_map_path, ".npy")
-        
         
         self.image_path = image_path
         self.segmentation_path = segmentation_path
@@ -62,11 +52,11 @@ class DatasetFromCoord(Dataset):
         self.overlap_rate = overlap_rate
         
         if dataset_type in ["train", "val"]:
-            self.img_segmentation = np.load(segmentation_path)
-            self.img_depth = np.load(distance_map_path)
+            self.img_segmentation = load_image(segmentation_path)
+            self.img_depth = load_image(distance_map_path)
         
-        self.image = np.load(image_path)
-        self.image_shape = get_npy_shape(image_path)
+        self.image = load_image(image_path)
+        self.image_shape = self.image.shape
         
         self.generate_coords()
 
@@ -161,7 +151,7 @@ class DatasetFromCoord(Dataset):
         if self.augment:
             
             # Run random shift
-            uniform_dist_range = (-0.9, 0.9)
+            uniform_dist_range = (-0.99, 0.99)
             
             random_row_prop = np.random.uniform(*uniform_dist_range)
             random_column_prop = np.random.uniform(*uniform_dist_range)
