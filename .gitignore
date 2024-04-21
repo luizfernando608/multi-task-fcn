@@ -12,7 +12,6 @@ Data Repo Model
 *_data/
 packages/
 *_models/
-exploration_notebooks
 Original Data Source
 *.log
 debug_folder
