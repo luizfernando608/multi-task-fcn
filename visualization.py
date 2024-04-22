@@ -36,12 +36,20 @@ def generate_view_for_sythentic_label(current_iter_folder:str, train_segmentatio
     plt.figure(dpi = 1200)
 
     ORTHOIMAGE = read_tiff(orthoimage_path)
-    plt.imshow(np.moveaxis(ORTHOIMAGE, 0, 2))
+    ORTHOIMAGE = np.moveaxis(ORTHOIMAGE, 0, 2)
+    
+    if ORTHOIMAGE.shape[-1] == 25:
+        ORTHOIMAGE = ORTHOIMAGE[..., [5,3,2]].copy()
+    
+    if ORTHOIMAGE.max() > 255:
+        ORTHOIMAGE = np.divide(ORTHOIMAGE, np.quantile(ORTHOIMAGE, 0.99, axis=(0,1)))
+
+    plt.imshow(ORTHOIMAGE)
     del ORTHOIMAGE
 
     # plot contours
     for contour in find_contours(synthetic_labels):
-        plt.plot(contour[:, 1], contour[:, 0], linewidth=0.3, color = "red", label = "Predição")
+        plt.plot(contour[:, 1], contour[:, 0], linewidth=0.3, color = "red", label = "Prediction")
 
     plt.axis('off')
     plt.savefig(join(OUTPUT_MAP_FOLDER, f"{current_iter:03d}_segmentation.png"), bbox_inches='tight', pad_inches=0)
@@ -132,30 +140,28 @@ def generate_labels_view(current_iter_folder:str, orthoimage_path:str, train_seg
     
 
 if __name__ == "__main__":
-    from pathlib import Path
 
-    from src.utils import load_args
+    from src.io_operations import load_args
 
     # parameters
-    VERSION_FOLDER = "2.8.2_version_data"
+    VERSION_FOLDER = r"C:\Users\ziull\OneDrive\Documentos\Estudos\TCC\multi-task-fcn\19.2_version_data"
     
     
     ROOT_PATH = dirname(__file__)
-    
-    # for iter_num in range(0,9):
-    #     iter_folder = join(VERSION_FOLDER, f"iter_{iter_num:03d}")
-    #     args = load_args(join(ROOT_PATH, VERSION_FOLDER, "args.yaml"))
-
-
-    #     generate_labels_view(iter_folder, args.ortho_image, args.train_segmentation_path)
 
     # run it in parallel
     import multiprocessing as mp
     
     args = load_args(join(ROOT_PATH, VERSION_FOLDER, "args.yaml"))
     
-    with mp.Pool(mp.cpu_count()) as pool:
-        pool.starmap(
-            generate_labels_view,
-            [(join(VERSION_FOLDER, f"iter_{iter_num:03d}"), args.ortho_image, args.train_segmentation_path) for iter_num in range(0,9)]
+    # with mp.Pool(mp.cpu_count()//4) as pool:
+    #     pool.starmap(
+    #         generate_labels_view,
+    #         [(join(VERSION_FOLDER, f"iter_{iter_num:03d}"), args.ortho_image, args.train_segmentation_path) for iter_num in range(20,0,-1)]
+    #     )
+    for iter_num in range(20,0,-1):
+        iter_path = join(VERSION_FOLDER, f"iter_{iter_num:03d}")
+    
+        generate_view_for_sythentic_label(
+            iter_path, args.train_segmentation_path, args.ortho_image
         )
