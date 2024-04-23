@@ -3,8 +3,9 @@ from os.path import dirname, join, split
 import pandas as pd
 from millify import millify
 from matplotlib.ticker import FuncFormatter
+import matplotlib.pyplot as plt
 
-from typing import Iterable
+from typing import Union
 
 import numpy as np
 
@@ -40,27 +41,7 @@ def get_version_folders():
     return version_folders.sort_values("version")
 
 
-def autolabel(ax: np.ndarray, format: str = None):
-    """
-    Attach a text label above each bar in *rects*, displaying its height.
-    """
-    if not isinstance(ax, Iterable):
-        ax = [ax]
 
-    if format is None:
-        format = "{:.0f}"
-
-    for ax_ in ax:
-        for rect in ax_.patches:
-            height = rect.get_height()
-            ax_.annotate(
-                format.format(height),
-                xy=(rect.get_x() + rect.get_width() / 2, height),
-                xytext=(0, 3),  # 3 points vertical offset
-                textcoords="offset points",
-                ha="center",
-                va="bottom",
-            )
 
 
 def get_iter_folders():
@@ -96,8 +77,6 @@ def get_iter_folders():
     df_iter_path.sort_values(["version", 'iter'], inplace = True)
 
     return df_iter_path
-
-
 
 
 
@@ -145,6 +124,28 @@ def format_axis(axis, which='both', fmt = "{:.2f}"):
         
     if which in ['y', 'both']:
         axis.get_yaxis().set_major_formatter(FuncFormatter(formatter))
+
+
+
+def autolabel(axis:Union[np.ndarray,plt.Axes], fmt = "{:.2f}"):
+    """Adiciona textos sobre cada barra em um gráfico de barras
+
+    Parameters
+    ----------
+    ax : Union[np.ndarray,plt.Axes]
+        Eixo ou eixos do matplotlib
+    fmt : str
+        Formato do texto apresentado
+    """
+    if not isinstance(axis, np.ndarray):
+        axis = np.array([axis])
+    
+    
+    for ax in axis.flatten():
+        for container in ax.containers:
+            ax.bar_label(container, fmt = fmt, fontsize = 9)
+
+
 
 
 if __name__ == "__main__":
