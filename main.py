@@ -3,6 +3,7 @@ import math
 import os
 import shutil
 from os.path import dirname, exists, isfile, join
+from multiprocessing import Process
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -751,26 +752,30 @@ if __name__ == "__main__":
         
         # if the iteration 0 applies distance map to ground truth segmentation
         if current_iter == 0:
-            
             logger.info(f"Generating test distance map")
 
             TEST_SEGMENTATION_PATH = args.test_segmentation_path
             TEST_DISTANCE_MAP_OUTPUT = join(current_iter_folder, "distance_map", "test_distance_map.tif")
-            
             check_folder(dirname(TEST_DISTANCE_MAP_OUTPUT))
-            generate_distance_map(TEST_SEGMENTATION_PATH, TEST_DISTANCE_MAP_OUTPUT, args.sigma)
-
-            logger.info("Done!")
 
             logger.info(f"Generating train distance map")
             TRAIN_SEGMENTATION_PATH  = args.train_segmentation_path
             TRAIN_DISTANCE_MAP_OUTPUT = join(current_iter_folder, "distance_map", "train_distance_map.tif")
-
             check_folder(dirname(TRAIN_DISTANCE_MAP_OUTPUT))
 
-            generate_distance_map(TRAIN_SEGMENTATION_PATH, TRAIN_DISTANCE_MAP_OUTPUT, args.sigma)
+            # Create processes for test and train distance map generation
+            test_process = Process(target=generate_distance_map, args=(TEST_SEGMENTATION_PATH, TEST_DISTANCE_MAP_OUTPUT, args.sigma))
+            train_process = Process(target=generate_distance_map, args=(TRAIN_SEGMENTATION_PATH, TRAIN_DISTANCE_MAP_OUTPUT, args.sigma))
             
-            logger.info("Done!")
+            # Start the processes
+            test_process.start()
+            train_process.start()
+            
+            # Wait for both processes to finish
+            test_process.join()
+            train_process.join()
+
+            logger.info("Both test and train distance maps have been generated in parallel using multiprocessing.")
 
             logger.info("Generating labels view for iter 0")
 
