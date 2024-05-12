@@ -5,11 +5,13 @@ from typing import Tuple
 import numpy as np
 import pandas as pd
 from scipy.ndimage import gaussian_filter
-from skimage.measure import label, regionprops_table
+from skimage.measure import label, regionprops_table, regionprops
+from shapely.geometry import Polygon
+
 from tqdm import tqdm
 
 from src.io_operations import (fix_relative_paths, load_args, read_tiff,
-                               read_yaml)
+                               read_yaml, get_image_metadata)
 
 from src.utils import convert_to_minor_numeric_type
 
@@ -465,8 +467,8 @@ def select_good_samples(old_pred_map:np.ndarray,
     
     # filter components too small or too large
     filter_components_by_geometric_property(new_pred_map, 
-                                            low_limit = 25_000, 
-                                            high_limit = np.inf, # high limit area
+                                            low_limit = np.float32(args.lower_limit_area), 
+                                            high_limit = np.float32(args.upper_limit_area), # high limit area
                                             property = "area")
     
     filter_components_by_mask(new_pred_map)
@@ -497,7 +499,14 @@ def select_good_samples(old_pred_map:np.ndarray,
 
     comp_new_stats["diff_soli"] =  (comp_new_stats["solidity"] - comp_new_stats["ref_solidity"])
     
-    median_filter = (((comp_new_stats["diff_area"] <= 0.7) & (comp_new_stats["diff_area"] >= -0.3)) & (comp_new_stats["diff_soli"] >= -0.05))
+    if args.scale_area == "log":
+        comp_new_stats["diff_area"] = np.log(comp_new_stats["diff_area"])
+
+    median_filter = (
+        (comp_new_stats["diff_area"] <= np.float32(args.upper_limit_area_rlted_to_tree_type)) & 
+        (comp_new_stats["diff_area"] >= np.float32(args.lower_limit_area_rlted_to_tree_type)) & 
+        (comp_new_stats["diff_soli"] >= -0.05)
+    )
 
     # Select componentes based on some metrics
     selected_comp = comp_new_stats[median_filter].copy()
@@ -619,8 +628,8 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
     args = read_yaml("args.yaml")
     ROOT_PATH = dirname(__file__)
-    
-    version_folder = join(ROOT_PATH, "2.8.2_version_data")
+        
+    version_folder = "/media/dariossh/Extreme SSD/Arquivos SSH/2.8.2_version_data"
     input_data_folder = join(ROOT_PATH, "amazon_input_data")
 
     gt_map = read_tiff(f"{input_data_folder}/segmentation/train_set.tif")
