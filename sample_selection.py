@@ -2,6 +2,7 @@ from logging import getLogger
 from os.path import dirname, join
 from typing import Tuple
 
+import geopandas as gpd
 import numpy as np
 import pandas as pd
 from scipy.ndimage import gaussian_filter
@@ -624,6 +625,50 @@ def get_new_segmentation_sample(ground_truth_map:np.ndarray,
 
 
 
+def convert_array_to_geodataframe(img_labels:np.ndarray,
+                                  crs_coords:str=None)->gpd.GeoDataFrame:
+    
+    
+    polygons = [Polygon(region.coords) for region in regionprops(img_labels)]
+    
+    # Create a GeoDataFrame
+    gdf = gpd.GeoDataFrame({'geometry': polygons})
+
+    # set the crs
+    if crs_coords is not None:
+        gdf.crs = crs_coords
+
+    return gdf
+
+
+def get_all_labels_set(old_selected_labels:np.ndarray,
+                       old_all_labels:np.ndarray,
+                       new_pred_map:np.ndarray, 
+                       ground_truth_map:np.ndarray,
+                       crs_coords:str=None)->gpd.GeoDataFrame:
+    
+    gpd_old_selected_labels = convert_array_to_geodataframe(old_selected_labels, crs_coords)
+    gpd_old_all_labels = convert_array_to_geodataframe(old_all_labels, crs_coords)
+    gpd_new_pred_map = convert_array_to_geodataframe(new_pred_map, crs_coords)
+    gpd_ground_truth_map = convert_array_to_geodataframe(ground_truth_map, crs_coords)
+
+
+    logger.info("Joining the old and new components")
+    # Spatial left join between new_pred_map and old_all_labels
+    gpd_new_labels_set = gpd.sjoin(gpd_new_pred_map, gpd_old_all_labels, how="left", op="intersects")
+
+    # Getting the new components
+    logger.info("Getting the new components")
+    # Select components that are in new but not in old
+    gpd_delta_labels = gpd
+    
+    
+    
+
+
+
+
+
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     args = read_yaml("args.yaml")
@@ -646,17 +691,30 @@ if __name__ == "__main__":
 
     depth_predicted = read_tiff(f"{version_folder}/iter_001/raster_prediction/depth_0.6.TIF")
     
-    all_labels_set, selected_labels_set =  get_new_segmentation_sample(old_selected_labels = old_selected_labels,
-                                                                       old_all_labels = old_all_labels,
+    metadata = get_image_metadata(f"{input_data_folder}/segmentation/train_set.tif")
+    
+    all_labels_set = get_all_labels_set(
+        old_selected_labels=old_selected_labels,
+        old_all_labels=old_all_labels,
+        new_pred_map=new_pred_map,
+        ground_truth_map=gt_map,
+        crs_coords=metadata["crs"]
+    )
 
-                                                                       new_pred_map = new_pred_map,
-                                                                       new_prob_map = new_prob_map,
-                                                                       new_depth_map = depth_predicted,
-                                                                       
-                                                                       ground_truth_map = gt_map,
-                                                                       
-                                                                       prob_thr=0.7,
-                                                                       depth_thr=0.1
-                                                                       )
+    print(all_labels_set.shape)
+    
+    all_labels_set, selected_labels_set =  get_new_segmentation_sample(
+        old_selected_labels = old_selected_labels,
+        old_all_labels = old_all_labels,
+
+        new_pred_map = new_pred_map,
+        new_prob_map = new_prob_map,
+        new_depth_map = depth_predicted,
+        
+        ground_truth_map = gt_map,
+        
+        prob_thr=0.7,
+        depth_thr=0.1
+    )
     
     print("Ok")
