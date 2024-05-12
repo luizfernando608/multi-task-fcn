@@ -398,22 +398,33 @@ def train_iteration(current_iter_folder:str, args:dict):
     current_iter = int(current_iter_folder.split("_")[-1])
 
 
-    last_checkpoint = join(current_model_folder, args.checkpoint_file)
+    current_iter_checkpoint = join(current_model_folder, args.checkpoint_file)
     
-    loaded_from_last_iteration = False
+    if isfile(current_iter_checkpoint):
+        last_checkpoint = current_iter_checkpoint
+        loaded_from_last_iteration = False
     
     # If the weights from the current iteration, doenst exist.
-    if not isfile(last_checkpoint):
+    elif not isfile(current_iter_checkpoint):
         if current_iter > 1:
             last_checkpoint = join(args.data_path, f"iter_{current_iter-1:03d}", args.model_dir, args.checkpoint_file)
             loaded_from_last_iteration = True
             print_sucess("Loaded_from_last_checkpoint")
+
+        elif current_iter == 1:
+            last_checkpoint = None
+            loaded_from_last_iteration = False    
     
 
-    to_restore = restore_checkpoint_variables(checkpoint_path=last_checkpoint)
+    if last_checkpoint is None:
+        pass
+    
+    else:
+        to_restore = restore_checkpoint_variables(checkpoint_path=last_checkpoint)
 
-    if to_restore["is_iter_finished"] and not loaded_from_last_iteration:
-        return
+        if to_restore["is_iter_finished"] and not loaded_from_last_iteration:
+            return
+    
 
     logger.info("============ Initialized Training ============")
     
@@ -478,15 +489,9 @@ def train_iteration(current_iter_folder:str, args:dict):
         dropout_rate = args.dropout_rate
     )
 
-    ########## LOAD MODEL WEIGHTS FROM THE LAST CHECKPOINT ##########
-    model = load_weights(model, last_checkpoint)
-    # Load model to GPU
-    model = model.to(DEVICE)
-
 
     logger.info("Building model done.")
 
-    
     ###### BULD OPTMIZER #######
     optimizer = torch.optim.SGD(
         model.parameters(),
@@ -507,7 +512,20 @@ def train_iteration(current_iter_folder:str, args:dict):
     logger.info("Building optimizer done.")
 
 
-    #### LOAD METRICS FROM THE LAST CHECKPOINT ####
+    
+    ########## LOAD MODEL WEIGHTS FROM THE LAST CHECKPOINT ##########
+    if last_checkpoint is None:
+        # create empty checkpoint
+        save_checkpoint(current_iter_checkpoint, model, optimizer, 0, 0.0, 0, is_iter_finished=False)
+        
+        last_checkpoint = current_iter_checkpoint
+    
+
+    model = load_weights(model, last_checkpoint)
+    # Load model to GPU
+    model = model.to(DEVICE)
+    
+    # restore variables
     to_restore = {"epoch": 0, "best_val":(0.), "count_early": 0, "is_iter_finished":False}
     restart_from_checkpoint(
         last_checkpoint,
