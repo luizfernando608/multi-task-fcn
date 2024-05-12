@@ -1,36 +1,98 @@
-arch: deeplabv3_resnet50
-augment: true
-base_lr: 0.01
-batch_size: 16
-checkpoint_file: checkpoint.pth.tar
-data_path: 0.0_test_data
-depth_thr: 0.2
-dropout_rate: 0.01
-epochs: 2
-filters:
-- 32
-- 32
-- 32
-- 32
-final_lr: 0.0001
-is_pretrained: true
-lambda_weight: 1
-mask_path: amazon_mc_input_data/mask.tif
+##################
+### FILE PATHS ###
+##################
+# experiment directory
 model_dir: exp_deeplab_v4
-nb_class: 17
-num_iter: 2
-ortho_image: amazon_mc_input_data/orthoimage/NOV_2017_FINAL_004.tif
-overlap:
-- 0.1
-- 0.3
-- 0.5
-prob_thr: 0.7
+checkpoint_file: checkpoint.pth.tar
+
+data_path: "test_data"
+
+note: "Runnnig the model with data from Santa Catarina"
+
+# Input data for the model
+ortho_image: input_data/orthoimage/fixed_ortoA1_25tiff.tif
+train_segmentation_path: input_data/segmentation/train_set.tif
+test_segmentation_path: input_data/segmentation/test_set.tif
+mask_path: input_data/mask.tif
+
+
+################################# 
+###### TRAINING parameters ######
+
+# num samples per epoch
 samples: 100
-seed: 31
-size_crops: 128
-start_warmup: 0.0
-test_segmentation_path: amazon_mc_input_data/segmentation/test_set.tif
-train_segmentation_path: amazon_mc_input_data/segmentation/train_set.tif
+# True for data augmentation during training
+augment: True
+
+# convnet architecture --> 'resunet','deeplabv3_resnet50',deeplabv3+_resnet9, deeplabv3+
+arch: deeplabv3_resnet50
+# True for load pretrained weights from Imagenet
+is_pretrained: True
+
+# Dropout rate for deepvlab clasisfication traning
+dropout_rate: 0.65
+
+# Filter for the ResUnet for trained from scratch
+filters: [32, 32, 32, 32]
+
+# regularization weight of distance map
+lambda_weight: 1
+
+### optim parameters ###
+# number of total epochs to run
+epochs: 30
+# batch size per gpu, i.e. how many unique instances per gpu
+batch_size: 32
+# base learning rate
+base_lr: 0.01
+# final learning rate
+final_lr: 0.0001
+# number of warmup epochs
 warmup_epochs: 5
-weight_decay: 1.0e-06
-workers: 0
+# initial warmup learning rate
+start_warmup: 0.0
+
+# weight decay
+weight_decay: 1e-06
+
+
+### others parameters ###
+# number of data loading workers
+workers: 12
+# random seed
+seed: 3115
+
+
+###############################
+#### Evaluation parameters ####
+###############################
+
+# True for training 4 disjoint regions
+size_crops: 256
+# Número de classes
+nb_class: 14
+# samples per epoch
+overlap: [0.1, 0.3, 0.5]
+
+
+################################
+## Active Learning parameters ##
+################################
+
+# probability and distance map thershold to filter new components
+prob_thr: 0.9
+depth_thr: 0.2
+# Num of iter
+num_iter : 20
+
+lower_limit_area: 500
+upper_limit_area: "inf"
+
+lower_limit_area_rlted_to_tree_type: -0.3
+upper_limit_area_rlted_to_tree_type: 0.7
+
+# Availables scales: "log", None
+scale_area: "log"
+
+# Sigma value for gaussian filter in distance map
+sigma : 5
